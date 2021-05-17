@@ -1,0 +1,51 @@
+boloname =  PB20.13.13_Comb01Ch05
+fitDemodResult.py | main() | 0MB | exclude_indices (size:0) = [] | 
+fitDemodResult.py | main() | 0MB | real [x] (no cut)         = [1.3774012549320398, 0.9715746199191606, 5.102455865973732, -4.262695470546139, -1.9181089741151696, -3.9921375833469765, -0.9870706067461117, 1.0664356899736984] | 
+fitDemodResult.py | main() | 0MB | x_fit (after excludeAngle) = [1.3774012549320398, 0.9715746199191606, 5.102455865973732, -4.262695470546139, -1.9181089741151696, -3.9921375833469765, -0.9870706067461117, 1.0664356899736984] | 
+minuitfit.py | minuitminosfit() | 0MB | minuit :
+┌───┬──────┬───────────┬───────────┬────────────┬────────────┬─────────┬─────────┬───────┐
+│   │ Name │   Value   │ Hesse Err │ Minos Err- │ Minos Err+ │ Limit-  │ Limit+  │ Fixed │
+├───┼──────┼───────────┼───────────┼────────────┼────────────┼─────────┼─────────┼───────┤
+│ 0 │ x0   │  -0.3303  │  -0.0033  │            │            │         │         │       │
+│ 1 │ x1   │  -0.3303  │  -0.0033  │            │            │         │         │       │
+│ 2 │ x2   │   3.60    │   0.04    │            │            │         │         │       │
+│ 3 │ x3   │   1.00    │   0.01    │            │            │         │         │       │
+└───┴──────┴───────────┴───────────┴────────────┴────────────┴─────────┴─────────┴───────┘ | 
+minuitfit.py | minuitminosfit() | 0MB | covariance :
+┌────┬─────────────────────────────────────┐
+│    │       x0       x1       x2       x3 │
+├────┼─────────────────────────────────────┤
+│ x0 │ 0.000101 0.000251 0.000192 0.000356 │
+│ x1 │ 0.000251 0.000632 0.000484 0.000901 │
+│ x2 │ 0.000192 0.000484 0.000385 0.000707 │
+│ x3 │ 0.000356 0.000901 0.000707  0.00132 │
+└────┴─────────────────────────────────────┘ | 
+minuitfit.py | minuitminosfit() | 0MB | is_valid   = True | 
+minuitfit.py | minuitminosfit() | 0MB | is_accurate= False | 
+minuitfit.py | printResult() | 0MB | fmin (minimized value) = 12.5018559671602 | 
+minuitfit.py | printResult() | 0MB | nfcn (# of calls)      = 3497 | 
+minuitfit.py | printResult() | 0MB | Center of real                 =    0.389 +- 0.283 | 
+minuitfit.py | printResult() | 0MB | Center of imag.                =   -1.049 +- 0.167 | 
+minuitfit.py | printResult() | 0MB | Raidus                         =    4.867 +- 0.020 | 
+minuitfit.py | printResult() | 0MB | Coefficient on imag. term      =    1.027 +- 0.036 | 
+fitDemodResult.py | main() | 0MB | (x0,y0) = (   0.389,   -1.049) +- (0.283, 0.167) | 
+fitDemodResult.py | main() | 0MB | r0 (center)                    =    1.118 +- 0.185 | 
+fitDemodResult.py | main() | 0MB | theta0 (center) [rad.]         =   -1.216 +- 0.243 | 
+fitDemodResult.py | main() | 0MB | theta0 (center) [deg.]         =  290.349 +- 13.902 | 
+fitDemodResult.py | main() | 0MB | k=0 wire angle = 0.0, fit angle = 78.1, fit angle (0deg) = 78.1 | 
+fitDemodResult.py | main() | 0MB | k=0 d_fittheta = 0.0 | 
+fitDemodResult.py | main() | 0MB | k=1 wire angle = 22.5, fit angle = 74.5, fit angle (0deg) = 78.1 | 
+fitDemodResult.py | main() | 0MB | k=1 d_fittheta = 3.6 | 
+fitDemodResult.py | main() | 0MB | k=2 wire angle = 45.0, fit angle = 329.6, fit angle (0deg) = 78.1 | 
+fitDemodResult.py | main() | 0MB | k=2 d_fittheta = 108.6 | 
+fitDemodResult.py | main() | 0MB | k=3 wire angle = 67.5, fit angle = 232.3, fit angle (0deg) = 78.1 | 
+fitDemodResult.py | main() | 0MB | k=3 d_fittheta = 205.9 | 
+fitDemodResult.py | main() | 0MB | k=4 wire angle = 90.0, fit angle = 216.2, fit angle (0deg) = 78.1 | 
+fitDemodResult.py | main() | 0MB | k=4 d_fittheta = 222.0 | 
+fitDemodResult.py | main() | 0MB | k=5 wire angle = 112.5, fit angle = 154.5, fit angle (0deg) = 78.1 | 
+fitDemodResult.py | main() | 0MB | k=5 d_fittheta = 283.7 | 
+fitDemodResult.py | main() | 0MB | k=6 wire angle = 135.0, fit angle = 99.1, fit angle (0deg) = 78.1 | 
+fitDemodResult.py | main() | 0MB | k=6 d_fittheta = 339.0 | 
+fitDemodResult.py | main() | 0MB | k=7 wire angle = 157.5, fit angle = 75.5, fit angle (0deg) = 78.1 | 
+fitDemodResult.py | main() | 0MB | k=7 d_fittheta = 2.6 | 
+fitDemodResult.py | main() | 0MB | Saving plot (plot_ver1/ver1_PB20.13.13_Comb01Ch05_demodfitresult...) | 
