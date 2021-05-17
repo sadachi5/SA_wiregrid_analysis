@@ -1,0 +1,9 @@
+.*
+_*
+*.pyc
+plot*/
+plot*/*
+tmp
+tmp/*
+test*
+aho*
