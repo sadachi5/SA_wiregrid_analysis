@@ -210,7 +210,7 @@ def truncateX(x, data, xlim=[None, None], err=None) :
         data_truncate.append(data[i]);
         if len(err)>i : err_truncate .append(err [i]);
         pass;
-    return x_truncate, data_truncate, err_truncate;
+    return np.array(x_truncate), np.array(data_truncate), np.array(err_truncate);
 
 def printResult(result, parlabels=None, out=None,  verbosity=0) :
     # initialize Out
