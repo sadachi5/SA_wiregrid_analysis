@@ -57,6 +57,10 @@ def printVar(var) :
 
 ## saveFig() ##
 def saveFig(fig, outpath, ext) :
+    outdir = '/'.join(outpath.split('/')[:-1] );
+    if not os.path.isdir(outdir) :
+        os.makedirs(outdir);
+        pass;
     for exttmp in ext.split(',') :
         fig.savefig('{}.{}'.format(outpath,exttmp));
         pass;
@@ -68,9 +72,23 @@ def saveFig(fig, outpath, ext) :
 def mjd_to_second(mjd) : return mjd * 86400;
 # second to MJD
 def second_to_mjd(second) : return second * (1./86400.);
+
+# theta range --> [-pi, pi]
+def thetapitopi(theta) :
+    return np.arctan2(np.sin(theta),np.cos(theta));
+# theta range --> [0, 2pi]
+def theta0to2pi(theta) :
+    return np.arctan2(-np.sin(theta),-np.cos(theta))+np.pi;
+
 # radian to degrees
-def rad_to_deg(rad) : return (rad%(2.*np.pi)) * 180./(np.pi) ; # [deg.]
-def deg_to_rad(deg) : return deg/180.*np.pi;
+def rad_to_deg(rad) : return np.multiply(rad, 180./(np.pi)) ; # [deg.]
+# --> [0, 360] deg
+def rad_to_deg_0to2pi(rad) : return np.multiply( theta0to2pi(rad), 180./(np.pi) ); # [deg.]
+# --> [-180, 180] deg
+def rad_to_deg_pitopi(rad) : return np.multiply( thetapitopi(rad), 180./(np.pi) ); # [deg.]
+
+# degree to radian
+def deg_to_rad(deg) : return np.multiply(deg, np.pi/180.);
 
 # Create new array of x and y between xmin & xmax  (xmin<=x<=xmax)
 # x and y have the same size
@@ -88,11 +106,11 @@ def between(x,y,xmin,xmax) :
         pass;
     return np.array(xnew),np.array(ynew);
 
-# Calculate (r,theta) of (x,y) and their error
+# Calculate (r,theta) of (x,y) and their error in a circle
 import math;
 def calculateRTheta(x,y,xerr=None,yerr=None) :
     r     = np.sqrt( np.power(x,2.) + np.power(y,2.) );
-    theta = math.atan2(y,x);
+    theta = math.atan2(y,x); # atan2 returns [-pi,pi]
     if xerr is None and yerr is None :
         return  [r, theta];
     else :
@@ -108,8 +126,56 @@ def calculateRTheta(x,y,xerr=None,yerr=None) :
                 np.power(dtheta_dy*yerr, 2.) );
         pass;
     return [[r, rerr], [theta, thetaerr]];
+# Calculate (r,theta) of (x,y) and their error in an ellipse
+import math;
+def calculateRThetaEllipse(x,y,alpha,a,b,xerr=None,yerr=None,alphaerr=None,aerr=None,berr=None) :
+    r     = np.sqrt( np.power(x,2.) + np.power(y,2.) );
+    X     =  x*np.cos(alpha) + y * np.sin(alpha);
+    Y     = -x*np.sin(alpha) + y * np.cos(alpha);
+    theta_XY = math.atan2(a*Y, b*X); # atan2 returns [-pi,pi]
+    theta    = theta_XY + alpha;
+    if xerr is None and \
+       yerr is None and \
+       alphaerr is None and \
+       aerr is None and \
+       berr is None:
+        return  [r, theta];
+    else :
+        if xerr is None : xerr = 0.;
+        if yerr is None : yerr = 0.;
+        if alphaerr is None : alphaerr = 0.;
+        if aerr is None : aerr = 0.;
+        if berr is None : berr = 0.;
+        dr_dx = x/r;
+        dr_dy = y/r;
+        rerr  = np.sqrt( np.power(dr_dx*xerr,2.) + np.power(dr_dy*yerr,2.) );
+
+        X2  = np.power(X, 2.);
+        Y2  = np.power(Y, 2.);
+        #dX2 = np.power(np.cos(alpha)*xerr,2.) + np.power(np.sin(alpha)*yerr,2.) + np.power(Y*alphaerr,2.);
+        #dY2 = np.power(np.sin(alpha)*xerr,2.) + np.power(np.cos(alpha)*yerr,2.) + np.power(X*alphaerr,2.);
+        dX2 = np.power(np.cos(alpha)*xerr,2.) + np.power(np.sin(alpha)*yerr,2.);
+        dY2 = np.power(np.sin(alpha)*xerr,2.) + np.power(np.cos(alpha)*yerr,2.);
+        D   = a/b * Y/X;
+        a2  = np.power(a, 2.);
+        b2  = np.power(b, 2.);
+        D2  = np.power(D, 2.);
+        dThetaSubAlpha2 = D2/np.power(1.+D2, 2.) * ( np.power(aerr,2.)/a2 + np.power(berr,2.)/b2 + dX2/X2 + dY2/Y2 );
+        dtheta_alpha = 1. - 1./(1.+D2) * a/b * np.power(r,2.) / np.power(x*np.cos(alpha) + y*np.sin(alpha), 2.);
+        #print('dtheta_alpha = {}'.format(dtheta_alpha));
+        dtheta_from_alpha2 = np.power( dtheta_alpha * alphaerr, 2. );
+        #dTheta2         = np.power(alphaerr,2.) + dThetaSubAlpha2;
+        dTheta2         = dThetaSubAlpha2 + dtheta_from_alpha2;
+        #dTheta2         = dThetaSubAlpha2;
+        thetaerr  = np.sqrt(dTheta2);
+        pass;
+    return [[r, rerr], [theta, thetaerr]];
+
 
 # rms
 def rms(x) :
     return np.sqrt(np.sum(np.power(x,2.))/(float)(len(x)));
 
+
+def getwafername(boloname) :
+    return boloname.split('_')[0];

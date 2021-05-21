@@ -15,7 +15,7 @@ from slowdaq_map import *;
 
 # my library
 import Out;
-from utils import rad_to_deg, colors;
+from utils import rad_to_deg, theta0to2pi, colors;
 from loadbolo import loadbolo;
 
 class OneAngleData :
@@ -69,6 +69,9 @@ class OneAngleData :
         if out==None : self.m_out = Out.Out(verbosity=verbosity);
         else         : self.m_out = out;
 
+        # Check output directory
+        if not os.path.isdir(self.m_outdir) : os.makedirs(self.m_outdir);
+
         # open & read pickle file
         if not self.m_loaddata :
             if os.path.isfile(self.m_outpath+'.pkl') :
@@ -83,8 +86,8 @@ class OneAngleData :
                 self.m_LStemp_data = pickle.load(outfile);
                 self.m_SIMtemp_time = pickle.load(outfile);
                 self.m_SIMtemp_data = pickle.load(outfile);
-                self.m_out.OUTVar(self.m_LStemp_time,'',-1);
-                self.m_out.OUTVar(self.m_LStemp_data,'',-1);
+                self.m_out.OUTVar(self.m_LStemp_time,-1);
+                self.m_out.OUTVar(self.m_LStemp_data,-1);
             else : # if there is no pickle file, load g3 datafile
                 self.m_loaddata = True;
                 pass;
@@ -237,8 +240,8 @@ class OneAngleData :
     
             # Draw x: WHWP angle / y: output
             if self.m_loadWHWP :
-                angle_ax.plot(rad_to_deg(self.m_whwp_angle),y_subave,label='Raw data - average({:e})'.format(ave), marker='.', markersize=1,linestyle='',color='tab:orange')
-                angle_ax.plot(rad_to_deg(self.m_whwp_angle),y_subDC,label='Raw data - DC', marker='.', markersize=1,linestyle='',color='tab:blue')
+                angle_ax.plot(rad_to_deg(theta0to2pi(self.m_whwp_angle)),y_subave,label='Raw data - average({:e})'.format(ave), marker='.', markersize=1,linestyle='',color='tab:orange')
+                angle_ax.plot(rad_to_deg(theta0to2pi(self.m_whwp_angle)),y_subDC,label='Raw data - DC', marker='.', markersize=1,linestyle='',color='tab:blue')
                 pass;
             # Plot cosmetic
             angle_ax.set_title('WHWP angle');
@@ -250,7 +253,7 @@ class OneAngleData :
             if not os.path.isdir(outdir) : 
                 out.WARNING('There is no output directory: {}'.format(outdir));
                 out.WARNING('--> Make the directory.');
-                os.mkdir(outdir);
+                os.makedirs(outdir);
                 pass;
     
             out.OUT('Saving plot ({}_{}.png) for [{}]:{}'.format(self.m_outpath, boloname, i, boloname),1);

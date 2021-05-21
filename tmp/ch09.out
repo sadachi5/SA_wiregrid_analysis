@@ -1,9 +1,0 @@
-warning: pydfmux is not installed! Use dummy module.
-slowdaqdir = /group/cmb/polarbear/data/pb2a/slowdaq
-grid_rotation_analysis.py | __main__() | 0MB | loaddata = True | 
-grid_rotation_analysis.py | main() | 0MB | boloname = PB20.13.13_Comb01Ch09 | 
-Open DB file : ./data/pb2a_stimulator_run223_20210223.db
-Input DB table structure : ('table', 'pb2a_stimulator', 'pb2a_stimulator', 2, 'CREATE TABLE pb2a_stimulator            (run_id TEXT,run_subid TEXT,hardware_map_readout_name TEXT, Bolo_name TEXT,            tau INTEGER, tauerr INTEGER,            amp INTEGER, amperr INTEGER,            number_freq_use TEXT, hwp TEXT)')
-Input DB first element : ('22300418', '1', '13.10_243.90B', 'PB20.13.10_Comb01Ch01', 0.02609481313423394, 0.0008547414483347551, 2.2029622621956464, 0.04491924853172671, '5,9,13,19,29,37,44', None)
-There is no matched runID / name to 22300607 / PB20.13.13_Comb01Ch09.
-There is no matched runID / name to 22300610 / PB20.13.13_Comb01Ch09.

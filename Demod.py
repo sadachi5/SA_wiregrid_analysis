@@ -43,15 +43,15 @@ class Demod :
         self.m_all_modes = self.m_demod_modes + [ m for m in self.m_narrow_modes if not m in self.m_demod_modes ]; # get all modes for band pass filter
 
         # Print variables
-        self.m_out.OUTVar(self.m_tod_size, 'm_tod_size', 0);
-        self.m_out.OUTVar(self.m_dt_ave  , 'm_dt_ave  ', 0);
-        self.m_out.OUTVar(self.m_nyq     , 'm_nyq     ', 0);
-        self.m_out.OUTVar(self.m_speed   , 'm_speed   ', 0);
-        self.m_out.OUTVar(self.m_band        , 'm_band        ', 0);
-        self.m_out.OUTVar(self.m_demod_modes , 'm_demod_modes ', 0);
-        self.m_out.OUTVar(self.m_band_narrow , 'm_band_narrow ', 0);
-        self.m_out.OUTVar(self.m_narrow_modes, 'm_narrow_modes', 0);
-        self.m_out.OUTVar(self.m_all_modes   , 'm_all_modes   ', 0);
+        self.m_out.OUTVar(self.m_tod_size, 0, 'm_tod_size');
+        self.m_out.OUTVar(self.m_dt_ave  , 0, 'm_dt_ave  ');
+        self.m_out.OUTVar(self.m_nyq     , 0, 'm_nyq     ');
+        self.m_out.OUTVar(self.m_speed   , 0, 'm_speed   ');
+        self.m_out.OUTVar(self.m_band        , 0, 'm_band        ');
+        self.m_out.OUTVar(self.m_demod_modes , 0, 'm_demod_modes ');
+        self.m_out.OUTVar(self.m_band_narrow , 0, 'm_band_narrow ');
+        self.m_out.OUTVar(self.m_narrow_modes, 0, 'm_narrow_modes');
+        self.m_out.OUTVar(self.m_all_modes   , 0, 'm_all_modes   ');
 
         # Define band-pass/low-pass filters
         self.m_fbpf         = {}  ; # band pass fitlers for narrow band filters
@@ -73,7 +73,7 @@ class Demod :
         dangle[dangle < -0.5] += 1; # unwrap
         self.m_out.OUT('dangle after unwrap = {}'.format(dangle),1);
         dt_array = np.diff(time); # array of dt
-        self.m_out.OUTVar(dt_array,'dt_array',1);
+        self.m_out.OUTVar(dt_array,1,'dt_array');
         if mask is None :
             dm = np.ones(len(dangle), dtype=bool);
         else:
@@ -83,22 +83,22 @@ class Demod :
         if self.m_out.m_verbosity>1 : plottmp(time[:-1], s, 'time', 'Rotation Speed', outname='AngleSpeed', i=0); 
         if self.m_out.m_verbosity>1 : plottmp(time[:-1], dangle, 'time', 'angle diff.', outname='AngleDiff', i=1); 
         if self.m_out.m_verbosity>1 : plottmp(time[:-1], dt_array, 'time', 'time diff.', outname='TimeDiff', i=0); 
-        self.m_out.OUTVar(s,'s',1);
-        self.m_out.OUTVar(dm,'dm',1);
-        self.m_out.OUTVar(dm[dm==True],'dm==True before mask',1);
+        self.m_out.OUTVar(s,1,'s');
+        self.m_out.OUTVar(dm,1,'dm');
+        self.m_out.OUTVar(dm[dm==True],1,'dm==True before mask');
         s0 = np.median(s[dm]); # Median of speed data who has True in dm.
-        self.m_out.OUTVar(s0,'s0',1);
+        self.m_out.OUTVar(s0,1,'s0');
         dm *= (np.abs(s - s0) < 0.1); # Mask data if the diff from the median is >= 0.1 Hz.
-        self.m_out.OUTVar(dm,'dm after mask',1);
-        self.m_out.OUTVar(dm[dm==True],'dm==True after mask',1);
-        self.m_out.OUTVar(dangle  ,'dangle before mask',1);
-        self.m_out.OUTVar(dt_array,'dt_array before mask',1);
-        self.m_out.OUTVar(dangle[dm]  ,'dangle after mask',1);
-        self.m_out.OUTVar(dt_array[dm],'dt_array after mask',1);
-        self.m_out.OUTVar(dangle.sum()  ,'sum of dangle before mask',1);
-        self.m_out.OUTVar(dt_array.sum(),'sum of dt_array before mask',1);
-        self.m_out.OUTVar((dangle[dm]).sum()  ,'sum of dangle after mask',1);
-        self.m_out.OUTVar((dt_array[dm]).sum(),'sum of dt_array after mask',1);
+        self.m_out.OUTVar(dm,1,'dm after mask');
+        self.m_out.OUTVar(dm[dm==True]  ,1,'dm==True after mask');
+        self.m_out.OUTVar(dangle        ,1,'dangle before mask');
+        self.m_out.OUTVar(dt_array      ,1,'dt_array before mask');
+        self.m_out.OUTVar(dangle[dm]    ,1,'dangle after mask');
+        self.m_out.OUTVar(dt_array[dm]  ,1,'dt_array after mask');
+        self.m_out.OUTVar(dangle.sum()  ,1,'sum of dangle before mask');
+        self.m_out.OUTVar(dt_array.sum(),1,'sum of dt_array before mask');
+        self.m_out.OUTVar((dangle[dm]).sum()  ,1,'sum of dangle after mask');
+        self.m_out.OUTVar((dt_array[dm]).sum(),1,'sum of dt_array after mask');
         return dangle[dm].sum() / dt_array[dm].sum(); # sum of not-masked angle data / sum of not-masked time period data
     
     def defineFilters(self) :
@@ -163,8 +163,8 @@ class Demod :
         # Get demod result
         # If you use fbpf/flpf instead of bpf/lpf, 
         # we need just filter size for bpf/lpf.
-        self.m_out.OUTVar(fbpf,'fbpf',1);
-        self.m_out.OUTVar(flpf,'flpf',1);
+        self.m_out.OUTVar(fbpf,1,'fbpf');
+        self.m_out.OUTVar(flpf,1,'flpf');
         u = sa_common_numerical.demod(y, e, 
                 bpf =self.m_numtaps if doBpf else None, lpf =self.m_numtaps if doLpf else None, 
                 fbpf=fbpf           if doBpf else None, flpf=flpf           if doLpf else None); 

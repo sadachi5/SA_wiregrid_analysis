@@ -36,7 +36,7 @@ class Out :
     ## end of OUT() ##
 
     ## OUTVar() ##
-    def OUTVar(self,var,varname='',verbosityLevel=0,*args) :
+    def OUTVar(self,var,verbosityLevel=0,varname='',*args) :
         if verbosityLevel+self.m_verbosity>0 :
             mem      = resource.getrusage(resource.RUSAGE_SELF)[2];
             funcname = inspect.currentframe().f_back.f_code.co_name;
@@ -73,7 +73,7 @@ class Out :
     ## end of WARNING() ##
 
     ## ERROR() ##
-    def ERROR(comment,*args) :
+    def ERROR(self,comment,*args) :
         mem      = resource.getrusage(resource.RUSAGE_SELF)[2];
         funcname = inspect.currentframe().f_back.f_code.co_name;
         filename = inspect.currentframe().f_back.f_code.co_filename.split('/')[-1];
@@ -86,7 +86,7 @@ class Out :
     ## end of ERROR() ##
 
     ## MEMOUT() ##
-    def MEMOUT(verbosityLevel=0) :
+    def MEMOUT(self,verbosityLevel=0) :
         if verbosityLevel+self.m_verbosity>0 :
             mem      = resource.getrusage(resource.RUSAGE_SELF)[2];
             funcname = inspect.currentframe().f_back.f_code.co_name;

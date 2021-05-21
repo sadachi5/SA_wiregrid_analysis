@@ -64,15 +64,39 @@ for k in range(k) :
 
 
 
-#'''
+'''
 import numpy as np;
 from utils import plottmp;
 
 alpha = 0.; # deg
 beta  =  20.; # deg
 
-x = np.arange(200.)/200. * 180.;
+x = np.arange(200.)/200. * 180. * 4. - 360.;
 rad = x/180.*np.pi;
 y = (np.arctan(np.tan(rad)*np.cos(np.pi/180. * alpha)/np.cos(np.pi/180. * beta)) - np.arctan(np.tan(rad)))*180./np.pi * 2.;
 
 plottmp(x,y,xlabel='angle [deg.]',ylabel='diff [deg.] by ({:.0f},{:.0f}) deg. tilts'.format(alpha,beta));
+
+
+
+#y = (np.arctan(np.tan((rad-np.pi)/2.)) + np.pi/2.)*2.;
+#y = np.arctan2(np.sin(rad),np.cos(rad));
+y = np.arctan2(-np.sin(rad),-np.cos(rad))+np.pi;
+plottmp(rad,y,xlabel='angle [rad.]',ylabel='acos(cos(angle)) [rad.]');
+#'''
+
+
+import numpy as np;
+import sqlite3;
+import pickle;
+
+dbname = 'output_ver1/db/PB20.13.13/ver1_PB20.13.13_Comb01Ch01';
+conn = sqlite3.connect(dbname+'.db');
+cursor = conn.cursor();
+cursor.execute('SELECT * FROM wiregrid');
+print(cursor.fetchall());
+cursor.close();
+conn.close();
+
+infile = open(dbname+'.pkl', 'rb');
+print( pickle.load(infile) );

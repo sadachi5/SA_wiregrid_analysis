@@ -13,7 +13,7 @@ from scipy.fftpack import fft, fftfreq;
 import Out;
 from OneAngleData import OneAngleData 
 from Demod import Demod
-from utils import mjd_to_second, rad_to_deg, between, rms, saveFig, colors;
+from utils import mjd_to_second, theta0to2pi, rad_to_deg, between, rms, saveFig, colors;
 
 from DBreadStimulator import DBreaderStimulator;
 
@@ -130,7 +130,7 @@ def plotDemodFigure(time, y_demods, y_demods_narrow,
     if (not os.path.isdir(outdir)) : 
         out.WARNING('There is no output directory: {}'.format(outdir));
         out.WARNING('--> Make the directory.');
-        os.mkdir(outdir);
+        os.makedirs(outdir);
         pass;
  
     outpath = '{}/{}'.format(outdir, outname);
@@ -141,7 +141,7 @@ def plotDemodFigure(time, y_demods, y_demods_narrow,
     return 0;
  
 
-def plotAll(angleDataList, outdir='aho', outname='aho', out=None, ext='pdf', verbosity=0) :
+def plotAll(angleDataList, outdir='aho', outname='aho', pickledir='aho', out=None, ext='pdf', verbosity=0) :
     # initialize Out
     if out==None : out = Out.Out(verbosity=verbosity);
     else         : out = out;
@@ -237,8 +237,8 @@ def plotAll(angleDataList, outdir='aho', outname='aho', out=None, ext='pdf', ver
          
             ### Drawing WHWP angle + TOD figure for all of the angles ###
             # Draw x: WHWP angle / y: output
-            axs[0].plot(rad_to_deg(whwp_angle),y_subave,label='Raw data - Ave.({:.1e}) [angleI={}]'.format(ave,j), marker='x', markersize=0.5,linestyle='',color=colors[j])
-            #axs[0].plot(rad_to_deg(whwp_angle),y_subDC,label='Raw data - poly(1) [angleI={}]'.format(j), marker='v', markersize=0.5,linestyle='',color=colors[j])
+            axs[0].plot(rad_to_deg(theta0to2pi(whwp_angle)),y_subave,label='Raw data - Ave.({:.1e}) [angleI={}]'.format(ave,j), marker='x', markersize=0.5,linestyle='',color=colors[j])
+            #axs[0].plot(rad_to_deg(theta0to2pi(whwp_angle)),y_subDC,label='Raw data - poly(1) [angleI={}]'.format(j), marker='v', markersize=0.5,linestyle='',color=colors[j])
             # Plot cosmetic
             axs[0].set_title('WHWP angle');
             axs[0].set_xlabel('WHWP angle [deg.]');
@@ -334,7 +334,7 @@ def plotAll(angleDataList, outdir='aho', outname='aho', out=None, ext='pdf', ver
             plotDemodFigure(time, y_demods, y_demods_narrow,
                     band_modes, band_modes_narrow, bandwidth, bandwidth_narrow,
                     title = '{}: {} [angleI={}]'.format(outname,boloname,j),
-                    outdir=outdir, outname='{}_{}_demod_angle{}'.format(outname,boloname,j), 
+                    outdir=outdir, outname='{}{}_demod_angle{}'.format(outname,boloname,j), 
                     out=out, ext=ext, time_lim=None);
             # Time cut [numtaps, tod_size-numtaps]
             if len(time) > numtaps * 2 :
@@ -343,7 +343,7 @@ def plotAll(angleDataList, outdir='aho', outname='aho', out=None, ext='pdf', ver
                 plotDemodFigure(time, y_demods, y_demods_narrow, 
                         band_modes, band_modes_narrow, bandwidth, bandwidth_narrow,
                         title = '{}: {} [angleI={}]'.format(outname,boloname,j),
-                        outdir=outdir, outname='{}_{}_demod_angle_timecut{}'.format(outname,boloname,j), 
+                        outdir=outdir, outname='{}{}_demod_angle_timecut{}'.format(outname,boloname,j), 
                         out=out, ext=ext, time_lim=[timemin, timemax]);
                 pass;
             ### End of demoded TOD figure for one angle ###
@@ -381,7 +381,7 @@ def plotAll(angleDataList, outdir='aho', outname='aho', out=None, ext='pdf', ver
             pass; # End of loop over OneAngleDatas
        
         out.OUT('Saving plot ({}_{}...) for [{}]:{}'.format(outpath, boloname, i, boloname),0);
-        saveFig(fig, '{}_{}'.format(outpath,boloname), ext);
+        saveFig(fig, '{}{}'.format(outpath,boloname), ext);
         plt.close(fig);
 
         out.OUT('Saving plot ({}FFT_{}...) for [{}]:{}'.format(outpath, boloname, i, boloname),0);
@@ -406,10 +406,10 @@ def plotAll(angleDataList, outdir='aho', outname='aho', out=None, ext='pdf', ver
             imags_mK_err = [result['imag_mK_err'] for result in demod_results ];
             mags_mK      = [result['mag_mK'] for result in demod_results ];
             mags_mK_err  = [result['mag_mK_err'] for result in demod_results ];
-            out.OUTVar(reals,'',0);
-            out.OUTVar(reals_err,'',0);
-            out.OUTVar(reals_mK,'',0);
-            out.OUTVar(reals_mK_err,'',0);
+            out.OUTVar(reals    ,0);
+            out.OUTVar(reals_err,0);
+            out.OUTVar(reals_mK ,0);
+            out.OUTVar(reals_mK_err,0);
 
             figres, axsres = plt.subplots(1,1);
             plt.subplots_adjust(wspace=0.5, hspace=0.5)
@@ -421,10 +421,10 @@ def plotAll(angleDataList, outdir='aho', outname='aho', out=None, ext='pdf', ver
             axsres.set_xlabel('Real');
             axsres.set_ylabel('Imag.');
             axsres.grid(True);
-            out.OUT('Saving plot ({}_{}_demodresult.png) for [{}]:{}'.format(outpath, boloname, i, boloname),0);
-            saveFig(figres, '{}_{}_demodresult'.format(outpath,boloname), ext);
+            out.OUT('Saving plot ({}{}_demod.png) for [{}]:{}'.format(outpath, boloname, i, boloname),0);
+            saveFig(figres, '{}{}_demod'.format(outpath,boloname), ext);
 
-            outfile = open('{}_{}_demodresult.pkl'.format(outpath,boloname), 'wb');
+            outfile = open('{}/{}{}.pkl'.format(pickledir,outname,boloname), 'wb');
             # copy angleDataList except data key
             tmpDataList = [];
             for angleData in angleDataList :
@@ -478,17 +478,17 @@ def main(boloname, filename='',
     # amp is half height of the modulation. It is not the full height.
     db = DBreaderStimulator('./data/pb2a_stimulator_run223_20210223.db');
     stimulator_amp  = [db.getamp(22300607, boloname), db.getamp(22300610, boloname),]; # [ADC counts] Run22300607, Run22300610
-    if stimulator_amp[0][0]==0. or stimulator_amp[0][0]==0. :
-        out.ERROR('There is no matched stimulator amplitude data for {}'.format(boloname));
-        out.ERROR('The output is {}'.format(stimulator_amp));
-        return 1;
+    if stimulator_amp[0][0]==0. or stimulator_amp[1][0]==0. :
+        out.WARNING('There is no matched stimulator amplitude data for {}'.format(boloname));
+        out.WARNING('The output is {}'.format(stimulator_amp));
+        pass;
     out.OUT('stimulator amp (run 22300607) = {} +- {}'.format(stimulator_amp[0][0], stimulator_amp[0][1]), 0);
     out.OUT('stimulator amp (run 22300610) = {} +- {}'.format(stimulator_amp[1][0], stimulator_amp[1][1]), 0);
     stimulator_temp = 52. ; # 52. [mK_RJ/amp[ADC counts]] @ 90GHz, 103. [mK_RJ/amp[ADC counts]] @ 150GHz
 
     # set calibration constant and its error from ADC output to mK_RJ
-    cal     = stimulator_temp/stimulator_amp[1][0]  ; # chose 90GHz after calibration
-    cal_err = cal/stimulator_amp[1][0] * stimulator_amp[1][1]        ; # chose 90GHz after calibration 
+    cal     = stimulator_temp/stimulator_amp[1][0]  if stimulator_amp[1][0]>0. else 0.; # chose 90GHz after calibration
+    cal_err = cal/stimulator_amp[1][0] * stimulator_amp[1][1] if stimulator_amp[1][0]>0. else 0.; # chose 90GHz after calibration 
     out.OUT('calibration constant (ADC->mK_RJ) = {:.3f} +- {:.3f}'.format(cal,cal_err),0);
 
     # ver0
@@ -506,8 +506,8 @@ def main(boloname, filename='',
             {'angle':202.5, 'start':'20210205_181750', 'end':'20210205_181810', 'outname':'A8_180deg'  },
             {'angle':225. , 'start':'20210205_182000', 'end':'20210205_182400', 'outname':'A9_202.5deg'},
         ];
-    # ver1
-    elif 'ver1' in outdir :
+    # otherwise
+    else :
         angleDataList = [
             {'angle':  0  , 'start':'20210205_180230', 'end':'20210205_180400', 'outname':'A1_0deg'    },
             {'angle': 22.5, 'start':'20210205_180510', 'end':'20210205_180530', 'outname':'A2_22.5deg' },
@@ -524,11 +524,11 @@ def main(boloname, filename='',
 
     # retrieve each angle data
     for i, angleData in enumerate(angleDataList) :
-        print(boloname);
+        out.OUTVar(boloname,0);
         oneAngleData = OneAngleData(
                     filename = filename             , boloname  = boloname          ,
                     start    = angleData['start']   , end       = angleData['end']  ,
-                    outname  = angleData['outname'] , outdir    = pickledir         ,
+                    outname  = angleData['outname'] , outdir    = pickledir+'/'+boloname,
                     loaddata = loaddata             , out       = out
                 );
         angleDataList[i]['data'] = oneAngleData;
@@ -536,7 +536,7 @@ def main(boloname, filename='',
         angleDataList[i]['cal_err'] = cal_err;
         pass;
 
-    plotAll(angleDataList, outdir=outdir, outname=outname, out=out, ext=ext);
+    plotAll(angleDataList, outdir=outdir, outname=outname, pickledir=pickledir, out=out, ext=ext);
 
     return 0;
 
@@ -548,7 +548,7 @@ if __name__=='__main__' :
     filename='/group/cmb/polarbear/data/pb2a/g3compressed/22300000_v05/Run22300609';
     #boloname='PB20.13.13_Comb01Ch01';
     boloname='PB20.13.13_Comb01Ch02';
-    outname ='ver1';
+    outname ='ver1_';
     outdir  ='plot_ver1';
     pickledir = 'plot'; # write&read directory for data retrieved from g3 file
     ext     ='png';
