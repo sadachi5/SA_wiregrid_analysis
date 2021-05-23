@@ -36,12 +36,12 @@ class DBreaderStimulator:
 
     def getamp(self, runID=0, channelname='') :
         channel = self.getchannel(runID, channelname);
-        if channel is None : return 0;
+        if channel is None : return (0.,0.);
         else               : return (float(channel[6]), float(channel[7]));
 
     def gettau(self, runID=0, channelname='') :
         channel = self.getchannel(runID, channelname);
-        if channel is None : return 0;
+        if channel is None : return (0.,0.);
         else               : return (float(channel[4]), float(channel[5]));
 
 

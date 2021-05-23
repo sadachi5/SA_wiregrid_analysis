@@ -527,7 +527,7 @@ if __name__=='__main__' :
     refAngle    = 0.; # deg
 
     batchmode = False;
-    verbosity = 0;
+    verbosity = 1;
     
     parser = argparse.ArgumentParser();
     parser.add_argument('-b', '--boloname', default=boloname, help='boloname (default: {})'.format(boloname));

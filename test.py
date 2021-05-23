@@ -86,6 +86,7 @@ plottmp(rad,y,xlabel='angle [rad.]',ylabel='acos(cos(angle)) [rad.]');
 #'''
 
 
+'''
 import numpy as np;
 import sqlite3;
 import pickle;
@@ -100,3 +101,116 @@ conn.close();
 
 infile = open(dbname+'.pkl', 'rb');
 print( pickle.load(infile) );
+#'''
+
+
+'''
+import subprocess
+out = subprocess.getoutput('bjobs');
+print('out=',out.split('\n'));
+print('Njob=',len(out.split('\n'))-1);
+#'''
+
+
+
+
+
+
+
+#'''
+import sqlite3
+
+tablename = 'wiregrid'
+#directory = '/home/cmb/sadachi/analysis_2021/output_ver2';
+directory = '/Users/shadachi/Experiment/PB/analysis/analysis_2021/output_ver2';
+filenames = [
+        '{}/db/PB20.13.13/Fit_PB20.13.13_Comb08Ch22.db'.format(directory),
+        '{}/db/PB20.13.13/Fit_PB20.13.13_Comb08Ch24.db'.format(directory),
+        '{}/db/PB20.13.13/Fit_PB20.13.13_Comb08Ch25.db'.format(directory),
+        ];
+
+con = sqlite3.connect('aho.db')
+cur = con.cursor()
+sql = 'DROP TABLE if exists {}'.format(tablename);
+con.execute(sql);
+con.commit();
+
+sql = "ATTACH DATABASE '%s' as filetmp" % (filenames[0])
+print(sql);
+con.execute(sql)
+con.commit()
+cur.execute("SELECT name FROM filetmp.sqlite_master WHERE type='table'");
+print(cur.fetchall());
+
+sql2 = 'SELECT  * FROM filetmp.{}'.format(tablename)
+cur.execute(sql2);
+print(cur.fetchall());
+
+sql2 = "PRAGMA TABLE_INFO({})".format(tablename);
+print(sql2);
+cur.execute(sql2);
+info=cur.fetchall();
+print(info);
+
+columndefs = [];
+notPrimaryColumns = [];
+for column in info :
+  cid    = column[0];
+  name   = column[1];
+  ctype  = column[2];
+  notnull= column[3];
+  default= column[4];
+  pk     = column[5];
+
+  columndef = ' {} {}'.format(name, ctype);
+  if notnull : columndef += ' NOT NULL';
+  if not default is None : columndef += ' DEFAULT {}'.format(default);
+  if pk      : columndef += ' PRIMARY KEY';
+  else       : notPrimaryColumns.append(name);
+
+  print(columndef);
+  columndefs.append(columndef);
+  pass;
+tabledef = ','.join(columndefs);
+
+print(tabledef);
+sql = 'CREATE TABLE {}({})'.format(tablename, tabledef);
+con.execute(sql);
+con.commit();
+
+sql = 'DETACH DATABASE filetmp';
+con.execute(sql);
+con.commit();
+
+insertColumns = ','.join(notPrimaryColumns);
+for i,filename in enumerate(filenames):
+    sql = "ATTACH DATABASE '%s' as file%d" % (filename,i)
+    con.execute(sql)
+    con.commit();
+    sql2 = 'INSERT INTO {table}({columns}) SELECT {columns} FROM file{i}.{table}'.format(table=tablename, columns=insertColumns, i=i);
+    print(sql2);
+    cur.execute(sql2);
+    con.commit();
+    pass;
+print(cur.fetchall());
+
+for i,filename in enumerate(filenames):
+    sql = "DETACH DATABASE file%d" % (i)
+    con.execute(sql)
+    con.commit();
+    pass;
+
+print(con);
+print(cur);
+
+cur.close()
+con.close()
+
+con = sqlite3.connect('aho.db');
+cur = con.cursor();
+cur.execute('SELECT * FROM {}'.format(tablename));
+print(cur.fetchall());
+cur.close();
+con.close();
+#'''
+

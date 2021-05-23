@@ -1,0 +1,135 @@
+fitDemodResult.py | main() | 0MB | outpath = output_ver1/plots/PB20.13.13/PB20.13.13_Comb01Ch01/ver1_PB20.13.13_Comb01Ch01 | 
+fitDemodResult.py | main() | 0MB | wireangles_rad (size:8) = [0.0, 0.39269908169872414, 0.7853981633974483, 1.1780972450961724, 1.5707963267948966, 1.9634954084936207, 2.356194490192345, 2.748893571891069] | 
+[[Fit Statistics]]
+    # fitting method   = leastsq
+    # function evals   = 96
+    # data points      = 8
+    # variables        = 5
+    chi-square         = 958.213249
+    reduced chi-square = 319.404416
+    Akaike info crit   = 48.2850305
+    Bayesian info crit = 48.6822382
+[[Variables]]
+    par0:  188.680874 +/- 24.0235428 (12.73%) (init = 52.83394)
+    par1:  206.035056 +/- 49.0546700 (23.81%) (init = 52.83394)
+    par2:  4220.78113 +/- 29.4479369 (0.70%) (init = 4328.231)
+    par3:  4321.85813 +/- 45.8897426 (1.06%) (init = 4328.231)
+    par4: -0.38753644 +/- 0.35501383 (91.61%) (init = 0)
+[[Correlations]] (unreported correlations are < 0.100)
+    C(par1, par3) =  0.952
+    C(par2, par4) =  0.613
+    C(par0, par4) = -0.555
+    C(par1, par4) =  0.432
+    C(par3, par4) =  0.401
+    C(par1, par2) =  0.337
+    C(par0, par2) = -0.317
+    C(par2, par3) =  0.279
+    C(par0, par1) = -0.148
+    C(par0, par3) =  0.103
+[[Fit Statistics]]
+    # fitting method   = leastsq
+    # function evals   = 95
+    # data points      = 8
+    # variables        = 3
+    chi-square         = 1124.71774
+    reduced chi-square = 224.943548
+    Akaike info crit   = 45.5667667
+    Bayesian info crit = 45.8050914
+[[Variables]]
+    par0:  156.857211 +/- 0.20067976 (0.13%) (init = 188.6809)
+    par1:  181.565155 +/- 0.25043136 (0.14%) (init = 206.0351)
+    par2:  4275.64459 +/- 0.20212348 (0.00%) (init = 4220.781)
+    par3:  4275.64459 +/- 0.20212348 (0.00%) == 'par2'
+    par4:  0 (fixed)
+[[Correlations]] (unreported correlations are < 0.100)
+    C(par0, par2) = -0.416
+    C(par1, par2) = -0.217
+fitDemodResult.py | main() | 0MB | ### Fit using leastsq i=0 ### | 
+[[Fit Statistics]]
+    # fitting method   = leastsq
+    # function evals   = 217
+    # data points      = 8
+    # variables        = 5
+    chi-square         = 934.677073
+    reduced chi-square = 311.559024
+    Akaike info crit   = 48.0860764
+    Bayesian info crit = 48.4832841
+[[Variables]]
+    par0:  186.876893 +/- 2.64738120 (1.42%) (init = 156.8572)
+    par1:  224.022601 +/- 1.27344195 (0.57%) (init = 181.5652)
+    par2:  4223.92641 +/- 10.0612641 (0.24%) (init = 4275.645)
+    par3:  4340.92133 +/- 4.94995088 (0.11%) (init = 4220.781)
+    par4: -0.30187223 +/- 0.06471894 (21.44%) (init = 0)
+[[Correlations]] (unreported correlations are < 0.100)
+    C(par3, par4) =  0.999
+    C(par2, par4) =  0.997
+    C(par0, par4) =  0.996
+    C(par0, par3) =  0.996
+    C(par2, par3) =  0.995
+    C(par0, par2) =  0.990
+    C(par0, par1) = -0.984
+    C(par1, par3) = -0.980
+    C(par1, par4) = -0.973
+    C(par1, par2) = -0.962
+fitDemodResult.py | main() | 0MB | before params = Parameters([('par0', <Parameter 'par0', value=156.8572110225905 +/- 0.201, bounds=[-4275.397514267694:4381.065390894779]>), ('par1', <Parameter 'par1', value=181.56515500196383 +/- 0.25, bounds=[-4275.397514267694:4381.065390894779]>), ('par2', <Parameter 'par2', value=4275.644591309218 +/- 0.202, bounds=[0.0:43282.31452581236]>), ('par3', <Parameter 'par3', value=4220.781127438294 +/- 0.202, bounds=[3798.7030146944644:4642.859240182123]>), ('par4', <Parameter 'par4', value=0.0 +/- 0, bounds=[-1.5707963267948966:1.5707963267948966]>)]) | 
+fitDemodResult.py | main() | 0MB | after params = Parameters([('par0', <Parameter 'par0', value=186.8768932333087 +/- 2.65, bounds=[-4275.397514267694:4381.065390894779]>), ('par1', <Parameter 'par1', value=224.0226005618897 +/- 1.27, bounds=[-4275.397514267694:4381.065390894779]>), ('par2', <Parameter 'par2', value=4223.926406007869 +/- 10.1, bounds=[0.0:43282.31452581236]>), ('par3', <Parameter 'par3', value=4340.921326077129 +/- 4.95, bounds=[3798.7030146944644:4642.859240182123]>), ('par4', <Parameter 'par4', value=-0.3018722259133555 +/- 0.0647, bounds=[-1.5707963267948966:1.5707963267948966]>)]) | 
+fitDemodResult.py | main() | 0MB | init_pars for minuit = [186.8768932333087, 224.0226005618897, 4223.926406007869, 4340.921326077129, -0.3018722259133555] | 
+minuitfit.py | minuitminosfit() | 0MB | minuit :
+┌───┬──────┬───────────┬───────────┬────────────┬────────────┬─────────┬─────────┬───────┐
+│   │ Name │   Value   │ Hesse Err │ Minos Err- │ Minos Err+ │ Limit-  │ Limit+  │ Fixed │
+├───┼──────┼───────────┼───────────┼────────────┼────────────┼─────────┼─────────┼───────┤
+│ 0 │ x0   │   186.9   │    1.9    │            │            │         │         │       │
+│ 1 │ x1   │   224.0   │    2.2    │            │            │         │         │       │
+│ 2 │ x2   │  4.22e3   │  0.04e3   │            │            │         │         │       │
+│ 3 │ x3   │  4.34e3   │  0.04e3   │            │            │         │         │       │
+│ 4 │ x4   │  -0.3019  │  -0.0030  │            │            │         │         │       │
+└───┴──────┴───────────┴───────────┴────────────┴────────────┴─────────┴─────────┴───────┘ | 
+minuitfit.py | minuitminosfit() | 0MB | covariance :
+┌────┬───────────────────────────────────────────────────┐
+│    │        x0        x1        x2        x3        x4 │
+├────┼───────────────────────────────────────────────────┤
+│ x0 │   0.00841  -0.00299  -0.00799  -0.00857 -7.19e-05 │
+│ x1 │  -0.00299    0.0011   0.00285   0.00305  2.55e-05 │
+│ x2 │  -0.00799   0.00285   0.00868    0.0081  6.86e-05 │
+│ x3 │  -0.00857   0.00305    0.0081   0.00991  7.36e-05 │
+│ x4 │ -7.19e-05  2.55e-05  6.86e-05  7.36e-05  6.18e-07 │
+└────┴───────────────────────────────────────────────────┘ | 
+minuitfit.py | minuitminosfit() | 0MB | is_valid   = True | 
+minuitfit.py | minuitminosfit() | 0MB | is_accurate= False | 
+fitDemodResult.py | main() | 0MB | result of minuit: [<ValueView x0=186.87719388520327 x1=224.0224764060522 x2=4223.925432788277 x3=4340.921394960069 x4=-0.30187134854443376>, 934.6752191524331, 1736, <ErrorView x0=0.09172910668257828 x1=0.03313546547860824 x2=0.09318912123899281 x3=0.09953707085514907 x4=0.0007862637391954364>] | 
+minuitfit.py | printResult() | 0MB | fmin (minimized value) = 934.6752191524331 | 
+minuitfit.py | printResult() | 0MB | nfcn (# of calls)      = 1736 | 
+minuitfit.py | printResult() | 0MB | Center of real                 =  186.877 +- 0.092 | 
+minuitfit.py | printResult() | 0MB | Center of imag.                =  224.022 +- 0.033 | 
+minuitfit.py | printResult() | 0MB | a (semi-major axis radius)     = 4223.925 +- 0.093 | 
+minuitfit.py | printResult() | 0MB | b (semi-minor axis radius)     = 4340.921 +- 0.100 | 
+minuitfit.py | printResult() | 0MB | Rotation of ellipse axis (alpha) =   -0.302 +- 0.001 | 
+fitDemodResult.py | main() | 0MB | r                              = 4282.423 +- 0.047 | 
+fitDemodResult.py | main() | 0MB | alpha [deg.]                   =  342.704 +- 0.045 | 
+fitDemodResult.py | main() | 0MB | (x0,y0) = ( 186.877,  224.022) +- (0.092, 0.033) | 
+fitDemodResult.py | main() | 0MB | r0 (center)                    =  291.735 +- 0.064 | 
+fitDemodResult.py | main() | 0MB | theta0 (center) [rad.]         =    0.876 +- 0.000 | 
+fitDemodResult.py | main() | 0MB | theta0 (center) [deg.]         =   50.165 +- 0.014 | 
+fitDemodResult.py | main() | 4MB | k=0 wire angle = 0.0, fit angle = 232.9, fit angle (0deg) = 232.9 | 
+fitDemodResult.py | main() | 4MB | k=0 d_fittheta = 0.0 | 
+fitDemodResult.py | main() | 4MB | k=1 wire angle = 22.5, fit angle = 191.3, fit angle (0deg) = 232.9 | 
+fitDemodResult.py | main() | 4MB | k=1 d_fittheta = 41.5 | 
+fitDemodResult.py | main() | 4MB | k=2 wire angle = 45.0, fit angle = 149.3, fit angle (0deg) = 232.9 | 
+fitDemodResult.py | main() | 4MB | k=2 d_fittheta = 83.5 | 
+fitDemodResult.py | main() | 4MB | k=3 wire angle = 67.5, fit angle = 104.0, fit angle (0deg) = 232.9 | 
+fitDemodResult.py | main() | 4MB | k=3 d_fittheta = 128.9 | 
+fitDemodResult.py | main() | 4MB | k=4 wire angle = 90.0, fit angle = 54.8, fit angle (0deg) = 232.9 | 
+fitDemodResult.py | main() | 4MB | k=4 d_fittheta = 178.0 | 
+fitDemodResult.py | main() | 4MB | k=5 wire angle = 112.5, fit angle = 5.2, fit angle (0deg) = 232.9 | 
+fitDemodResult.py | main() | 4MB | k=5 d_fittheta = 227.6 | 
+fitDemodResult.py | main() | 4MB | k=6 wire angle = 135.0, fit angle = 319.3, fit angle (0deg) = 232.9 | 
+fitDemodResult.py | main() | 4MB | k=6 d_fittheta = 273.6 | 
+fitDemodResult.py | main() | 4MB | k=7 wire angle = 157.5, fit angle = 276.2, fit angle (0deg) = 232.9 | 
+fitDemodResult.py | main() | 4MB | k=7 d_fittheta = 316.7 | 
+fitDemodResult.py | main() | 4MB | Saving plot (output_ver1/plots/PB20.13.13/PB20.13.13_Comb01Ch01/ver1_PB20.13.13_Comb01Ch01_fitresult)... | 
+fitDemodResult.py | main() | 4MB | Saving database (output_ver1/db/PB20.13.13/ver1_PB20.13.13_Comb01Ch01.db)... | 
+fitDemodResult.py | main() | 4MB | sqlite3 table setting : | 
+fitDemodResult.py | main() | 4MB |  CREATE TABLE wiregrid(id  INTEGER PRIMARY KEY AUTOINCREMENT,boloname STRING,lmfit_x0 REAL,lmfit_y0 REAL,lmfit_a REAL,lmfit_b REAL,lmfit_alpha REAL,lmfit_chisqr REAL,x0 REAL,y0 REAL,theta0 REAL,a REAL,b REAL,r REAL,alpha REAL,x0_err REAL,y0_err REAL,theta0_err REAL,a_err REAL,b_err REAL,r_err REAL,alpha_err REAL,chisqr REAL,wireangle0 REAL,wireangle0_err REAL,theta_wire0 REAL,theta_wire0_err REAL) | 
+fitDemodResult.py | main() | 4MB | execute_string = INSERT INTO wiregrid VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) | 
+fitDemodResult.py | main() | 4MB | column_values (size:27) = ['0', '"PB20.13.13_Comb01Ch01"', '1.868769e+02', '2.240226e+02', '4.223926e+03', '4.340921e+03', '-3.018722e-01', '9.346771e+02', '1.868772e+02', '2.240225e+02', '8.755530e-01', '4.223925e+03', '4.340921e+03', '4.282423e+03', '-3.018713e-01', '9.172911e-02', '3.313547e-02', '2.521713e-04', '9.318912e-02', '9.953707e-02', '4.659622e-02', '7.862637e-04', '9.346752e+02', '4.020566e+00', '3.776636e-03', '4.899540e+00', '7.553272e-03'] | 
+fitDemodResult.py | main() | 4MB | Saving database into a pickle file (output_ver1/db/PB20.13.13/ver1_PB20.13.13_Comb01Ch01.pkl)... | 

@@ -26,6 +26,7 @@ class OneAngleData :
                     start=None  , end=None      ,
                     loaddata=True, loadWHWP=True, loadSlow=True,
                     outname='output'    , outdir='plot' , 
+                    loadpickledir='',
                     out=None            , verbosity=0   ) :
 
         # initialize data variables
@@ -50,6 +51,7 @@ class OneAngleData :
         self.m_outname  = '';
         self.m_outdir   = '';
         self.m_outpath  = '';
+        self.m_loadpickldir = '';
         self.m_out = None; # class Out
 
         # assign input variables
@@ -62,8 +64,7 @@ class OneAngleData :
         self.m_loadSlow  = loadSlow;
         self.m_outname   = outname;
         self.m_outdir    = outdir;
-
-        self.m_outpath = self.m_outdir+'/'+self.m_outname;
+        self.m_loadpickledir = loadpickledir;
 
         # initialize Out
         if out==None : self.m_out = Out.Out(verbosity=verbosity);
@@ -74,9 +75,15 @@ class OneAngleData :
 
         # open & read pickle file
         if not self.m_loaddata :
-            if os.path.isfile(self.m_outpath+'.pkl') :
-                self.m_out.OUT('load data from {}.pkl'.format(self.m_outpath),-1);
-                outfile = open(self.m_outpath+'.pkl', 'rb');
+            loadfilename   = '';
+            checkfilename  = '{}/{}.pkl'.format(self.m_outdir       , self.m_outname);
+            checkfilename2 = '{}/{}.pkl'.format(self.m_loadpickledir, self.m_outname);
+            if   os.path.isfile(checkfilename ) : loadfilename = checkfilename ;
+            elif os.path.isfile(checkfilename2) : loadfilename = checkfilename2;
+            self.m_out.OUT('load data from {}'.format(loadfilename),0);
+
+            if len(loadfilename)>0:
+                outfile = open(loadfilename, 'rb');
                 self.m_bolonames = pickle.load(outfile);
                 self.m_time      = pickle.load(outfile);
                 self.m_whwp_angle= pickle.load(outfile);
@@ -92,6 +99,8 @@ class OneAngleData :
                 self.m_loaddata = True;
                 pass;
             pass;
+        self.m_outpath = self.m_outdir+'/'+self.m_outname;
+
     
 
         # retrieve the TOD data from g3 datafile
@@ -166,6 +175,8 @@ class OneAngleData :
                 pickle.dump(self.m_SIMtemp_data, outfile);
                 pass;
             outfile.close();
+            del bolo;
+            del g3c;
             pass;
         # End of loaddata
             

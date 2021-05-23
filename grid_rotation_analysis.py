@@ -466,7 +466,7 @@ def plotAll(angleDataList, outdir='aho', outname='aho', pickledir='aho', out=Non
 
 
 def main(boloname, filename='', 
-         outdir='aho', outname='aho', pickledir='aho', 
+         outdir='aho', outname='aho', pickledir='aho', loadpickledir='aho',
          loaddata=True, out0=None, ext='pdf', verbosity=0 ) :
 
     # initialize Out
@@ -478,6 +478,7 @@ def main(boloname, filename='',
     # amp is half height of the modulation. It is not the full height.
     db = DBreaderStimulator('./data/pb2a_stimulator_run223_20210223.db');
     stimulator_amp  = [db.getamp(22300607, boloname), db.getamp(22300610, boloname),]; # [ADC counts] Run22300607, Run22300610
+    print(stimulator_amp);
     if stimulator_amp[0][0]==0. or stimulator_amp[1][0]==0. :
         out.WARNING('There is no matched stimulator amplitude data for {}'.format(boloname));
         out.WARNING('The output is {}'.format(stimulator_amp));
@@ -529,14 +530,15 @@ def main(boloname, filename='',
                     filename = filename             , boloname  = boloname          ,
                     start    = angleData['start']   , end       = angleData['end']  ,
                     outname  = angleData['outname'] , outdir    = pickledir+'/'+boloname,
-                    loaddata = loaddata             , out       = out
+                    loadpickledir = loadpickledir   , 
+                    loaddata = loaddata             , out       = out               ,
                 );
         angleDataList[i]['data'] = oneAngleData;
         angleDataList[i]['cal'    ] = cal;
         angleDataList[i]['cal_err'] = cal_err;
         pass;
 
-    plotAll(angleDataList, outdir=outdir, outname=outname, pickledir=pickledir, out=out, ext=ext);
+    if boloname!='' : plotAll(angleDataList, outdir=outdir, outname=outname, pickledir=pickledir, out=out, ext=ext);
 
     return 0;
 
@@ -550,27 +552,30 @@ if __name__=='__main__' :
     boloname='PB20.13.13_Comb01Ch02';
     outname ='ver1_';
     outdir  ='plot_ver1';
-    pickledir = 'plot'; # write&read directory for data retrieved from g3 file
+    pickledir = 'plot'; # write directory for demod data
+    loadpickledir = ''; # read directory for TOD data retrieved from g3 file (If it is empty, it will be 'pickledir')
     ext     ='png';
 
     parser = argparse.ArgumentParser();
-    parser.add_argument('-b', '--boloname', default=boloname, help='boloname (default: {})'.format(boloname));
+    parser.add_argument('-b', '--boloname', default=boloname, help='boloname (default: {}): If boloname=="", make data and stop job. (no making plot or demodulation) '.format(boloname));
     parser.add_argument('-f', '--filename', default=filename, help='input g3 filename (default: {})'.format(filename));
     parser.add_argument('-d', '--outdir', default=outdir, help='output directory for the plots (default: {})'.format(outdir));
     parser.add_argument('-o', '--outname', default=outname, help='output filename (default: {})'.format(outname));
-    parser.add_argument('-p', '--pickledir', default=pickledir, help='write&read directory for pickle files to save the data retreived from g3 file (default: {})'.format(pickledir));
+    parser.add_argument('-p', '--pickledir', default=pickledir, help='write directory for pickle files to save the data retreived from g3 file (default: {})'.format(pickledir));
+    parser.add_argument('-l', '--loadpickledir', default=pickledir, help='read directory for pickle files to load the data retreived from g3 file (default=pickledir)');
     parser.add_argument('-L', '--loadpickle', dest='loaddata', action='store_false', default=True, 
             help='Whether load pickle file or not. If not load it, it will load raw data file. (default: False)');
     parser.add_argument('-e', '--extension', default=ext, help='Output file extensions for figure: You can set multiple extensions by "," e.g. "pdf,png". (default: {})'.format(ext));
     parser.add_argument('-v', '--verbose', default=verbose, type=int, help='verbosity level: A larger number means more printings. (default: {})'.format(verbose));
     args = parser.parse_args();
 
+    if args.loadpickledir=='' : loadpickledir = args.pickledir;
 
     out = Out.Out(args.verbose);
     out.OUT('loaddata = {}'.format(args.loaddata),1)
 
     main(boloname=args.boloname, filename=args.filename, 
-            outdir=args.outdir, outname=args.outname, pickledir=args.pickledir, 
+            outdir=args.outdir, outname=args.outname, pickledir=args.pickledir, loadpickledir=loadpickledir,
             loaddata=args.loaddata, out0=out, ext=args.extension);
     pass;
 

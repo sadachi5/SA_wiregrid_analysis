@@ -28,10 +28,10 @@ done
 #python3 grid_rotation_analysis.py -b PB20.13.13_Comb01Ch01 | tee ch01.out
 #python3 fitDemodResult.py -b PB20.13.13_Comb01Ch02
 
-#python3 fitDemodResult.py -b PB20.13.13_Comb01Ch01
-#python3 fitDemodResult.py -b PB20.13.13_Comb01Ch02
-#python3 fitDemodResult.py -b PB20.13.13_Comb01Ch08
-#python3 fitDemodResult.py -b PB20.13.13_Comb01Ch03
+#python3 fitDemodResult.py -b PB20.13.13_Comb01Ch01 -v 1 | tee plot_ver1_Ch01.out
+#python3 fitDemodResult.py -b PB20.13.13_Comb01Ch02 -v 1
+#python3 fitDemodResult.py -b PB20.13.13_Comb01Ch08 -v 1
+#python3 fitDemodResult.py -b PB20.13.13_Comb01Ch03 -v 1
 
 
 #python3 fitDemodResult.py -b PB20.13.13_Comb01Ch01 --outsuffix "_0alpha"    --init-alpha "0."   &
@@ -46,8 +46,12 @@ done
 wafer='PB20.13.13';
 boloname='PB20.13.13_Comb01Ch01';
 outdir='output_ver2';
-filename='/group/cmb/polarbear/data/pb2a/g3compressed/22300000_v05/Run22300609';
+#filename='/group/cmb/polarbear/data/pb2a/g3compressed/22300000_v05/Run22300609';
+filename='/group/cmb/polarbear/usr/sadachi/SparseWireCalibration/PB2a/g3compressed/Run22300609/';
 pickledir="${outdir}/pkl/${wafer}";
 mkdir -vp  ${outdir}/txt/${wafer}/
-python3 grid_rotation_analysis.py -b ${boloname} -o 'gridana_' -f ${filename} -d ${outdir}/plot/${wafer}/${boloname} -p ${pickledir} -L 2>&1>& ${outdir}/txt/${wafer}/gridana_${boloname}.out
-python3 fitDemodResult.py -b ${boloname} -p ${pickledir} --pickleprefix 'gridana_' --picklesuffix '' -o ${outdir} --outprefix \"Fit_\" --outsuffix \"\" -v 1 2>&1>& ${outdir}/txt/${wafer}/fit_${boloname}.out
+python3 grid_rotation_analysis.py -b ${boloname} -o 'gridana_' -f ${filename} -d ${outdir}/plot/${wafer}/${boloname} -p ${pickledir} 2>&1>& ${outdir}/txt/${wafer}/gridana_${boloname}.out
+python3 fitDemodResult.py -b ${boloname} -p ${pickledir} --pickleprefix 'gridana_' --picklesuffix '' -d ${outdir} --outprefix 'Fit_' --outsuffix '' -v 1 2>&1>& ${outdir}/txt/${wafer}/fit_${boloname}.out
+
+
+#python3 grid_rotation_analysis.py -b '' -o 'gridana_' -f ${filename} -d ${outdir}/plot -p ${outdir}/pkl/ 2>&1>& ${outdir}/txt/gridana_all.out

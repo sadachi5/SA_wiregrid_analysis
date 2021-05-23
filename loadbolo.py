@@ -33,7 +33,7 @@ def loadbolo(
     out.OUT(np.array(g3c.bolonames_all),0);
     
     bolonames=[];
-    if boloname==None :
+    if boloname is None or boloname=="" :
         bolonames = np.array(g3c.bolonames_all) 
     else :
         bolonames = np.array([boloname]);
