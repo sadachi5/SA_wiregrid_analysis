@@ -9,6 +9,8 @@ class DBreader:
     print('Open DB file : {}'.format(self.dbfilename));
     self.sq         = sqlite3.connect(self.dbfilename);
     self.cursor     = self.sq.cursor();
+    self.cursor.execute('SELECT * FROM sqlite_master where type="table"');
+    print('Input DB table structure : {}'.format(self.cursor.fetchall()[0]));
     self.verbose    = verbose;
     self.cursor.execute('SELECT * FROM boloid');
     self.allchannels = self.cursor.fetchall();
