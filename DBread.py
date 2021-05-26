@@ -4,7 +4,7 @@ import sqlite3;
 
 class DBreader:
 
-  def __init__(self, dbfilename='', verbose=2):
+  def __init__(self, dbfilename='', tablename='boloid',verbose=2):
     self.dbfilename = dbfilename;
     print('Open DB file : {}'.format(self.dbfilename));
     self.sq         = sqlite3.connect(self.dbfilename);
@@ -12,13 +12,13 @@ class DBreader:
     self.cursor.execute('SELECT * FROM sqlite_master where type="table"');
     print('Input DB table structure : {}'.format(self.cursor.fetchall()[0]));
     self.verbose    = verbose;
-    self.cursor.execute('SELECT * FROM boloid');
+    self.cursor.execute('SELECT * FROM {}'.format(tablename));
     self.allchannels = self.cursor.fetchall();
     #print('Input hardware map : {}'.format(self.cursor.fetchall()[0][0]));
     pass;
 
   def getchannel(self, channelname='') :
-    self.cursor.execute('SELECT * FROM boloid');
+    self.cursor.execute('SELECT * FROM {}'.format(tablename));
     for channel in self.allchannels :
       name = channel[0];
       if channelname==name :

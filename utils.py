@@ -68,6 +68,25 @@ def saveFig(fig, outpath, ext) :
 ## end of saveFig() ##
 
 
+## getPandasPickle() ##
+# filename : pickle filename (*.pkl)
+def getPandasPickle(filename) :
+    import pandas as pd;
+    df=None;
+
+    hostname = os.environ['HOSTNAME'] if 'HOSTNAME' in os.environ.keys() else '';
+    if hostname.endswith('kek.jp') :
+        df = pd.read_pickle(filename);
+    else :
+        import pickle5;
+        with open(filename, 'rb') as f :
+            df = pickle5.load(f);
+            pass;
+        pass;
+ 
+    return df;
+## end of getPandaPickle() ##
+
 # MJD to second
 def mjd_to_second(mjd) : return mjd * 86400;
 # second to MJD

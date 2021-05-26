@@ -1,5 +1,33 @@
 import os, sys;
 
+def getSQLColumnDefs(con, cur, tablename, verbose=0):
+    # Get table info from filetmp
+    cur.execute('PRAGMA TABLE_INFO({})'.format(tablename));
+    info=cur.fetchall();
+    if verbose>0 : print(info);
+    
+    # Retrieve columns info
+    columndefs = [];
+    notPrimaryColumns = [];
+    for column in info :
+      cid    = column[0];
+      name   = column[1];
+      ctype  = column[2];
+      notnull= column[3];
+      default= column[4];
+      pk     = column[5];
+    
+      columndef = '{} {}'.format(name, ctype);
+      if notnull : columndef += ' NOT NULL';
+      if not default is None : columndef += ' DEFAULT {}'.format(default);
+      if pk      : columndef += ' PRIMARY KEY';
+      else       : notPrimaryColumns.append(name);
+    
+      print('column definition : {}'.format(columndef));
+      columndefs.append(columndef);
+      pass;
+    return columndefs, notPrimaryColumns;
+
 def mergeDB(newfile, filenames, tablename, verbose=0) :
     import sqlite3
     # Open new database
@@ -21,31 +49,9 @@ def mergeDB(newfile, filenames, tablename, verbose=0) :
         print('    data of {} = {}'.format(tablename, cur.fetchall()));
         pass;
     
-    # Get table info from filetmp
-    cur.execute('PRAGMA TABLE_INFO({})'.format(tablename));
-    info=cur.fetchall();
-    if verbose>0 : print(info);
-    
-    # Retrieve columns info
-    columndefs = [];
-    notPrimaryColumns = [];
-    for column in info :
-      cid    = column[0];
-      name   = column[1];
-      ctype  = column[2];
-      notnull= column[3];
-      default= column[4];
-      pk     = column[5];
-    
-      columndef = ' {} {}'.format(name, ctype);
-      if notnull : columndef += ' NOT NULL';
-      if not default is None : columndef += ' DEFAULT {}'.format(default);
-      if pk      : columndef += ' PRIMARY KEY';
-      else       : notPrimaryColumns.append(name);
-    
-      print('column definition : {}'.format(columndef));
-      columndefs.append(columndef);
-      pass;
+
+    # Get table definition
+    columndefs, notPrimaryColumns = getSQLColumnDefs(con,cur,tablename,verbose);
     tabledef = ','.join(columndefs);
     
     # Create new table in newfile
@@ -61,6 +67,7 @@ def mergeDB(newfile, filenames, tablename, verbose=0) :
     insertColumns = ','.join(notPrimaryColumns);
     for i,filename in enumerate(filenames):
         if i%100 == 0 : print('{}th file is being merged... ({})'.format(i, filename));
+        #print('{}th file is being merged... ({})'.format(i, filename));
         # Attach input file
         con.execute("ATTACH DATABASE '{}' as file{}".format(filename,i));
         con.commit();
@@ -81,11 +88,81 @@ def mergeDB(newfile, filenames, tablename, verbose=0) :
     # Check the new file
     con = sqlite3.connect(newfile);
     cur = con.cursor();
-    cur.execute('SELECT * FROM {}'.format(tablename));
     print('{} in {} :'.format(tablename, newfile));
+    cur.execute("SELECT * FROM sqlite_master WHERE type='table'");
+    print('    tables = {}'.format(cur.fetchall()));
+    cur.execute('SELECT * FROM {}'.format(tablename));
     print('    {}'.format(cur.fetchall()));
     cur.close();
     con.close();
+
+    return 0;
+
+def modifySQL(sqlfile, newfile, tablename='wiregrid', verbose=0) :
+    import sqlite3
+    # open SQL file
+    con = sqlite3.connect(newfile);
+    cur = con.cursor();
+    # Remove table if exists
+    con.execute('DROP TABLE if exists {}'.format(tablename));
+    con.commit();
+    con.execute('DROP TABLE if exists tabletmp');
+    con.commit();
+    # Copy table
+    con.execute("ATTACH DATABASE '%s' as filetmp" % (sqlfile));
+    con.commit();
+    copycmd = 'CREATE TABLE {table} AS SELECT * FROM filetmp.{table}'.format(table=tablename);
+    cur.execute(copycmd);
+    con.commit();
+    con.execute('DETACH DATABASE filetmp');
+    con.commit();
+
+    # Modification
+
+    # Remove " in boloname
+    replace_cmd = 'UPDATE {table} SET {column}=REPLACE({column},\'"\',"");'.format(table=tablename, column='boloname');
+    if verbose>0 : print('Replace command: {}'.format(replace_cmd));
+    con.execute(replace_cmd);
+    con.commit();
+    # Change column name: "boloname" --> "readout_name"
+    columndefs, notPrimaryColumns = getSQLColumnDefs(con,cur,tablename,verbose);
+    for i,column in enumerate(columndefs):
+        print(column);
+        if   column.startswith('boloname NUM'): columndefs[i]=column.replace('boloname NUM','readout_name TEXT');
+        elif column.startswith('boloname '   ): columndefs[i]=column.replace('boloname '   ,'readout_name ');
+        pass;
+    tabledef = ','.join(columndefs);
+    print(tabledef);
+    con.execute('ALTER TABLE {table} RENAME TO tabletmp'.format(table=tablename));
+    con.commit();
+    con.execute('CREATE TABLE {table}({tabledef})'.format(table=tablename, tabledef=tabledef));
+    con.commit();
+    cur.execute('INSERT INTO {table} SELECT * FROM tabletmp;'.format(table=tablename));
+    con.commit();
+    # Add column (theta_det = theta_wire0/2, theta_det_err = theta_wire0/2)
+    con.execute('ALTER TABLE {table} ADD COLUMN theta_det'.format(table=tablename));
+    con.commit();
+    con.execute('ALTER TABLE {table} ADD COLUMN theta_det_err'.format(table=tablename));
+    con.commit();
+    cur.execute('UPDATE {table} SET(theta_det, theta_det_err) = (SELECT theta_wire0*0.5,theta_wire0_err*0.5 FROM tabletmp WHERE id = {table}.id) '.format(table=tablename));
+    con.commit();
+    con.execute('DROP TABLE tabletmp');
+    con.commit();
+    con.execute('VACUUM');
+    con.commit();
+
+    # Close SQL file
+    cur.close();
+    con.close();
+
+    # Check SQL file
+    con = sqlite3.connect(newfile);
+    cur = con.cursor();
+    cur.execute('SELECT * FROM sqlite_master where type="table"');
+    print('Input DB table structure : {}'.format(cur.fetchall()[0]));
+    cur.execute('SELECT * FROM {}'.format(tablename));
+    print('{} in {} :'.format(tablename, sqlfile));
+    print('    {}'.format(cur.fetchall()));
 
     return 0;
 
@@ -109,10 +186,11 @@ def convertSQLtoPandas(sqlfile, outputfile, tablename='wiregrid', addDB=[], verb
     conn.close();
 
     # Modify Pandas DB to add another DB
-    df['boloname'] = df['boloname'].str.replace('"(.*)"', r'\1', regex=True);
-    print('--- Pandas header after removing " in boloname ----');
-    print(df.head());
-    print('---------------------------------------------------');
+    #df['boloname'] = df['boloname'].str.replace('"(.*)"', r'\1', regex=True);
+    #df = df.rename(columns={'boloname':'readout_name'});
+    #print('--- Pandas header after removing " in readout_name(<-boloname) ----');
+    #print(df.head());
+    #print('-------------------------------------------------------------------');
 
     # Add DB from another database
     if len(addDB)>0 :
@@ -130,23 +208,25 @@ def convertSQLtoPandas(sqlfile, outputfile, tablename='wiregrid', addDB=[], verb
             __query = 'SELECT * FROM {} {}'.format(__dbtablename, ('where '+__dbselection) if len(__dbselection)>0 else '' );
             print('query = {}'.format(__query));
             __df=pandas.read_sql_query(__query, __conn);
+            # Modify __df
             #__dfnew = __df.rename(columns={'name':'boloname'});
-            __dfnew = __df.rename(columns={'readout_name':'boloname'});
+            #__dfnew = __df.rename(columns={'readout_name':'boloname'});
+            __dfnew = __df; # No modification
             if verbose>0 : 
                 print('--- Added pandas header ---------------');
                 print(__dfnew.head());
-                print('---------------------------------');
+                print('---------------------------------------');
                 pass;
-            dfnew = pandas.merge(df, __dfnew, how='inner', on='boloname');
+            dfmerge = pandas.merge(df, __dfnew, how='inner', on='readout_name');
             #__conn.close();
             #del __df;
             #del __dfnew;
-            df = copy.deepcopy(dfnew);
+            df = copy.deepcopy(dfmerge);
             pass;
         
         print('=== Pandas Data after adding other databases =============================');
         if verbose>0 : 
-            print('--- Pandas Data ---------------');
+            print('--- Pandas Data -----------------');
             print(df);
             print('---------------------------------');
             pass;
@@ -235,15 +315,19 @@ def mergeAllDB(inputdir, newfile, ispickle=True, tablename='wiregrid', verbose=1
 
 if __name__=='__main__' :
     tablename = 'wiregrid'
-    inputdir = '/home/cmb/sadachi/analysis_2021/output_ver2';
+    inputdir = './output_ver2';
+    #inputdir = '/home/cmb/sadachi/analysis_2021/output_ver2';
     #inputdir = '/Users/shadachi/Experiment/PB/analysis/analysis_2021/output_ver2';
     newfile = 'output_ver2/db/all';
     verbose = 1;
     
     # merge sqlite3 db files
     #mergeAllDB(inputdir=inputdir, newfile=newfile, ispickle=False, tablename=tablename, verbose=verbose);
+    # modify table (boloname "???" --> ???, column: boloname NUM-->readout TEXT)
+    #modifySQL(sqlfile=newfile+'.db', newfile=newfile+'_mod.db', tablename=tablename, verbose=verbose);
     # convert the merged sqlite3 db to pandas data (in a pickle file)
-    convertSQLtoPandas(sqlfile=newfile+'.db', outputfile=newfile+'_pandas', tablename=tablename, addDB=[['data/pb2a-20210205/pb2a_mapping.db','pb2a_focalplane', "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'"]], verbose=verbose);
+    convertSQLtoPandas(sqlfile=newfile+'_mod.db', outputfile=newfile+'_pandas', tablename=tablename, verbose=verbose, 
+            addDB=[['data/pb2a-20210205/pb2a_mapping.db','pb2a_focalplane', "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'"]]);
 
     # merge pickle files
     #mergeAllDB(inputdir=inputdir, newfile=newfile, ispickle=True, tablename=tablename, verbose=verbose);
