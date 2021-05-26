@@ -1,0 +1,15 @@
+.*
+_*
+*.pyc
+out*/
+out*/*
+plot*/
+plot*/*
+tmp
+tmp/*
+test*
+aho*
+data/*/pb2a_tuning.db
+__pycache__
+
+!.gitignore
