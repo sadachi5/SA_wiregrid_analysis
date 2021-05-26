@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import pandas as pd;
 
-from utils import colors;
+from utils import colors, getPandasPickle;
 
 def main(database, baseselect=[''],outfile='aho.png',verbose=0) :
     # make output dir
@@ -13,15 +13,8 @@ def main(database, baseselect=[''],outfile='aho.png',verbose=0) :
         print('making outdir = {}...'.format(outdir));
         os.makedirs(outdir);
         pass;
-    hostname = os.environ['HOSTNAME'] if 'HOSTNAME' in os.environ.keys() else '';
-    if hostname.endswith('kek.jp') :
-        df = pd.read_pickle(database);
-    else :
-        import pickle5;
-        with open(database, 'rb') as f :
-            df = pickle5.load(f);
-            pass;
-        pass;
+    # get pandas from pickle file
+    df = getPandasPickle(database);
     print('pandas column names = {}'.format(df.columns.values));
     if verbose>0 :
         pd.set_option('display.max_columns', 20)
@@ -36,6 +29,13 @@ def main(database, baseselect=[''],outfile='aho.png',verbose=0) :
     #         align='mid', orientation='vertical', rwidth=None,
     #         log=False, color=kBlue, alpha=0.3, label='All', stacked=False,
     #         hold=None, data=None);
+
+    #dataname = 'wireagnle0';
+    #dataname = 'theta_wire0';
+    dataname = 'theta_det';
+    # convert factor
+    #convertF = 180./np.pi*0.5; # convert from rad --> deg & 2*theta_det --> theta_det
+    convertF = 180./np.pi; # convert from rad --> deg
  
     fig, axs = plt.subplots(1,1);
     fig.tight_layout(rect=[0,0,1,1]);
@@ -47,7 +47,7 @@ def main(database, baseselect=[''],outfile='aho.png',verbose=0) :
     if len(baseselect)>1 :  baselabel = baseselect[1];
     elif len(baseselect[0])>0 : baselabel = baseselect[0];
     baselabel = baseselect[1] if len(baseselect)>1 else 'All';
-    axs.hist(df.query(baseselect[0])['wireangle0'], bins=36*2, range=(0.,2.*np.pi), histtype='stepfilled',
+    axs.hist(df.query(baseselect[0])[dataname]*convertF, bins=36*4, range=(0.,360.), histtype='stepfilled',
              align='mid', orientation='vertical', log=False, linewidth=0.5, linestyle='-', edgecolor='k',
              color=colors[ihist], alpha=0.3, label=baselabel, stacked=False);
     ihist +=1;
@@ -69,18 +69,19 @@ def main(database, baseselect=[''],outfile='aho.png',verbose=0) :
         df_select = df.query(selection);
         print('selection = {}'.format(selection));
         print('    # of bolos = {}'.format(len(df_select)));
-        data_selects.append(df_select['wireangle0']);
+        data_selects.append(df_select[dataname]*convertF);
         pass;
 
 
-    axs.hist(data_selects, bins=36*2, range=(0.,2.*np.pi), histtype='stepfilled',
+    axs.hist(data_selects, bins=36*4, range=(0.,360.), histtype='stepfilled',
              align='mid', orientation='vertical', log=False, linewidth=0.5, linestyle='-', edgecolor='k',
              color=colors[ihist:ihist+ndata], alpha=0.4, label=labels, stacked=False);
  
     axs.set_title('wireangle0');
-    axs.set_xlabel(r'$\theta_{wire}(\theta=0)$',fontsize=16);
+    axs.set_xlabel(r'$\theta(Wire angle=0)/2 = \theta_{\mathrm{det}}$ [deg.]',fontsize=16);
     axs.set_ylabel(r'# of bolometers',fontsize=16);
-    #axs.set_xlim(-5000,5000);
+    axs.set_xticks(np.arange(0,360,22.5));
+    axs.set_xlim(0,180);
     #axs.set_ylim(-5000,5000);
     axs.tick_params(labelsize=12);
     axs.grid(True);
@@ -93,8 +94,10 @@ def main(database, baseselect=[''],outfile='aho.png',verbose=0) :
 if __name__=='__main__' :
     database = 'output_ver2/db/all_pandas.pkl';
     outdir   = 'output_ver2/summary';
-    wafer    = '13.13';
-    main(database, baseselect=['boloname==boloname&wafer_number=="{}"'.format(wafer),wafer+' All'], outfile=outdir+'/'+wafer+'_all.png',verbose=1);
-    main(database, baseselect=['band==90&wafer_number=="{}"'.format(wafer) ,wafer+' 90GHz all']   , outfile=outdir+'/'+wafer+'_90GHz.png',verbose=1);
-    main(database, baseselect=['band==150&wafer_number=="{}"'.format(wafer),wafer+' 150GHz all']  , outfile=outdir+'/'+wafer+'_150GHz.png',verbose=1);
+    wafers=['13.13', '13.15', '13.28', '13.11', '13.12', '13.10', '13.31'];
+    for wafer in wafers :
+        main(database, baseselect=["readout_name==readout_name&wafer_number=='{}'".format(wafer),wafer+' All'], outfile=outdir+'/'+wafer+'_all.png',verbose=1);
+        main(database, baseselect=["band==90&wafer_number=='{}'".format(wafer) ,wafer+' 90GHz all']   , outfile=outdir+'/'+wafer+'_90GHz.png',verbose=1);
+        main(database, baseselect=["band==150&wafer_number=='{}'".format(wafer),wafer+' 150GHz all']  , outfile=outdir+'/'+wafer+'_150GHz.png',verbose=1);
+        pass;
     pass;

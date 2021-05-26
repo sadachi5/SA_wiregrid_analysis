@@ -438,7 +438,7 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
     # Save database
     columns = [
            ['id'            , ' INTEGER PRIMARY KEY AUTOINCREMENT', 0 ],
-           ['boloname'      , 'STRING'  , boloname      ],
+           ['boloname'      , 'TEXT'  , boloname      ],
            ['lmfit_x0'      , 'REAL'    , init_pars[0]  ],
            ['lmfit_y0'      , 'REAL'    , init_pars[1]  ],
            ['lmfit_a'       , 'REAL'    , init_pars[2]  ],
