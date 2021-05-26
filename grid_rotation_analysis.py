@@ -16,6 +16,7 @@ from Demod import Demod
 from utils import mjd_to_second, theta0to2pi, rad_to_deg, between, rms, saveFig, colors;
 
 from DBreadStimulator import DBreaderStimulator;
+from DBreader import DBreader;
 
 
 def plotOneTOD(axs, time, y, color, label='', title='') :
@@ -141,7 +142,7 @@ def plotDemodFigure(time, y_demods, y_demods_narrow,
     return 0;
  
 
-def plotAll(angleDataList, outdir='aho', outname='aho', pickledir='aho', out=None, ext='pdf', verbosity=0) :
+def plotAll(angleDataList, theta_det_db=None, outdir='aho', outname='aho', pickledir='aho', out=None, ext='pdf', verbosity=0) :
     # initialize Out
     if out==None : out = Out.Out(verbosity=verbosity);
     else         : out = out;
@@ -191,6 +192,11 @@ def plotAll(angleDataList, outdir='aho', outname='aho', pickledir='aho', out=Non
 
         # demod results
         demod_results = [];
+        # theta_det for demod
+        theta_det =  0.;
+        if not theta_det_db is None :
+            theta_det = theta_det_db.getcolumn('theta_det', boloname);
+            pass;
     
         for j, angledata in enumerate(angleDataList) :
             data = angledata['data']; # OneAngleData
@@ -209,6 +215,7 @@ def plotAll(angleDataList, outdir='aho', outname='aho', pickledir='aho', out=Non
             angle      = whwp_angle; # [rad.]
             out.OUT('data = {}'.format(data), -1);
             out.OUT('whwp_angle [rad.] (size={}) = {}'.format(len(whwp_angle), whwp_angle), -1);
+            out.OUT('theta_det for demod = {}'.format(theta_det), -1);
             out.OUT('y (size={}) = {}'.format(len(y),y), -1);
             out.OUT('time (size={}) = {}'.format(len(time),time), -1);
             out.OUT('diff(time) (size={}) = {}'.format(len(time),np.diff(time)), -1);
@@ -226,13 +233,13 @@ def plotAll(angleDataList, outdir='aho', outname='aho', pickledir='aho', out=Non
             y_demods_narrow = {};
             for mode in band_modes :
                 out.OUT('demod mode={} (nominal) for angleI={} (wire {}deg.)'.format(mode,j,wireangle),0);
-                y_demods[mode] = demod.demod(y,angle,mode,narrow=False);
-                #y_demods[mode] = demod.demod(y,angle,mode,narrow=False,doBpf=False,doLpf=False);
+                y_demods[mode] = demod.demod(y,angle-2.*theta_det,mode,narrow=False);
+                #y_demods[mode] = demod.demod(y,angle-2.*theta_det,mode,narrow=False,doBpf=False,doLpf=False);
                 pass;
             for mode in band_modes_narrow :
                 out.OUT('demod mode={} (narrow) for angleI={} (wire {}deg.)'.format(mode,j,wireangle),0);
-                y_demods_narrow[mode] = demod.demod(y,angle,mode,narrow=True);
-                #y_demods_narrow[mode] = demod.demod(y,angle,mode,narrow=True,doBpf=False,doLpf=False);
+                y_demods_narrow[mode] = demod.demod(y,angle-2.*theta_det,mode,narrow=True);
+                #y_demods_narrow[mode] = demod.demod(y,angle-2.*theta_det,mode,narrow=True,doBpf=False,doLpf=False);
                 pass;
          
             ### Drawing WHWP angle + TOD figure for all of the angles ###
@@ -467,6 +474,8 @@ def plotAll(angleDataList, outdir='aho', outname='aho', pickledir='aho', out=Non
 
 def main(boloname, filename='', 
          outdir='aho', outname='aho', pickledir='aho', loadpickledir='aho',
+         #theta_det_db=['output_ver2/db/all_mod.db','wiregrid','theta_det'], 
+         theta_det_db=None, 
          loaddata=True, out0=None, ext='pdf', verbosity=0 ) :
 
     # initialize Out
@@ -476,8 +485,8 @@ def main(boloname, filename='',
     out.OUT('boloname = {}'.format(boloname), 0);
 
     # amp is half height of the modulation. It is not the full height.
-    db = DBreaderStimulator('./data/pb2a_stimulator_run223_20210223.db');
-    stimulator_amp  = [db.getamp(22300607, boloname), db.getamp(22300610, boloname),]; # [ADC counts] Run22300607, Run22300610
+    db_stim = DBreaderStimulator('./data/pb2a_stimulator_run223_20210223.db');
+    stimulator_amp  = [db_stim.getamp(22300607, boloname), db_stim.getamp(22300610, boloname),]; # [ADC counts] Run22300607, Run22300610
     print(stimulator_amp);
     if stimulator_amp[0][0]==0. or stimulator_amp[1][0]==0. :
         out.WARNING('There is no matched stimulator amplitude data for {}'.format(boloname));
@@ -486,6 +495,12 @@ def main(boloname, filename='',
     out.OUT('stimulator amp (run 22300607) = {} +- {}'.format(stimulator_amp[0][0], stimulator_amp[0][1]), 0);
     out.OUT('stimulator amp (run 22300610) = {} +- {}'.format(stimulator_amp[1][0], stimulator_amp[1][1]), 0);
     stimulator_temp = 52. ; # 52. [mK_RJ/amp[ADC counts]] @ 90GHz, 103. [mK_RJ/amp[ADC counts]] @ 150GHz
+
+    # DB for theta_det calibration
+    db_theta = None;
+    if (not theta_det_db is None) and len(theta_det_db)>2 :
+        db_theta = DBreader(theta_det_db[0], theta_det_db[1], theta_det_db[2]),
+        pass;
 
     # set calibration constant and its error from ADC output to mK_RJ
     cal     = stimulator_temp/stimulator_amp[1][0]  if stimulator_amp[1][0]>0. else 0.; # chose 90GHz after calibration
@@ -538,7 +553,7 @@ def main(boloname, filename='',
         angleDataList[i]['cal_err'] = cal_err;
         pass;
 
-    if boloname!='' : plotAll(angleDataList, outdir=outdir, outname=outname, pickledir=pickledir, out=out, ext=ext);
+    if boloname!='' : plotAll(angleDataList, theta_det_db=theta_det_db, outdir=outdir, outname=outname, pickledir=pickledir, out=out, ext=ext);
 
     return 0;
 
