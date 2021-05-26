@@ -119,14 +119,19 @@ def convertSQLtoPandas(sqlfile, outputfile, tablename='wiregrid', addDB=[], verb
         for db in addDB :
             __dbfilename = db[0];
             __dbtablename= db[1];
+            __dbselection= '';
+            if len(db)>2 : __dbselection= db[2];
             if not os.path.isfile(__dbfilename) :
                 print('WARNING! There is no adding databese: {}'.format(__dbfilename));
                 print('         --> Skip!!');
                 continue;
             print('Adding {}..'.format(__dbfilename));
             __conn = sqlite3.connect(__dbfilename);
-            __df=pandas.read_sql_query('SELECT * FROM {}'.format(__dbtablename), __conn);
-            __dfnew = __df.rename(columns={'name':'boloname'});
+            __query = 'SELECT * FROM {} {}'.format(__dbtablename, ('where '+__dbselection) if len(__dbselection)>0 else '' );
+            print('query = {}'.format(__query));
+            __df=pandas.read_sql_query(__query, __conn);
+            #__dfnew = __df.rename(columns={'name':'boloname'});
+            __dfnew = __df.rename(columns={'readout_name':'boloname'});
             if verbose>0 : 
                 print('--- Added pandas header ---------------');
                 print(__dfnew.head());
@@ -238,7 +243,7 @@ if __name__=='__main__' :
     # merge sqlite3 db files
     #mergeAllDB(inputdir=inputdir, newfile=newfile, ispickle=False, tablename=tablename, verbose=verbose);
     # convert the merged sqlite3 db to pandas data (in a pickle file)
-    convertSQLtoPandas(sqlfile=newfile+'.db', outputfile=newfile+'_pandas', tablename=tablename, addDB=[['data/boloid_pb2a_20210412.db','boloid']], verbose=verbose);
+    convertSQLtoPandas(sqlfile=newfile+'.db', outputfile=newfile+'_pandas', tablename=tablename, addDB=[['data/pb2a-20210205/pb2a_mapping.db','pb2a_focalplane', "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'"]], verbose=verbose);
 
     # merge pickle files
     #mergeAllDB(inputdir=inputdir, newfile=newfile, ispickle=True, tablename=tablename, verbose=verbose);

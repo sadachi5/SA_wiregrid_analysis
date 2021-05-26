@@ -31,6 +31,13 @@ class DBreader:
     for channel in self.allchannels :
         print(channel[0]);
         pass;
+    return 0;
+
+  def printAll(self):
+    print(self.allchannels);
+    return 0;
+    
+
 
 if __name__ == '__main__':
   db = DBreader('./data/boloid_pb2a_20210412.db');

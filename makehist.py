@@ -6,11 +6,22 @@ import pandas as pd;
 from utils import colors;
 
 def main(database, baseselect=[''],outfile='aho.png',verbose=0) :
-    #import pickle5;
-    #with open(database, 'rb') as f :
-    #    df = pickle5.load(f);
-    #    pass;
-    df = pd.read_pickle(database);
+    # make output dir
+    outdir = './' if not '/' in outfile else '/'.join(outfile.split('/')[:-1]);
+    print(outdir);
+    if not os.path.isdir(outdir) : 
+        print('making outdir = {}...'.format(outdir));
+        os.makedirs(outdir);
+        pass;
+    hostname = os.environ['HOSTNAME'] if 'HOSTNAME' in os.environ.keys() else '';
+    if hostname.endswith('kek.jp') :
+        df = pd.read_pickle(database);
+    else :
+        import pickle5;
+        with open(database, 'rb') as f :
+            df = pickle5.load(f);
+            pass;
+        pass;
     print('pandas column names = {}'.format(df.columns.values));
     if verbose>0 :
         pd.set_option('display.max_columns', 20)
@@ -64,7 +75,7 @@ def main(database, baseselect=[''],outfile='aho.png',verbose=0) :
 
     axs.hist(data_selects, bins=36*2, range=(0.,2.*np.pi), histtype='stepfilled',
              align='mid', orientation='vertical', log=False, linewidth=0.5, linestyle='-', edgecolor='k',
-             color=colors[ihist:ihist+ndata], alpha=0.4, label=labels, stacked=True);
+             color=colors[ihist:ihist+ndata], alpha=0.4, label=labels, stacked=False);
  
     axs.set_title('wireangle0');
     axs.set_xlabel(r'$\theta_{wire}(\theta=0)$',fontsize=16);
@@ -81,7 +92,9 @@ def main(database, baseselect=[''],outfile='aho.png',verbose=0) :
 
 if __name__=='__main__' :
     database = 'output_ver2/db/all_pandas.pkl';
-    main(database, baseselect=['boloname==boloname','All'], outfile='aho_all.png',verbose=1);
-    main(database, baseselect=['band==90','90GHz all'], outfile='aho_90GHz.png',verbose=1);
-    main(database, baseselect=['band==150','150GHz all'], outfile='aho_150GHz.png',verbose=1);
+    outdir   = 'output_ver2/summary';
+    wafer    = '13.13';
+    main(database, baseselect=['boloname==boloname&wafer_number=="{}"'.format(wafer),wafer+' All'], outfile=outdir+'/'+wafer+'_all.png',verbose=1);
+    main(database, baseselect=['band==90&wafer_number=="{}"'.format(wafer) ,wafer+' 90GHz all']   , outfile=outdir+'/'+wafer+'_90GHz.png',verbose=1);
+    main(database, baseselect=['band==150&wafer_number=="{}"'.format(wafer),wafer+' 150GHz all']  , outfile=outdir+'/'+wafer+'_150GHz.png',verbose=1);
     pass;
