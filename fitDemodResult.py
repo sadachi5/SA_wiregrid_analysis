@@ -27,7 +27,7 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
     else          : out = out0;
     # output filepath
     wafername = getwafername(boloname);
-    outpath   = '{}/plots/{}/{}/{}'.format(outdir, wafername, boloname, outname);
+    outpath   = '{}/plot/{}/{}/{}'.format(outdir, wafername, boloname, outname);
     outdbdir  = '{}/db/{}'.format(outdir, wafername);
     outdbpath = '{}/db/{}/{}'.format(outdir, wafername, outname);
     out.OUT('outpath = {}'.format(outpath),0);
@@ -122,12 +122,15 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
     yerr_fit    = copy.deepcopy(imags_err);
     # Check excludeAngle
     exclude_indices = [];
-    wireangles_rad = [];
+    wireangles_rad = []; # rad
     for k, angleData in enumerate(angleDataList) :
-        if angleData['angle'] in excludeAngle :
+        # WARNING!!
+        angleDataList[k]['angle_deg'] = angleData['angle']; # deg
+        angleDataList[k]['angle_rad'] = deg_to_rad(angleData['angle']); # rad
+        if angleData['angle_deg'] in excludeAngle : # deg
             exclude_indices.append(k);
         else :
-            wireangles_rad.append(deg_to_rad(angleData['angle']));
+            wireangles_rad.append(deg_to_rad(angleData['angle_deg'])); # deg
             pass;
         pass;
     exclude_indices.sort(reverse=True); # sorted by reversed order
@@ -152,8 +155,8 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
     i_0deg = 0;
     i_90deg= 0;
     for k, angleData in enumerate(angleDataList) :
-        if angleData['angle']== 0 : i_0deg = k;
-        if angleData['angle']==90 : i_90deg= k;
+        if angleData['angle_deg']== 0 : i_0deg = k; # deg
+        if angleData['angle_deg']==90 : i_90deg= k; # deg
         pass;
     rtheta_tmp = calculateRTheta(reals[i_0deg]-reals[i_90deg], imags[i_0deg]-imags[i_90deg]);
     r_tmp  = rtheta_tmp[0]/2.;
@@ -312,19 +315,21 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
         y1err = imags_err[k];
         #(r1, r1_err), (theta1, theta1_err) = calculateRTheta(x1-x0, y1-y0, np.sqrt(x1err**2.+x0err**2.), np.sqrt(y1err**2.+y0err**2.));
         (r1, r1_err), (theta1, theta1_err) = calculateRThetaEllipse(x1-x0, y1-y0, alpha, a, b, np.sqrt(x1err**2.+x0err**2.), np.sqrt(y1err**2.+y0err**2.), alphaerr, aerr, berr);
-        theta1_deg     = rad_to_deg_0to2pi(theta1);
-        theta1_err_deg = rad_to_deg_0to2pi(theta1_err);
-        wireangle0     = theta0to2pi(angleData['angle'] + theta0to2pi(theta1)/2.);
-        wireangle0_err = theta1_err/2.;
-        theta_wire0= theta0to2pi(theta1 + angleData['angle']*2.);
-        theta_wire0_err= theta1_err;
-        fitRThetas.append({'wireangle':angleData['angle'], 'r':[r1,r1_err], 'theta':[theta1,theta1_err], 'theta_deg':[theta1_deg, theta1_err_deg], 'wireangle0':[wireangle0, wireangle0_err], 'theta_wire0':[theta_wire0, theta_wire0_err]});
+        theta1_deg     = rad_to_deg_0to2pi(theta1);     # rad
+        theta1_err_deg = rad_to_deg_0to2pi(theta1_err); # rad
+        wireangle0     = theta0to2pi(2.*angleData['angle_rad'] + theta0to2pi(theta1))/2.; # rad
+        wireangle0_err = theta1_err/2.; # rad
+        theta_wire0    = theta0to2pi(theta1 + angleData['angle_rad']*2.); # rad
+        theta_wire0_err= theta1_err; # rad
+        fitRThetas.append({'wireangle_deg':angleData['angle_deg'], 'wireangle':angleData['angle_rad'], 'r':[r1,r1_err], 'theta':[theta1,theta1_err], 'theta_deg':[theta1_deg, theta1_err_deg], 'wireangle0':[wireangle0, wireangle0_err], 'theta_wire0':[theta_wire0, theta_wire0_err]});
+        out.OUT('k={} wire angle = {:.1f}, wireangle_at_0 = {:.1f}, theta_of_wire0 = {:.1f}'.format(k, angleData['angle_deg'], wireangle0, theta_wire0),0);
         pass;
     # Calclate thetawire (wire angle) at theta=0 deg in the complex plane
-    mean_wireangle0     = np.mean([ rtheta['wireangle0'][0] for rtheta in fitRThetas ]);
-    mean_wireangle0_err = np.mean([ rtheta['wireangle0'][1] for rtheta in fitRThetas ]);
-    mean_theta_wire0     = np.mean([ rtheta['theta_wire0'][0] for rtheta in fitRThetas ]);
-    mean_theta_wire0_err = np.mean([ rtheta['theta_wire0'][1] for rtheta in fitRThetas ]);
+    mean_wireangle0     = np.mean([ rtheta['wireangle0'][0] for rtheta in fitRThetas ]); # rad
+    mean_wireangle0_err = np.mean([ rtheta['wireangle0'][1] for rtheta in fitRThetas ]); # rad
+    mean_theta_wire0     = np.mean([ rtheta['theta_wire0'][0] for rtheta in fitRThetas ]); # rad
+    mean_theta_wire0_err = np.mean([ rtheta['theta_wire0'][1] for rtheta in fitRThetas ]); # rad
+    out.OUT('wire angle @ 0deg = {:.2f}+-{:.2f}, theta_of_wire0 = {:.2f}+-{:.2f}'.format(mean_wireangle0,mean_wireangle0_err,mean_theta_wire0,mean_theta_wire0_err),0);
 
     
     # Make funciton of the fitted circle
@@ -356,8 +361,8 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
     shifty=r*0.04;
     fitTheta0 = None;
     for k in  range(len(reals)) :
-        fitTheta = fitRThetas[k]['theta_deg'];
-        if fitRThetas[k]['wireangle'] == refAngle : fitTheta0 = fitTheta;
+        fitTheta = fitRThetas[k]['theta_deg']; # deg
+        if fitRThetas[k]['wireangle_deg'] == refAngle : fitTheta0 = fitTheta; # deg
         
         x_tmp = reals[k];
         y_tmp = imags[k]+shifty;
@@ -368,7 +373,7 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
         #if k==10 : x_tmp = reals[k]+0.*shiftx   ;
         #if k==10 : y_tmp = imags[k]-5.*shifty;
         #axsres[0].text(x_tmp, y_tmp, '{} deg.\n({:.1f} , {:.1f})\n'.format(angleDataList[k]['angle'], reals[k],imags[k])+r'$\theta$'+' = {:.2f} +- {:.2f} deg.'.format(fitTheta[0],fitTheta[1]), color='tab:blue');
-        axsres[0].text(x_tmp, y_tmp, '{} deg.\n'.format(angleDataList[k]['angle'])+r'$\theta$'+' = {:.2f} +- {:.2f} deg.'.format(fitTheta[0],fitTheta[1]), fontsize=10, color='tab:blue');
+        axsres[0].text(x_tmp, y_tmp, '{} deg.\n'.format(angleDataList[k]['angle_deg'])+r'$\theta$'+' = {:.2f} +- {:.2f} deg.'.format(fitTheta[0],fitTheta[1]), fontsize=10, color='tab:blue');
         pass;
     # Draw center
     axsres[0].errorbar([0.,x0],[0.,y0],xerr=[0.,x0err],yerr=[0.,y0err],linestyle='-',marker='o',markersize=1.,capsize=2.,color='tab:brown');
@@ -390,7 +395,7 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
 
     # Draw ideal radial lines at each 45 deg
     for k in range(8) :
-        theta_ideal = deg_to_rad(-k*45. + fitTheta0[0]);
+        theta_ideal = deg_to_rad(-k*45. + fitTheta0[0]); # deg
         x_line = x0+r*np.cos(theta_ideal);
         y_line = y0+r*np.sin(theta_ideal);
         # Draw
@@ -400,20 +405,20 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
 
     # Angle plot
     # Calculate the d_theta
-    theta_wires = [];
-    d_thetas = [];
-    d_theta_errs = [];
+    theta_wires  = []; # deg
+    d_thetas     = []; # deg
+    d_theta_errs = []; # deg
     for k in  range(len(reals)) :
-        fitTheta = fitRThetas[k]['theta_deg'];
-        theta_wires.append(fitRThetas[k]['wireangle']);
+        fitTheta = fitRThetas[k]['theta_deg']; # deg
+        theta_wires.append(fitRThetas[k]['wireangle_deg']); # deg
         out.OUT('k={} wire angle = {:.1f}, fit angle = {:.1f}, fit angle (0deg) = {:.1f}'.format(k, theta_wires[-1], fitTheta[0], fitTheta0[0]),0);
-        d_fittheta = fitTheta0[0] - (fitTheta[0] if (fitTheta[0]<=fitTheta0[0]) else (fitTheta[0]-360.));
+        d_fittheta = fitTheta0[0] - (fitTheta[0] if (fitTheta[0]<=fitTheta0[0]) else (fitTheta[0]-360.)); # deg
         out.OUT('k={} d_fittheta = {:.1f}'.format(k, d_fittheta),0);
-        d_theta =  d_fittheta - (theta_wires[-1]-refAngle)*2.;
-        d_thetas.append(d_theta);
-        d_theta_errs.append(fitTheta[1]);
+        d_theta =  d_fittheta - (theta_wires[-1]-refAngle)*2.; # deg
+        d_thetas.append(d_theta); # deg
+        d_theta_errs.append(fitTheta[1]); # deg
         pass;
-    theta_wires = np.array(theta_wires);
+    theta_wires = np.array(theta_wires); 
     d_thetas    = np.array(d_thetas);
     # Draw
     axsres[1].errorbar(theta_wires,d_thetas,None,d_theta_errs,linestyle='-',marker='o',markersize=1.,capsize=2.,color='tab:blue');
@@ -438,7 +443,8 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
     # Save database
     columns = [
            ['id'            , ' INTEGER PRIMARY KEY AUTOINCREMENT', 0 ],
-           ['boloname'      , 'TEXT'  , boloname      ],
+           #['boloname'      , 'NUM'    , boloname      ], # ver2
+           ['readout_name'  , 'TEXT'    , boloname      ], # ver3
            ['lmfit_x0'      , 'REAL'    , init_pars[0]  ],
            ['lmfit_y0'      , 'REAL'    , init_pars[1]  ],
            ['lmfit_a'       , 'REAL'    , init_pars[2]  ],
@@ -464,6 +470,8 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
            ['wireangle0_err', 'REAL'    , mean_wireangle0_err  ],
            ['theta_wire0'   , 'REAL'    , mean_theta_wire0     ],
            ['theta_wire0_err','REAL'    , mean_theta_wire0_err ],
+           ['theta_det'     , 'REAL'    , theta0to2pi(2.*np.pi-mean_theta_wire0)/2.    ], # ver3
+           ['theta_det_err' , 'REAL'    , mean_theta_wire0_err/2.], # ver3
            ];
 
 
@@ -480,7 +488,10 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
     for column in columns :
         column_names  .append(column[0]);
         column_types  .append(column[1]);
-        column_values .append('"{}"'.format(column[2]) if isinstance(column[2],str) \
+        # ver2
+        #column_values .append('"{}"'.format(column[2]) if isinstance(column[2],str) \
+        # ver3
+        column_values .append('{}'.format(column[2]) if isinstance(column[2],str) \
                 else ( '{:d}'.format(column[2]) if isinstance(column[2],int) else '{:e}'.format(column[2]) ) );
         column_configs.append('{} {}'.format(column[0],column[1]));
         pass;

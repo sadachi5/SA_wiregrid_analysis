@@ -2,6 +2,7 @@
 
 njob=0
 
+:<<'#_COMMENT_'
 for i in {1..9}; do
     echo '';
     echo '';
@@ -22,7 +23,9 @@ for i in {1..9}; do
         sleep 5;
     done
 done
+#_COMMENT_
 
+#python3 grid_rotation_analysis.py -b PB20.13.13_Comb01Ch02 -L &
 
 #python3 grid_rotation_analysis.py -b PB20.13.13_Comb01Ch02 -L &
 #python3 grid_rotation_analysis.py -b PB20.13.13_Comb01Ch01 | tee ch01.out
@@ -46,12 +49,18 @@ done
 wafer='PB20.13.13';
 boloname='PB20.13.13_Comb01Ch01';
 outdir='output_ver2';
+#outdir='output_ver2_anglecalib';
 #filename='/group/cmb/polarbear/data/pb2a/g3compressed/22300000_v05/Run22300609';
 filename='/group/cmb/polarbear/usr/sadachi/SparseWireCalibration/PB2a/g3compressed/Run22300609/';
 pickledir="${outdir}/pkl/${wafer}";
 mkdir -vp  ${outdir}/txt/${wafer}/
-python3 grid_rotation_analysis.py -b ${boloname} -o 'gridana_' -f ${filename} -d ${outdir}/plot/${wafer}/${boloname} -p ${pickledir} 2>&1>& ${outdir}/txt/${wafer}/gridana_${boloname}.out
-python3 fitDemodResult.py -b ${boloname} -p ${pickledir} --pickleprefix 'gridana_' --picklesuffix '' -d ${outdir} --outprefix 'Fit_' --outsuffix '' -v 1 2>&1>& ${outdir}/txt/${wafer}/fit_${boloname}.out
+
+#python3 grid_rotation_analysis.py -b ${boloname} -o 'gridana_' -f ${filename} -d ${outdir}/plot/${wafer}/${boloname} -p ${pickledir} 2>&1>& ${outdir}/txt/${wafer}/gridana_${boloname}.out
+#python3 fitDemodResult.py -b ${boloname} -p ${pickledir} --pickleprefix 'gridana_' --picklesuffix '' -d ${outdir} --outprefix 'Fit_' --outsuffix '' -v 1 2>&1>& ${outdir}/txt/${wafer}/fit_${boloname}.out
+
+# Wt angle calibration
+#python3 grid_rotation_analysis.py -b ${boloname} -o 'gridana_' -f ${filename} -d ${outdir}/plot/${wafer}/${boloname} -p ${pickledir} --anglecalib './output_ver2/db/all_mod.db,wiregrid,readout_name' -v 2 -L 2>&1 | tee ${outdir}/txt/${wafer}/gridana/gridana_${boloname}.out
+python3 fitDemodResult.py -b ${boloname} -p ${pickledir} --pickleprefix 'gridana_' --picklesuffix '' -d ${outdir} --outprefix 'Fit_' --outsuffix '' -v 1 2>&1 | tee ${outdir}/txt/${wafer}/fit/fit_${boloname}.out
 
 
 #python3 grid_rotation_analysis.py -b '' -o 'gridana_' -f ${filename} -d ${outdir}/plot -p ${outdir}/pkl/ 2>&1>& ${outdir}/txt/gridana_all.out
