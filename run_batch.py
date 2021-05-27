@@ -9,10 +9,10 @@ doRun = True;
 ignoreFileExist = True;
 
 # All
-#wafers=['PB20.13.13', 'PB20.13.15', 'PB20.13.28', 'PB20.13.11', 'PB20.13.12', 'PB20.13.10', 'PB20.13.31'];
+wafers=['PB20.13.13', 'PB20.13.15', 'PB20.13.28', 'PB20.13.11', 'PB20.13.12', 'PB20.13.10', 'PB20.13.31'];
 #wafers=['PB20.13.13'];
 
-outdir='output_ver2';
+outdir='output_ver3';
 #filename='/group/cmb/polarbear/data/pb2a/g3compressed/22300000_v05/Run22300609';
 filename='/group/cmb/polarbear/usr/sadachi/SparseWireCalibration/PB2a/g3compressed/Run22300609/';
 selections=[];
@@ -32,7 +32,7 @@ for boloname in bolonames :
     pass;
 
 
-def runJob(maxNjob=30) :
+def runJob(maxNjob=50) :
     
     # loop over wafers
     for wafer in wafers :

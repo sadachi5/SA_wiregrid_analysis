@@ -15,7 +15,7 @@ from OneAngleData import OneAngleData
 from Demod import Demod
 from utils import mjd_to_second, theta0to2pi, rad_to_deg, between, rms, saveFig, colors;
 
-from DBreadStimulator import DBreaderStimulator;
+from DBreaderStimulator import DBreaderStimulator;
 from DBreader import DBreader;
 
 
@@ -142,7 +142,7 @@ def plotDemodFigure(time, y_demods, y_demods_narrow,
     return 0;
  
 
-def plotAll(angleDataList, theta_det_db=None, outdir='aho', outname='aho', pickledir='aho', out=None, ext='pdf', verbosity=0) :
+def plotAll(angleDataList, db_theta=None, outdir='aho', outname='aho', pickledir='aho', out=None, ext='pdf', verbosity=0) :
     # initialize Out
     if out==None : out = Out.Out(verbosity=verbosity);
     else         : out = out;
@@ -194,8 +194,9 @@ def plotAll(angleDataList, theta_det_db=None, outdir='aho', outname='aho', pickl
         demod_results = [];
         # theta_det for demod
         theta_det =  0.;
-        if not theta_det_db is None :
-            theta_det = theta_det_db.getcolumn('theta_det', boloname);
+        if not db_theta is None :
+            out.OUT('db_theta = {}'.format(db_theta),0);
+            theta_det = db_theta.getcolumn('theta_det', boloname);
             pass;
     
         for j, angledata in enumerate(angleDataList) :
@@ -474,7 +475,7 @@ def plotAll(angleDataList, theta_det_db=None, outdir='aho', outname='aho', pickl
 
 def main(boloname, filename='', 
          outdir='aho', outname='aho', pickledir='aho', loadpickledir='aho',
-         #theta_det_db=['output_ver2/db/all_mod.db','wiregrid','theta_det'], 
+         #theta_det_db=['output_ver2/db/all_mod.db','wiregrid','readout_name'], 
          theta_det_db=None, 
          loaddata=True, out0=None, ext='pdf', verbosity=0 ) :
 
@@ -499,7 +500,7 @@ def main(boloname, filename='',
     # DB for theta_det calibration
     db_theta = None;
     if (not theta_det_db is None) and len(theta_det_db)>2 :
-        db_theta = DBreader(theta_det_db[0], theta_det_db[1], theta_det_db[2]),
+        db_theta = DBreader(theta_det_db[0], theta_det_db[1], theta_det_db[2]);
         pass;
 
     # set calibration constant and its error from ADC output to mK_RJ
@@ -553,7 +554,7 @@ def main(boloname, filename='',
         angleDataList[i]['cal_err'] = cal_err;
         pass;
 
-    if boloname!='' : plotAll(angleDataList, theta_det_db=theta_det_db, outdir=outdir, outname=outname, pickledir=pickledir, out=out, ext=ext);
+    if boloname!='' : plotAll(angleDataList, db_theta=db_theta, outdir=outdir, outname=outname, pickledir=pickledir, out=out, ext=ext);
 
     return 0;
 
@@ -581,16 +582,20 @@ if __name__=='__main__' :
     parser.add_argument('-L', '--loadpickle', dest='loaddata', action='store_false', default=True, 
             help='Whether load pickle file or not. If not load it, it will load raw data file. (default: False)');
     parser.add_argument('-e', '--extension', default=ext, help='Output file extensions for figure: You can set multiple extensions by "," e.g. "pdf,png". (default: {})'.format(ext));
+    parser.add_argument('--anglecalib', default=None, help='Input database for angle calibration of theta_det e.g. "<DB filename>,<tablename>,<columnname for bolo>". (default: None)');
     parser.add_argument('-v', '--verbose', default=verbose, type=int, help='verbosity level: A larger number means more printings. (default: {})'.format(verbose));
     args = parser.parse_args();
 
     if args.loadpickledir=='' : loadpickledir = args.pickledir;
+    theta_det_db = None;
+    if not args.anglecalib is None : theta_det_db = args.anglecalib.split(',');
 
     out = Out.Out(args.verbose);
     out.OUT('loaddata = {}'.format(args.loaddata),1)
 
     main(boloname=args.boloname, filename=args.filename, 
             outdir=args.outdir, outname=args.outname, pickledir=args.pickledir, loadpickledir=loadpickledir,
+            theta_det_db = theta_det_db,
             loaddata=args.loaddata, out0=out, ext=args.extension);
     pass;
 

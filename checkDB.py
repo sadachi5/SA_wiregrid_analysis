@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import pandas as pd;
 
-from DBread import DBreader;
+from DBreader import DBreader;
 from utils import getPandasPickle;
 
 def main():

@@ -139,7 +139,7 @@ def modifySQL(sqlfile, newfile, tablename='wiregrid', verbose=0) :
     con.commit();
     cur.execute('INSERT INTO {table} SELECT * FROM tabletmp;'.format(table=tablename));
     con.commit();
-    # Add column (theta_det = theta_wire0/2, theta_det_err = theta_wire0/2)
+    # Add columns (theta_det = theta_wire0/2, theta_det_err = theta_wire0/2)
     con.execute('ALTER TABLE {table} ADD COLUMN theta_det'.format(table=tablename));
     con.commit();
     con.execute('ALTER TABLE {table} ADD COLUMN theta_det_err'.format(table=tablename));
@@ -322,9 +322,9 @@ if __name__=='__main__' :
     verbose = 1;
     
     # merge sqlite3 db files
-    #mergeAllDB(inputdir=inputdir, newfile=newfile, ispickle=False, tablename=tablename, verbose=verbose);
+    mergeAllDB(inputdir=inputdir, newfile=newfile, ispickle=False, tablename=tablename, verbose=verbose);
     # modify table (boloname "???" --> ???, column: boloname NUM-->readout TEXT)
-    #modifySQL(sqlfile=newfile+'.db', newfile=newfile+'_mod.db', tablename=tablename, verbose=verbose);
+    modifySQL(sqlfile=newfile+'.db', newfile=newfile+'_mod.db', tablename=tablename, verbose=verbose);
     # convert the merged sqlite3 db to pandas data (in a pickle file)
     convertSQLtoPandas(sqlfile=newfile+'_mod.db', outputfile=newfile+'_pandas', tablename=tablename, verbose=verbose, 
             addDB=[['data/pb2a-20210205/pb2a_mapping.db','pb2a_focalplane', "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'"]]);
