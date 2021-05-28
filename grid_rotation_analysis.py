@@ -216,7 +216,7 @@ def plotAll(angleDataList, db_theta=None, outdir='aho', outname='aho', pickledir
             angle      = whwp_angle; # [rad.]
             out.OUT('data = {}'.format(data), -1);
             out.OUT('whwp_angle [rad.] (size={}) = {}'.format(len(whwp_angle), whwp_angle), -1);
-            out.OUT('theta_det for demod = {}'.format(theta_det), -1);
+            out.OUT('theta_det for demod = {}'.format(theta_det), 0);
             out.OUT('y (size={}) = {}'.format(len(y),y), -1);
             out.OUT('time (size={}) = {}'.format(len(time),time), -1);
             out.OUT('diff(time) (size={}) = {}'.format(len(time),np.diff(time)), -1);
@@ -234,13 +234,13 @@ def plotAll(angleDataList, db_theta=None, outdir='aho', outname='aho', pickledir
             y_demods_narrow = {};
             for mode in band_modes :
                 out.OUT('demod mode={} (nominal) for angleI={} (wire {}deg.)'.format(mode,j,wireangle),0);
-                y_demods[mode] = demod.demod(y,angle-2.*theta_det,mode,narrow=False);
-                #y_demods[mode] = demod.demod(y,angle-2.*theta_det,mode,narrow=False,doBpf=False,doLpf=False);
+                y_demods[mode] = demod.demod(y,angle,mode,narrow=False,theta_det=theta_det);
+                #y_demods[mode] = demod.demod(y,angle,mode,narrow=False,doBpf=False,doLpf=False,theta_det=theta_det);
                 pass;
             for mode in band_modes_narrow :
                 out.OUT('demod mode={} (narrow) for angleI={} (wire {}deg.)'.format(mode,j,wireangle),0);
-                y_demods_narrow[mode] = demod.demod(y,angle-2.*theta_det,mode,narrow=True);
-                #y_demods_narrow[mode] = demod.demod(y,angle-2.*theta_det,mode,narrow=True,doBpf=False,doLpf=False);
+                y_demods_narrow[mode] = demod.demod(y,angle,mode,narrow=True,theta_det=theta_det);
+                #y_demods_narrow[mode] = demod.demod(y,angle,mode,narrow=True,doBpf=False,doLpf=False,theta_det=theta_det);
                 pass;
          
             ### Drawing WHWP angle + TOD figure for all of the angles ###
@@ -486,9 +486,9 @@ def main(boloname, filename='',
     out.OUT('boloname = {}'.format(boloname), 0);
 
     # amp is half height of the modulation. It is not the full height.
-    db_stim = DBreaderStimulator('./data/pb2a_stimulator_run223_20210223.db');
+    db_stim = DBreaderStimulator('./data/pb2a_stimulator_run223_20210223.db', verbose=verbosity);
     stimulator_amp  = [db_stim.getamp(22300607, boloname), db_stim.getamp(22300610, boloname),]; # [ADC counts] Run22300607, Run22300610
-    print(stimulator_amp);
+    out.OUT(stimulator_amp,-2);
     if stimulator_amp[0][0]==0. or stimulator_amp[1][0]==0. :
         out.WARNING('There is no matched stimulator amplitude data for {}'.format(boloname));
         out.WARNING('The output is {}'.format(stimulator_amp));
@@ -500,7 +500,8 @@ def main(boloname, filename='',
     # DB for theta_det calibration
     db_theta = None;
     if (not theta_det_db is None) and len(theta_det_db)>2 :
-        db_theta = DBreader(theta_det_db[0], theta_det_db[1], theta_det_db[2]);
+        out.OUT('Read theta_det form DB in {}'.format(theta_det_db[0]),0);
+        db_theta = DBreader(theta_det_db[0], theta_det_db[1], theta_det_db[2], verbose=verbosity);
         pass;
 
     # set calibration constant and its error from ADC output to mK_RJ
@@ -540,13 +541,15 @@ def main(boloname, filename='',
 
 
     # retrieve each angle data
+    out.OUT('load data from pickle file = {}'.format(not loaddata), 0);
+    out.OUT('input pickle file dir      = {}'.format(loadpickledir), 0);
     for i, angleData in enumerate(angleDataList) :
         out.OUTVar(boloname,0);
         oneAngleData = OneAngleData(
                     filename = filename             , boloname  = boloname          ,
                     start    = angleData['start']   , end       = angleData['end']  ,
                     outname  = angleData['outname'] , outdir    = pickledir+'/'+boloname,
-                    loadpickledir = loadpickledir   , 
+                    loadpickledir = loadpickledir+'/'+boloname, 
                     loaddata = loaddata             , out       = out               ,
                 );
         angleDataList[i]['data'] = oneAngleData;
@@ -587,6 +590,7 @@ if __name__=='__main__' :
     args = parser.parse_args();
 
     if args.loadpickledir=='' : loadpickledir = args.pickledir;
+    else                      : loadpickledir = args.loadpickledir;
     theta_det_db = None;
     if not args.anglecalib is None : theta_det_db = args.anglecalib.split(',');
 

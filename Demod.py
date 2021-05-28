@@ -142,7 +142,7 @@ class Demod :
     # angle : array of HWP angles [rad]
     # mode  : center of filtering band center [Hz]
     # narrow: use narrow band width or not (default: wide band width)
-    def demod(self, y, angle, mode, narrow=False, doBpf=True, doLpf=True) :
+    def demod(self, y, angle, mode, narrow=False, doBpf=True, doLpf=True, theta_det=0.) :
         self.m_out.OUT('demod mode={} / isnarrow={}'.format(mode, narrow));
         # Select low pass fitler
         flpf = self.m_flpf_narrow if narrow else self.m_flpf;
@@ -155,7 +155,7 @@ class Demod :
         # Get exp term
         expangle = {};
         for modetmp in self.m_all_modes:
-            expangle[modetmp] = np.exp(-1j * angle * modetmp);
+            expangle[modetmp] = np.exp(-1j * (angle * modetmp - 2. * theta_det));
             pass;
         e = expangle[mode];
         if self.m_out.m_verbosity>1 : plottmp(range(len(e)), e.real, 'Index', 'exp real [{}] {}'.format(mode, 'narrow' if narrow else 'demod'), outname='Exp{}{}'.format(mode, 'narrow' if narrow else 'demod'), i=0); 

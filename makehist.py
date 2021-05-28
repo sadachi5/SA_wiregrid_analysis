@@ -92,8 +92,10 @@ def main(database, baseselect=[''],outfile='aho.png',verbose=0) :
     return 0;
 
 if __name__=='__main__' :
-    database = 'output_ver2/db/all_pandas.pkl';
-    outdir   = 'output_ver2/summary';
+    #database = 'output_ver2/db/all_pandas.pkl';
+    #outdir   = 'output_ver2/summary';
+    database = 'output_ver3/db/all_pandas.pkl';
+    outdir   = 'output_ver3/summary';
     wafers=['13.13', '13.15', '13.28', '13.11', '13.12', '13.10', '13.31'];
     for wafer in wafers :
         main(database, baseselect=["readout_name==readout_name&wafer_number=='{}'".format(wafer),wafer+' All'], outfile=outdir+'/'+wafer+'_all.png',verbose=1);
