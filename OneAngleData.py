@@ -78,6 +78,8 @@ class OneAngleData :
             loadfilename   = '';
             checkfilename  = '{}/{}.pkl'.format(self.m_outdir       , self.m_outname);
             checkfilename2 = '{}/{}.pkl'.format(self.m_loadpickledir, self.m_outname);
+            self.m_out.OUT('candidate input pickle file1: {}'.format(checkfilename ),0);
+            self.m_out.OUT('candidate input pickle file2: {}'.format(checkfilename2),0);
             if   os.path.isfile(checkfilename ) : loadfilename = checkfilename ;
             elif os.path.isfile(checkfilename2) : loadfilename = checkfilename2;
             self.m_out.OUT('load data from {}'.format(loadfilename),0);

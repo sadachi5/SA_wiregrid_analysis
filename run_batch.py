@@ -6,13 +6,16 @@ import numpy as np
 import libg3py3 as libg3
 
 doRun = True;
-ignoreFileExist = True;
+doGridAna = False;
+doFit     = True;
+ignoreFileExist = False;
 
 # All
 wafers=['PB20.13.13', 'PB20.13.15', 'PB20.13.28', 'PB20.13.11', 'PB20.13.12', 'PB20.13.10', 'PB20.13.31'];
 #wafers=['PB20.13.13'];
 
-outdir='output_ver3';
+outdir1='output_ver2';
+outdir2='output_ver3';
 #filename='/group/cmb/polarbear/data/pb2a/g3compressed/22300000_v05/Run22300609';
 filename='/group/cmb/polarbear/usr/sadachi/SparseWireCalibration/PB2a/g3compressed/Run22300609/';
 selections=[];
@@ -40,16 +43,16 @@ def runJob(maxNjob=50) :
         print('Wafer = {} : {} bolos'.format(wafer, len(bolos)));
     
         # make script
-        scriptdir = '{}/scripts/{}'.format(outdir,wafer);
+        scriptdir = '{}/scripts/{}'.format(outdir2,wafer);
         if not os.path.isdir(scriptdir) : os.makedirs(scriptdir);
     
         # setting
-        pickledir='{}/pkl/{}'.format(outdir, wafer);
+        pickledir='{}/pkl/{}'.format(outdir1, wafer);
         prefix   ='gridana_';
-        plotdir  ='{}/plot/{}'.format(outdir, wafer);
-        txtbsubdir   ='{}/txt/{}/bsub'.format(outdir, wafer);
-        txtgridanadir='{}/txt/{}/gridana'.format(outdir, wafer);
-        txtfitdir    ='{}/txt/{}/fit'.format(outdir, wafer);
+        plotdir  ='{}/plot/{}'.format(outdir2, wafer);
+        txtbsubdir   ='{}/txt/{}/bsub'.format(outdir2, wafer);
+        txtgridanadir='{}/txt/{}/gridana'.format(outdir2, wafer);
+        txtfitdir    ='{}/txt/{}/fit'.format(outdir2, wafer);
         if not os.path.isdir(txtbsubdir)    : os.makedirs(txtbsubdir);
         if not os.path.isdir(txtgridanadir) : os.makedirs(txtgridanadir);
         if not os.path.isdir(txtfitdir)     : os.makedirs(txtfitdir);
@@ -62,19 +65,25 @@ def runJob(maxNjob=50) :
             txtfit         = '{}/{}.out'.format(txtfitdir, bolo);
             #print('Creating script file: {}'.format(scriptfilename));
             scriptfile     = open(scriptfilename, 'w');
-            commands='#!/bin/bash\ncd {};\n. ./env-shell.sh;\n'.format(os.environ['PWD'])+\
-            'python3 grid_rotation_analysis.py \
-            -b \"{boloname}\" -o \"{prefix}\" -f \"{filename}\" \
-            -d \"{plotdir}/{boloname}\" -p \"{pickledir}\" --loadpickledir \"{pickledir}\" \
-            2>&1>& {txtout};\n'.format(\
-            boloname=bolo, filename=filename, \
-            plotdir=plotdir, pickledir=pickledir, prefix=prefix, \
-            txtout=txtgridana)+\
-            'python3 fitDemodResult.py \
-            -b \"{boloname}\" -p \"{pickledir}\" --pickleprefix \"{prefix}\" --picklesuffix \"\" \
-            -d \"{outdir}\" --outprefix \"Fit_\" --outsuffix \"\" -v 1 \
-            2>&1>& {txtout};\n'.format(\
-            boloname=bolo, pickledir=pickledir, outdir=outdir, prefix=prefix, txtout=txtfit)
+            commands='#!/bin/bash\ncd {};\n. ./env-shell.sh;\n'.format(os.environ['PWD']);
+            if doGridAna :
+                commands += \
+                'python3 grid_rotation_analysis.py \
+                -b \"{boloname}\" -o \"{prefix}\" -f \"{filename}\" \
+                -d \"{plotdir}/{boloname}\" -p \"{pickledir}\" --loadpickledir \"{pickledir}\" \
+                2>&1>& {txtout};\n'.format(\
+                boloname=bolo, filename=filename, \
+                plotdir=plotdir, pickledir=pickledir, prefix=prefix, \
+                txtout=txtgridana);
+                pass;
+            if doFit :
+                commands += \
+                'python3 fitDemodResult.py \
+                -b \"{boloname}\" -p \"{pickledir}\" --pickleprefix \"{prefix}\" --picklesuffix \"\" \
+                -d \"{outdir}\" --outprefix \"Fit_\" --outsuffix \"\" -v 1 \
+                2>&1>& {txtout};\n'.format(\
+                boloname=bolo, pickledir=pickledir, outdir=outdir2, prefix=prefix, txtout=txtfit)
+                pass;
     
             scriptfile.write(commands);
     

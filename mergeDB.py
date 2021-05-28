@@ -315,22 +315,24 @@ def mergeAllDB(inputdir, newfile, ispickle=True, tablename='wiregrid', verbose=1
 
 if __name__=='__main__' :
     tablename = 'wiregrid'
-    inputdir = './output_ver2';
+    #inputdir = './output_ver2';
+    inputdir = './output_ver3';
     #inputdir = '/home/cmb/sadachi/analysis_2021/output_ver2';
     #inputdir = '/Users/shadachi/Experiment/PB/analysis/analysis_2021/output_ver2';
-    newfile = 'output_ver2/db/all';
+    newfile = '{}/db/all'.format(inputdir);
+    doModify = False;
     verbose = 1;
     
     # merge sqlite3 db files
-    mergeAllDB(inputdir=inputdir, newfile=newfile, ispickle=False, tablename=tablename, verbose=verbose);
+    #mergeAllDB(inputdir=inputdir, newfile=newfile, ispickle=False, tablename=tablename, verbose=verbose);
     # modify table (boloname "???" --> ???, column: boloname NUM-->readout TEXT)
-    modifySQL(sqlfile=newfile+'.db', newfile=newfile+'_mod.db', tablename=tablename, verbose=verbose);
+    if doModify : modifySQL(sqlfile=newfile+'.db', newfile=newfile+'_mod.db', tablename=tablename, verbose=verbose);
     # convert the merged sqlite3 db to pandas data (in a pickle file)
-    convertSQLtoPandas(sqlfile=newfile+'_mod.db', outputfile=newfile+'_pandas', tablename=tablename, verbose=verbose, 
+    convertSQLtoPandas(sqlfile=newfile+('_mod.db' if doModify else '.db'), outputfile=newfile+'_pandas', tablename=tablename, verbose=verbose, 
             addDB=[['data/pb2a-20210205/pb2a_mapping.db','pb2a_focalplane', "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'"]]);
 
     # merge pickle files
-    #mergeAllDB(inputdir=inputdir, newfile=newfile, ispickle=True, tablename=tablename, verbose=verbose);
+    mergeAllDB(inputdir=inputdir, newfile=newfile, ispickle=True, tablename=tablename, verbose=verbose);
 
     pass;
     
