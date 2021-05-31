@@ -197,48 +197,67 @@ def convertSQLtoPandas(sqlfile, outputfile, tablename='wiregrid', addDB=[], verb
         for db in addDB :
             __dbfilename = db[0];
             __dbtablename= db[1];
-            __dbselection= '';
-            if len(db)>2 : __dbselection= db[2];
+            __dbselection= None;
+            __dbboloname = None;
+            if len(db)>2 and db[2]!='' : __dbselection= db[2];
+            if len(db)>3 and db[3]!='' : __dbboloname = db[3];
             if not os.path.isfile(__dbfilename) :
                 print('WARNING! There is no adding databese: {}'.format(__dbfilename));
                 print('         --> Skip!!');
                 continue;
             print('Adding {}..'.format(__dbfilename));
             __conn = sqlite3.connect(__dbfilename);
-            __query = 'SELECT * FROM {} {}'.format(__dbtablename, ('where '+__dbselection) if len(__dbselection)>0 else '' );
+            __query = 'SELECT * FROM {} {}'.format(__dbtablename, ('where '+__dbselection) if not __dbselection is None else '' );
             print('query = {}'.format(__query));
             __df=pandas.read_sql_query(__query, __conn);
             # Modify __df
-            #__dfnew = __df.rename(columns={'name':'boloname'});
-            #__dfnew = __df.rename(columns={'readout_name':'boloname'});
-            __dfnew = __df; # No modification
+            if not __dbboloname is None :
+                __dfnew = __df.rename(columns={__dbboloname:'readout_name'});
+            else :
+                __dfnew = __df; # No modification
+                pass;
             if verbose>0 : 
+                pandas.set_option('display.max_columns', 20)
                 print('--- Added pandas header ---------------');
                 print(__dfnew.head());
                 print('---------------------------------------');
+                pandas.set_option('display.max_columns', 5)
                 pass;
-            dfmerge = pandas.merge(df, __dfnew, how='inner', on='readout_name');
+            dfmerge = pandas.merge(df, __dfnew, how='left', on='readout_name');
             #__conn.close();
             #del __df;
             #del __dfnew;
             df = copy.deepcopy(dfmerge);
-            pass;
-        
-        print('=== Pandas Data after adding other databases =============================');
-        if verbose>0 : 
-            print('--- Pandas Data -----------------');
-            print(df);
+            print('=== Pandas Data after adding {} ============================='.format(__dbfilename));
+            if verbose>0 : 
+                print('--- Pandas Data -----------------');
+                print(df);
+                print('---------------------------------');
+                pass;
+            print('--- Pandas header ---------------');
+            print(df.head());
             print('---------------------------------');
             pass;
-        print('--- Pandas header ---------------');
-        print(df.head());
-        print('---------------------------------');
         pass;
 
+        
+    # Check outputfile name
+    if outputfile.endswith('.pkl') : outputfile = '.'.join(outputfile.split('.')[:-1]);
+    if outputfile.endswith('.db')  : outputfile = '.'.join(outputfile.split('.')[:-1]);
+
     # Save Pandas to pickle file
-    if not outputfile.endswith('.pkl') : outputfile += '.pkl';
-    print('Saving the pandas to a pickle file ({})...'.format(outputfile));
-    df.to_pickle(outputfile);
+    outputfullname = outputfile + '.pkl';
+    print('Saving the pandas to a pickle file ({})...'.format(outputfullname));
+    df.to_pickle(outputfullname);
+
+    # Save Pandas to sqlite3 file
+    outputfullname = outputfile + '.db';
+    print('Saving the pandas to a sqlite3 file ({})...'.format(outputfullname));
+    conn = sqlite3.connect(outputfullname);
+    df.to_sql('wiregrid',conn,if_exists='replace',index=None);
+    conn.close();
+    del conn;
+
     return 0;
 
 def mergeDBpkl(newfile, filenames, verbose=0) :
@@ -329,10 +348,14 @@ if __name__=='__main__' :
     if doModify : modifySQL(sqlfile=newfile+'.db', newfile=newfile+'_mod.db', tablename=tablename, verbose=verbose);
     # convert the merged sqlite3 db to pandas data (in a pickle file)
     convertSQLtoPandas(sqlfile=newfile+('_mod.db' if doModify else '.db'), outputfile=newfile+'_pandas', tablename=tablename, verbose=verbose, 
-            addDB=[['data/pb2a-20210205/pb2a_mapping.db','pb2a_focalplane', "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'"]]);
+            addDB=[
+                ['data/pb2a-20210205/pb2a_mapping.db','pb2a_focalplane', "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'",None],
+                ['data/pb2a_stimulator_run223_20210223.db','pb2a_stimulator', "run_id=='22300610'", 'Bolo_name'],
+                #['data/pb2a_stimulator_run223_20210223.db','pb2a_stimulator', "run_id=='22300607'", 'Bolo_name'],
+                ]);
 
     # merge pickle files
-    mergeAllDB(inputdir=inputdir, newfile=newfile, ispickle=True, tablename=tablename, verbose=verbose);
+    #mergeAllDB(inputdir=inputdir, newfile=newfile, ispickle=True, tablename=tablename, verbose=verbose);
 
     pass;
     
