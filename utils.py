@@ -27,6 +27,65 @@ def plottmp(x,y,xlabel='x',ylabel='y',i=0,outname='aho',xlim=None, xtime=False) 
     return;
 ## end of plottmp() ##
 
+## plottmphist() ##
+import os;
+import numpy as np
+import copy
+import matplotlib.colors
+from matplotlib import pyplot as plt
+from matplotlib import dates as mdates
+def plottmphist(x0,nbins=100,y=None,xlabel='x',ylabel='Counts',i=0,outname='aho',xrange=None,yrange=None,xlim=None, ylim=None, xtime=False,show=False,log=False,drawflow=True, stacked=False, nHist=1, label='', outdir = 'tmp') :
+    if not os.path.isdir(outdir): os.mkdir(outdir);
+    plt.title('');
+    x = copy.deepcopy(x0);
+    if nHist==1 : print('x min = {} / max = {}'.format(min(x), max(x)));
+    if drawflow :
+        if not xrange is None :
+            if nHist == 1:
+                i_overflow  = (x>xrange[1]);
+                i_underflow = (x<xrange[0]);
+                x[i_overflow]  = xrange[1];
+                x[i_underflow] = xrange[0];
+            else :
+                for n in range(nHist) :
+                    i_overflow  = (x[n]>xrange[1]);
+                    i_underflow = (x[n]<xrange[0]);
+                    x[n][i_overflow]  = xrange[1];
+                    x[n][i_underflow] = xrange[0];
+                pass;
+            pass;
+        pass;
+    if not y is None : print('y min = {} / max = {}'.format(min(y), max(y)));
+    if y is None : 
+        hist = plt.hist  (x,    bins=nbins, range=xrange, histtype='stepfilled', linestyle='-', linewidth=0.5, edgecolor='k', stacked=stacked, alpha=0.5, color = colors[1:1+nHist], label=label, align='mid', orientation='vertical', log=log);
+    else         : 
+        ranges = None if xrange is None or yrange is None else [xrange,yrange];
+        hist = plt.hist2d(x, y, range=ranges,bins=nbins, norm=matplotlib.colors.LogNorm() if log else matplotlib.colors.Normalize());
+
+    plt.xlabel(xlabel);
+    plt.ylabel(ylabel);
+    plt.tight_layout(rect=[0,0,1,0.96])
+    if xtime :
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+        plt.tick_params(axis='x',labelrotation=40,labelsize=8);
+        pass;
+    plt.grid();
+    if label!='' : plt.legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 8,title='',borderaxespad=0.);
+    if not xlim==None : plt.xlim(xlim);
+    if not ylim==None : plt.ylim(ylim);
+
+    if not y is None :
+        plt.colorbar(hist[3])
+        pass;
+    if show : plt.show();
+    outname = '{}/{}{}.pdf'.format(outdir,outname,i);
+    print('save {}'.format(outname));
+    plt.savefig(outname);
+    plt.close();
+    return;
+## end of plottmphist() ##
+
+
 
 ## get_var_name() ##
 import inspect;
@@ -98,6 +157,13 @@ def thetapitopi(theta) :
 # theta range --> [0, 2pi]
 def theta0to2pi(theta) :
     return np.arctan2(-np.sin(theta),-np.cos(theta))+np.pi;
+# theta range --> [0, pi]
+def theta0topi(theta,upper=np.pi) :
+    theta2 = np.multiply(theta, 2.);
+    theta  = np.multiply(theta0to2pi(theta2),0.5);
+    theta  = np.where(theta>=upper, theta-np.pi, theta);
+    return theta;
+
 
 # radian to degrees
 def rad_to_deg(rad) : return np.multiply(rad, 180./(np.pi)) ; # [deg.]
@@ -108,6 +174,15 @@ def rad_to_deg_pitopi(rad) : return np.multiply( thetapitopi(rad), 180./(np.pi) 
 
 # degree to radian
 def deg_to_rad(deg) : return np.multiply(deg, np.pi/180.);
+
+
+# diff. between two angles (rad.)
+def diff_angle(rad1,rad2,upper90deg=True) :
+    diff = np.arccos(np.cos(rad1-rad2));
+    if upper90deg : 
+        diff = theta0topi(diff);
+        diff = np.where(diff>=np.pi/2., np.pi-diff, diff);
+    return diff;
 
 # Create new array of x and y between xmin & xmax  (xmin<=x<=xmax)
 # x and y have the same size

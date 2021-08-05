@@ -551,7 +551,7 @@ if __name__=='__main__' :
     parser.add_argument('--outprefix', default=outprefix, help='output filename prefix (default: {})'.format(outprefix));
     parser.add_argument('--outsuffix', default=outsuffix, help='output filename suffix (default: {})'.format(outsuffix));
     parser.add_argument('-e', '--ext', default=ext, help='Output file extensions for figure: You can set multiple extensions by "," e.g. "pdf,png". (default: {})'.format(ext));
-    parser.add_argument('--batch', dest='batchmode', action='store_true', default=True, help='Less output for batch job');
+    parser.add_argument('--notbatch', dest='batchmode', action='store_false', default=True, help='Unset batchmode(Less output for batch job)');
     parser.add_argument('--init-alpha', dest='initalpha_frac', default=initalpha_frac, help='Fixed value of alpha(alpha will be fixed in the fit)');
     parser.add_argument('--refAngle', default=refAngle, help='Reference wire angle for the angle calibration');
     parser.add_argument('--excludeAngle', default=None, help='Exclued wire angles in the fit. Multiple angles can be specified by joining \",\". (ex. 0,45) default=\"\"');
