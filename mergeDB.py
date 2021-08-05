@@ -1,4 +1,5 @@
 import os, sys;
+import numpy as np;
 
 def getSQLColumnDefs(con, cur, tablename, verbose=0):
     # Get table info from filetmp
@@ -166,7 +167,7 @@ def modifySQL(sqlfile, newfile, tablename='wiregrid', verbose=0) :
 
     return 0;
 
-def convertSQLtoPandas(sqlfile, outputfile, tablename='wiregrid', addDB=[], verbose=0):
+def convertSQLtoPandas(sqlfile, outputfile, tablename='wiregrid', addDB=[], doTauCalib=False, verbose=0):
     import sqlite3, pandas;
     import copy;
     # Open SQL
@@ -240,6 +241,11 @@ def convertSQLtoPandas(sqlfile, outputfile, tablename='wiregrid', addDB=[], verb
             pass;
         pass;
 
+    # do Tau Calibration
+    if doTauCalib and 'tau' in df.keys() :
+        hwp_speed = 2.; # [Hz]
+        df.loc[(df['tau']>0.), 'theta_det'] = df['theta_det'] - 2.*df['tau'] * (hwp_speed * 2. * np.pi );
+        pass;
         
     # Check outputfile name
     if outputfile.endswith('.pkl') : outputfile = '.'.join(outputfile.split('.')[:-1]);
@@ -250,7 +256,7 @@ def convertSQLtoPandas(sqlfile, outputfile, tablename='wiregrid', addDB=[], verb
     print('Saving the pandas to a pickle file ({})...'.format(outputfullname));
     df.to_pickle(outputfullname);
 
-    # Save Pandas to sqlite3 file
+    # Save Pandas to sqlite4 file
     outputfullname = outputfile + '.db';
     print('Saving the pandas to a sqlite3 file ({})...'.format(outputfullname));
     conn = sqlite3.connect(outputfullname);
@@ -336,18 +342,22 @@ if __name__=='__main__' :
     tablename = 'wiregrid'
     #inputdir = './output_ver2';
     inputdir = './output_ver3';
+    oldfile = '{}/db/all'.format(inputdir);
     #inputdir = '/home/cmb/sadachi/analysis_2021/output_ver2';
     #inputdir = '/Users/shadachi/Experiment/PB/analysis/analysis_2021/output_ver2';
-    newfile = '{}/db/all'.format(inputdir);
+    #newfile = '{}/db/all'.format(inputdir);
+    newfile = 'output_ver4/db/all';
     doModify = False;
+    doTauCalib = True;
     verbose = 1;
     
     # merge sqlite3 db files
     #mergeAllDB(inputdir=inputdir, newfile=newfile, ispickle=False, tablename=tablename, verbose=verbose);
     # modify table (boloname "???" --> ???, column: boloname NUM-->readout TEXT)
-    if doModify : modifySQL(sqlfile=newfile+'.db', newfile=newfile+'_mod.db', tablename=tablename, verbose=verbose);
+
+    if doModify : modifySQL(sqlfile=oldfile+'.db', newfile=oldfile+'_mod.db', tablename=tablename, verbose=verbose);
     # convert the merged sqlite3 db to pandas data (in a pickle file)
-    convertSQLtoPandas(sqlfile=newfile+('_mod.db' if doModify else '.db'), outputfile=newfile+'_pandas', tablename=tablename, verbose=verbose, 
+    convertSQLtoPandas(sqlfile=oldfile+('_mod.db' if doModify else '.db'), outputfile=newfile+'_pandas', tablename=tablename, verbose=verbose, doTauCalib=doTauCalib,
             addDB=[
                 ['data/pb2a-20210205/pb2a_mapping.db','pb2a_focalplane', "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'",None],
                 ['data/pb2a_stimulator_run223_20210223.db','pb2a_stimulator', "run_id=='22300610'", 'Bolo_name'],

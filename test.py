@@ -64,7 +64,7 @@ for k in range(k) :
 
 
 
-'''
+#'''
 import numpy as np;
 from utils import plottmp;
 
@@ -73,16 +73,17 @@ beta  =  20.; # deg
 
 x = np.arange(200.)/200. * 180. * 4. - 360.;
 rad = x/180.*np.pi;
-y = (np.arctan(np.tan(rad)*np.cos(np.pi/180. * alpha)/np.cos(np.pi/180. * beta)) - np.arctan(np.tan(rad)))*180./np.pi * 2.;
+#y = (np.arctan(np.tan(rad)*np.cos(np.pi/180. * alpha)/np.cos(np.pi/180. * beta)) - np.arctan(np.tan(rad)))*180./np.pi * 2.;
+y = np.sin(rad)**2.;
 
-plottmp(x,y,xlabel='angle [deg.]',ylabel='diff [deg.] by ({:.0f},{:.0f}) deg. tilts'.format(alpha,beta));
+plottmp(rad,y,xlabel='angle [deg.]',ylabel='diff [deg.] by ({:.0f},{:.0f}) deg. tilts'.format(alpha,beta));
 
 
 
 #y = (np.arctan(np.tan((rad-np.pi)/2.)) + np.pi/2.)*2.;
 #y = np.arctan2(np.sin(rad),np.cos(rad));
-y = np.arctan2(-np.sin(rad),-np.cos(rad))+np.pi;
-plottmp(rad,y,xlabel='angle [rad.]',ylabel='acos(cos(angle)) [rad.]');
+#y = np.arctan2(-np.sin(rad),-np.cos(rad))+np.pi;
+#plottmp(rad,y,xlabel='angle [rad.]',ylabel='acos(cos(angle)) [rad.]');
 #'''
 
 
@@ -116,8 +117,8 @@ print('Njob=',len(out.split('\n'))-1);
 
 
 
-
-#'''
+# sqlite merge test
+'''
 import sqlite3
 
 tablename = 'wiregrid'
@@ -214,3 +215,82 @@ cur.close();
 con.close();
 #'''
 
+
+
+# open pandas
+'''
+import pandas as pd;
+import numpy as np;
+from utils import colors, getPandasPickle, plottmphist;
+database = 'output_ver3/db/all_pandas.pkl';
+df = getPandasPickle(database);
+print(df.keys());
+print('plottmphist(df[\'r\'],i=0,show=True)');
+"""
+plottmphist(df['r'],i='',outname='all_r',xlabel=r'$r$',nbins=500,xrange=[0,5000],log=True,show=False,drawflow=True);
+plottmphist(df['r'],i='',outname='all_r_zoom',xlabel=r'$r$',nbins=50,xrange=[0,50],log=True,show=False,drawflow=True);
+plottmphist(df['chisqr'],i='',outname='all_chisqr',xlabel=r'$\chi ^2$',nbins=500,xrange=[0,5000],log=True,show=False,drawflow=True);
+plottmphist(df['chisqr'],i='',outname='all_chisqr_zoom',xlabel=r'$\chi ^2$',nbins=50,xrange=[0,50],log=True,show=False,drawflow=True);
+plottmphist(df['r'],y=df['chisqr'],i='',outname='all_r-chisqr',xlabel=r'$r$',ylabel=r'$\chi ^2$',nbins=50,xrange=[0,500],yrange=[0,500],log=True,show=False);
+plottmphist(df['r'],y=df['chisqr'],i='',outname='all_r-chisqr_zoom',xlabel=r'$r$',ylabel=r'$\chi ^2$',nbins=50,xrange=[0,50],yrange=[0,50],log=True,show=False);
+"""
+
+basecut0 = 'theta_det_err<1.*{:e}/180.'.format(np.pi);
+"""
+df_sel0 = df.query(basecut0);
+print('# of "{}" = {}/{}'.format(basecut0, len(df_sel0), len(df)));
+plottmphist(df_sel0['r'],i='',outname='thetaless1_r',xlabel=r'$r$',nbins=500,xrange=[0,500],log=True,show=False,drawflow=True);
+plottmphist(df_sel0['chisqr'],i='',outname='thetaless1_chisqr',xlabel=r'$\chi ^2$',nbins=500,xrange=[0,500],log=True,show=False,drawflow=True);
+"""
+
+basecut = 'r+chisqr>20. & '+basecut0;
+"""
+df_sel = df.query(basecut);
+print('# of "{}" = {}/{}'.format(basecut, len(df_sel), len(df)));
+plottmphist(df_sel['r'],i=6,nbins=500,xrange=[0,500],log=True,show=False,drawflow=True);
+plottmphist(df_sel['chisqr'],i=7,nbins=500,xrange=[0,500],log=True,show=False,drawflow=True);
+plottmphist(df_sel['r'],y=df_sel['chisqr'],i=8,nbins=50,xrange=[0,50],yrange=[0,50],log=True,show=False);
+"""
+
+sel2 = 'chisqr>5000';
+"""
+df_sel2 = df.query(sel2);
+print('# of "{}" = {}/{}'.format(sel2, len(df_sel2), len(df)));
+plottmphist(df_sel2['r'],y=df_sel2['chisqr'],i=9,nbins=50,log=True,show=False);
+"""
+
+sel3 = 'r>5000';
+"""
+df_sel3 = df.query(sel3);
+print('# of "{}" = {}/{}'.format(sel3, len(df_sel3), len(df)));
+plottmphist(df_sel3['r'],y=df_sel3['chisqr'],i=10,nbins=50,log=True,show=False);
+"""
+
+sel4 = 'chisqr<2 & chisqr>0. & '+basecut;
+"""
+df_sel4 = df.query(sel4);
+print('# of "{}" = {}/{}'.format(sel4, len(df_sel4), len(df)));
+pd.set_option('display.max_rows', 100)
+print(df_sel4[['readout_name','theta_det_err']]);
+pd.set_option('display.max_rows', 5)
+"""
+
+datas = [];
+cuts = [0,0.5,1.0,1.5,2.,10.];
+cuts_strs = [];
+for i in range(len(cuts)) :
+    if i<len(cuts)-1 :
+        selection = 'theta_det_err*180./{pi}>={cut1} & theta_det_err*180./{pi}<{cut2}'.format(pi=np.pi,cut1=cuts[i],cut2=cuts[i+1]);
+        cut_str   = cuts[i]+r' deg <= $\Delta \theta_{\mathrm{det}}$ < '+cuts[i+1]+' deg';
+    else :
+        selection = 'theta_det_err*180./{pi}>={cut}'.format(pi=np.pi,cut=cuts[i]);
+        cut_str   = cuts[i]+r' deg <= $\Delta \theta_{\mathrm{det}}$';
+        pass;
+    datas.append(df.query(selection)['r']);
+    cuts_strs.append(cut_str);
+    pass;
+plottmphist(df['theta_det_err']*180./np.pi,i='',outname='all_theta_det_err',xlabel=r'$\Delta \theta_{det} [deg.]$',nbins=360,xrange=[0,90.],log=True,show=False,drawflow=True);
+#plottmphist(df['theta_det_err']*180./np.pi,y=df['chisqr']+df['r'],i=14,nbins=180,xrange=[0,90],yrange=[0,3600],log=True,show=False);
+#plottmphist(df['theta_det_err']*180./np.pi,y=df['chisqr']+df['r'],i=15,nbins=100,log=True,show=False);
+plottmphist(datas,i='',outname='r_wt_different_theta_det_err',xlabel=r'$r$',ylabel=r'Counts of bolometers',nbins=100,xrange=[0,1000.],log=True,show=False,drawflow=True,stacked=True,nHist=len(datas),label=cuts_strs);
+#'''

@@ -20,3 +20,130 @@ Please intall them by
 **Do NOT forget to use pip3 instead of pip!**
 
 
+## run scripts
+ - (plot.sh: make plot of TODs)
+
+ - analysis.sh
+    - From demod to fit circle
+
+ - run\_batch.py
+    - Run demod & fit for many detectors by using batch job
+
+
+## Scripts for each analysis steps
+- (plot.py: simple TOD plotter)
+
+- grid\_rotation\_analysis.py
+    - get TOD & demod each wire angle data 
+    - Using scripts:
+        - OneAngleData.py
+
+- fitDemodResult.py
+    - fit circle data of demod datas
+    - Using scripts:
+        - minuitfit.py
+        - LMfit.py (not used now)
+        - plotFitResult.py
+
+
+## DB modification
+
+### merge & modify DB
+- mergeDB.py: 
+    - merge output of run\_batch.sh (fitDemodResult.py) & modify SQL database 
+        - Tau (timing constant) calibration
+        - Add hardware map DB
+    - input : output\_verX/db/"wafer name"/\*.db
+    - output:
+        - output\_verX/db/all.db : sqlite DB without modification
+        - output\_verX/db/all\_mod.db : sqlite DB with modification
+        - output\_verX/db/all\_pandas.pkl : pandas DB with modification 
+        - output\_verX/db/all\_pandas.db  : sqlite DB converted from pandas DB with modification 
+
+### Compare DB
+- compare\_db.py
+    - merge two sqlite DBs with 'readout\_name' column & compare them
+    - This script is used in the following scripts:
+        - compare\_DB\_for\_labelcorrection.py
+        - compare\_and\_make\_DB\_for\_labelcorrection.py
+    - input :
+        - original hardware map          : data/pb2a-20210205/pb2a_mapping.db
+        - kyohei's corrected hardware map: data/ykyohei/mapping/pb2a_mapping_postv2.db
+        - my wiregrid DB                 : output_verX/db/all_pandas.db
+    - output : 
+        - aho.png : 2D plot between varname1 v.s. varname2
+        - aho.csv : converted from pandas of bolometers with varname!=varname2
+
+- compare\_DB\_for\_labelcorrection.py
+    - compare wiregrid DB and kyohei's DB to find mislabel bolometers.
+    - make a new sqlite DB with corrected pol\_angle,pixel\_type,bolo\_type on found mislabeled bolometers by wiregrid DB
+        - base DB : my wire grid DB
+    - input : 
+        - my wiregrid DB                 : output_verX/db/all_pandas.db
+        - kyohei's corrected hardware map: data/ykyohei/mapping/pb2a_mapping_postv2.db
+    - output:
+        - output_verX/db/all_pandas_correct_label.db
+
+- compare\_and\_make\_DB\_for\_labelcorrection.py
+    - compare wiregrid DB and kyohei's DB to find mislabel bolometers.
+    - make a new sqlite DB for SA official DB with corrected pol\_angle,pixel\_type,pixel\_handedness,bolo\_type on found mislabeled bolometers by wiregrid DB
+        - base DB : original hardware map DB
+    - If tau is Nan or 0 (stimulator data is not good), theta\_det is set to nan.
+    - input : 
+        - original hardware map          : data/pb2a-20210205/pb2a_mapping.db
+        - kyohei's corrected hardware map: data/ykyohei/mapping/pb2a_mapping_postv2.db
+        - my wiregrid DB                 : output_verX/db/all_pandas.db
+    - output:
+        - output_verX/db/pb2a_mapping_corrected_label_v2.db
+
+
+
+## Plotting scripts
+
+### Check TOD
+- checkspeed.py
+    - print average frequency [Hz] of HWP
+    - input : output\_ver2/pkl/PB20.13.13/PB20.13.13\_Comb01Ch01/\*.pkl
+        - TOD for only one bolometer
+    - output: No (only printing)
+
+### Check DB
+- printDB.py :
+    - Print contents of pandas pickle file
+    - input : output\_verX/db/all\_pandas.pkl : pandas DB with modification 
+    - output: No (only printing)
+
+- checkDB.py
+    - Make plots of pandas pickle file
+    - input : output\_verX/db/all\_pandas.pkl : pandas DB with modification 
+    - output: output\_verX/check\_db/\*.pdf : figures
+
+### Check diff between wiregrid measured angle and design detector angle
+- check\_absolute.py
+    - make angle plots of DB with wiregrid corrected labels
+        - 2D plot: theta_det_angle (wiregrid measured angle) v.s. pol_angle (design value) for good data (tau!=nan, theta_det_err<0.5deg, pol_angle!=nan) 
+        - 2D plot: theta_det_angle (wiregrid measured angle) v.s. pol_angle (design value) for correct labels
+        - 1D plot: diff. between measured angle(theta_det_angle) and design angle(pol_angle)
+    - input : output\_ver4/db/all\_pandas\_correct\_label.db
+    - output: out\_check\_absolute/check\_absolute.png
+
+- check\_absolute\_labelcorrecteddb.py
+    - make angle plots of DB with wiregrid corrected labels
+    - input :
+        - output\_ver4/db/all\_pandas\_correct\_label.db
+          or 
+        - output\_ver4/db/all\_pandas.db
+    - output: out\_check\_absolute/check\_absolute\_labelcorrectedDB.png
+
+- check\_absolute\_nocorr.py
+    - make angle plots of DB without wiregrid label correction
+    - input : output\_ver4/db/all\_pandas.db
+    - output: out\_check\_absolute/check\_absolute\_nocorr.png
+
+### Others
+- makehist.py
+    - make histogram of wiregrid measured angels for each bolometer groups
+    - input : output\_ver4/db/all\_pandas.pkl
+    - output: output\_ver4/summary/\*.png
+
+
