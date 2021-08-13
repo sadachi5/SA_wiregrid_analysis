@@ -1,13 +1,14 @@
 #!/bin/python
 import numpy as np;
 import math, sqlite3;
+import pandas;
 from compare_db import compare_db;
 from utils import theta0topi, rad_to_deg, deg_to_rad, diff_angle;
 
 if __name__=='__main__' :
-    dbname_out = 'output_ver4/db/all_pandas_correct_label.db'
+    dbname_out = 'output_ver5/db/all_pandas_correct_label.db'
     dbnames =[
-            'output_ver4/db/all_pandas.db',
+            'output_ver5/db/all_pandas.db',
             #'data/pb2a-20210205/pb2a_mapping.db',
             'data/ykyohei/mapping/pb2a_mapping_postv2.db',
             ];
@@ -16,10 +17,11 @@ if __name__=='__main__' :
             #'pb2a_focalplane',
             'pb2a_focalplane',
             ];
+    primarycolumn = 'readout_name';
     columns=[
             '*',
             #'pol_angle,pixel_type,bolo_name,pixel_name,bolo_type,band,pixel_handedness',
-            'pixel_name,band',
+            'pixel_name,band,det_offset_x,det_offset_y,hardware_map_dir,hardware_map_commit_hash',
             ];
     if len(columns)==1 : columns = [columns[0] for i in range(len(dbnames))];
     suffixes=[
@@ -48,7 +50,7 @@ if __name__=='__main__' :
             selections = selections,
             suffixes   = suffixes,
             dropNan    = dropNan,
-            primarycolumn='readout_name',
+            primarycolumn=primarycolumn,
             outname='aho.png',
             );
 
@@ -60,9 +62,21 @@ if __name__=='__main__' :
     names_fail = [];
     check_columns = ['pixel_type', 'bolo_type', 'pixel_handedness'];
     dfmislabel = dfmislabel.reset_index();
-    # add mislabel column
     df_new = df0s[0];
+    # add mislabel column
     df_new['mislabel']=False;
+    # remove det_offset_x/y in df_new
+    df_new = df_new.drop('det_offset_x', axis=1);
+    df_new = df_new.drop('det_offset_y', axis=1);
+    # add det_offset_x/y from Kyohei's DB
+    #print('before add', df_new['det_offset_x']);
+    print('before add', df_new.columns.values);
+    print('df0s[1] keys:', df0s[1].columns.values)
+    df_new = pandas.merge(df_new, df0s[1][['det_offset_x','det_offset_y',primarycolumn]], how='left', on=primarycolumn);
+    #df_new['det_offset_x'] = df0s[1]['det_offset_x'];
+    #df_new['det_offset_y'] = df0s[1]['det_offset_y'];
+    print('after add', df_new['det_offset_x']);
+    print('after add', df_new.columns.values);
     for i in range(len(dfmislabel)) :
         print('******** i={} *********'.format(i));
         name          = dfmislabel.at[i,'readout_name'];
