@@ -6,12 +6,7 @@ Environmental setting:
 
     . env-shell.sh
 
-## Run scripts
-
-    . analysis.sh
-
-
-## required python libraries
+## Requirements of python libraries
 There are several python libraries aside from the libraries installed by env-shell.sh.
 Please intall them by
 
@@ -19,14 +14,47 @@ Please intall them by
 
 **Do NOT forget to use pip3 instead of pip!**
 
+## Versions
+output\_ver2
+------------
+  - version description: first version having theta\_det (DB + each bolometer demod fit/TODs)
+  - input data: raw data
+  - data : 2021/02/05 Run22300609
+  - output\_ver2/db/all.db
+    - CREATE TABLE wiregrid(id INTEGER PRIMARY KEY,boloname STRING,lmfit_x0 REAL,lmfit_y0 REAL,lmfit_a REAL,lmfit_b REAL,lmfit_alpha REAL,lmfit_chisqr REAL,x0 REAL,y0 REAL,theta0 REAL,a REAL,b REAL,r REAL,alpha REAL,x0_err REAL,y0_err REAL,theta0_err REAL,a_err REAL,b_err REAL,r_err REAL,alpha_err REAL,chisqr REAL,wireangle0 REAL,wireangle0_err REAL,theta_wire0 REAL,theta_wire0_err REAL); 
+    - Maybe this DB has bug or wrong data.
+
+output\_ver3
+------------
+  - version description: first version having theta\_det (DB + each bolometer demod fit)
+  - input data: output\_ver2 each bolometer TOD
+  - output\_ver3/db/all.db
+      - theta_det : detector angle (NO time-constant correction)
+      - theta_det_err : detector angle error (but it is NOT correct now.)
+
+output\_ver4
+-------------
+  - version description: theta\_det has time-constant correction (only DB)
+  - input data: output\_ver3 DB
+  - output\_ver4/db/all\_pandas\_correct\_label.db
+    - theta\_det : detector angle (Wt time-constant correction)
+        - If there is no stimulator data, theta\_det is not corrected. (2710/4324 bolos are corrected.)
+    - theta\_det\_err : detector angle error (but it is NOT correct now.)
+    - Stimulator data used for the correction is also included.
+
+output\_ver5
+------------
+  - version description: DB with each wire angle demod data [(x,y) in demode complex plane]
+    - reproduce from demod fit in ver3
+
 
 ## run scripts
- - (plot.sh: make plot of TODs)
+ - (./plot.sh: make plot of TODs)
 
- - analysis.sh
+ - ./analysis.sh
     - From demod to fit circle
 
- - run\_batch.py
+ - python3 run\_batch.py
     - Run demod & fit for many detectors by using batch job
 
 
@@ -75,9 +103,10 @@ Please intall them by
         - aho.csv : converted from pandas of bolometers with varname!=varname2
 
 - compare\_DB\_for\_labelcorrection.py
-    - compare wiregrid DB and kyohei's DB to find mislabel bolometers.
+    - compare wiregrid DB and Kyohei's DB to find mislabel bolometers.
     - make a new sqlite DB with corrected pol\_angle,pixel\_type,bolo\_type on found mislabeled bolometers by wiregrid DB
         - base DB : my wire grid DB
+    - add Kyohei's det\_offset\_x/y datas 
     - input : 
         - my wiregrid DB                 : output_verX/db/all_pandas.db
         - kyohei's corrected hardware map: data/ykyohei/mapping/pb2a_mapping_postv2.db
@@ -124,20 +153,22 @@ Please intall them by
         - 2D plot: theta_det_angle (wiregrid measured angle) v.s. pol_angle (design value) for good data (tau!=nan, theta_det_err<0.5deg, pol_angle!=nan) 
         - 2D plot: theta_det_angle (wiregrid measured angle) v.s. pol_angle (design value) for correct labels
         - 1D plot: diff. between measured angle(theta_det_angle) and design angle(pol_angle)
+    - make focal plane plot
     - input : output\_ver4/db/all\_pandas\_correct\_label.db
     - output: out\_check\_absolute/check\_absolute.png
 
 - check\_absolute\_labelcorrecteddb.py
     - make angle plots of DB with wiregrid corrected labels
     - input :
-        - output\_ver4/db/all\_pandas\_correct\_label.db
-          or 
-        - output\_ver4/db/all\_pandas.db
+        - output\_ver4/db/all\_pandas.db # No correction data
+        - output\_ver4/db/pb2a\_mapping\_corrected_label\_v2.db.db # Corrected data
     - output: out\_check\_absolute/check\_absolute\_labelcorrectedDB.png
 
 - check\_absolute\_nocorr.py
     - make angle plots of DB without wiregrid label correction
-    - input : output\_ver4/db/all\_pandas.db
+    - input : 
+        - output\_ver4/db/all\_pandas.db 
+        - data/ykyohei/mapping/pb2a\_mapping\_postv2.db
     - output: out\_check\_absolute/check\_absolute\_nocorr.png
 
 ### Others
@@ -145,5 +176,25 @@ Please intall them by
     - make histogram of wiregrid measured angels for each bolometer groups
     - input : output\_ver4/db/all\_pandas.pkl
     - output: output\_ver4/summary/\*.png
+
+- check\_jobs.py
+    - check if all the jobs run by bsub is finished successfully.
+        - check if error log is empty.
+        - check if 'error' word exists in the output log of fitDemodResult.py.
+        - check if 'error' word exists in the output log of grid_rotation_analysis_.py.
+    - output information :
+        0. # of all failed checks
+        1. # of failed checks except the error of "Function minimum is not valid." (Fmin error) 
+            - This number should be 0.
+            - "Function..." error is caused by failure of fit. It can be occurred by bad data and can be ignored.
+        2. # of memory limit error (TERM_MEMLIMIT)
+    - results :
+        - output_ver5 (only fitDemodResult.py)
+            0. # of all failed checks               = 88
+            1. # of failed checks except Fmin error = 1 
+                - bsub log error in ./output_ver5/txt/PB20.13.12/bsub/bsub_PB20.13.12_Comb15Ch26.out
+                - memory limit error (TERM_MEMLIMIT)
+                - It has been rerun successfully.
+            2. # of memory limit error = 1
 
 

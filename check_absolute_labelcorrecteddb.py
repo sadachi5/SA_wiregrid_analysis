@@ -8,8 +8,8 @@ from matplotlib import pyplot as plt;
 from lmfit.models import GaussianModel
 
 def check_absolute(outfile='out_check_absolute/check_absolute_labelcorrectedDB'):
-    #database_wiregrid = 'output_ver4/db/all_pandas.db';
-    database_wiregrid = 'output_ver4/db/all_pandas_correct_label.db';
+    database_wiregrid = 'output_ver4/db/all_pandas.db';
+    #database_wiregrid = 'output_ver4/db/all_pandas_correct_label.db';
     tablename_wiregrid = 'wiregrid';
     #columns_wiregrid   = 'readout_name,theta_det,theta_det_err,tau,tauerr';
     columns_wiregrid   = 'readout_name,theta_det,theta_det_err,tau';
@@ -233,7 +233,8 @@ def check_absolute(outfile='out_check_absolute/check_absolute_labelcorrectedDB')
     center2_ave = sum([ center.value for center in centers2])/float(len(centers2));
     center2_ave_err = np.sqrt(sum([ center.stderr**2. for center in centers2]))/float(len(centers2));
     axs[1][1].text(-20,20, 'Averaged center\n {:.2f} $\pm$ {:.2f}'.format(center2_ave,center2_ave_err), fontsize=10, color='tab:blue');
- 
+
+
  
     fig.savefig(outfile+'.png');
  

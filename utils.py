@@ -175,6 +175,15 @@ def rad_to_deg_pitopi(rad) : return np.multiply( thetapitopi(rad), 180./(np.pi) 
 # degree to radian
 def deg_to_rad(deg) : return np.multiply(deg, np.pi/180.);
 
+# degree range --> [0, 180]
+def deg0topi(deg,upper=180.) :
+    theta = deg_to_rad(deg);
+    upper_rad = deg_to_rad(upper);
+    theta = theta0topi(theta, upper_rad);
+    deg_new = rad_to_deg(theta);
+    return deg_new;
+
+
 
 # diff. between two angles (rad.)
 def diff_angle(rad1,rad2,upper90deg=True) :

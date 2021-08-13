@@ -1,5 +1,6 @@
 import os, sys
 import argparse;
+import gc
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -21,6 +22,7 @@ import lmfit;
 from LMfit import LMfit, getParamsValues;
 
 def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., usemK=False, out0=None, verbosity=0, ext='png', initalpha_frac=None, nLMfit=1, batchmode=False) :
+    print('##### fitDemodResult for {} ########################'.format(boloname));
 
     # initialize Out
     if out0==None : out = Out.Out(verbosity=verbosity);
@@ -124,7 +126,7 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
     exclude_indices = [];
     wireangles_rad = []; # rad
     for k, angleData in enumerate(angleDataList) :
-        # WARNING!!
+        # WARNING!! (take care about if it is rad. or deg.)
         angleDataList[k]['angle_deg'] = angleData['angle']; # deg
         angleDataList[k]['angle_rad'] = deg_to_rad(angleData['angle']); # rad
         if angleData['angle_deg'] in excludeAngle : # deg
@@ -333,7 +335,7 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
 
     
     # Make funciton of the fitted circle
-    delta = 1.;
+    delta = 1. if r>1. else r;
     xrange = np.arange(-r*1.2,r*1.2,delta);
     yrange = np.arange(-r*1.2,r*1.2,delta);
     X,Y = np.meshgrid(xrange, yrange);
@@ -473,6 +475,19 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
            ['theta_det'     , 'REAL'    , theta0to2pi(2.*np.pi-mean_theta_wire0)/2.    ], # ver3
            ['theta_det_err' , 'REAL'    , mean_theta_wire0_err/2.], # ver3
            ];
+    # add info for each wire angles
+    for k, angleData in enumerate(angleDataList) :
+        deg  = '{}'.format(angleData['angle_deg']);
+        x    = reals[k];
+        xerr = reals_err[k];
+        y    = imags[k];
+        yerr = imags_err[k];
+        columns.append(['[x_{}deg]'    .format(deg), 'REAL', x   ]);
+        columns.append(['[x_err_{}deg]'.format(deg), 'REAL', xerr]);
+        columns.append(['[y_{}deg]'    .format(deg), 'REAL', y   ]);
+        columns.append(['[y_err_{}deg]'.format(deg), 'REAL', yerr]);
+        out.OUT('Add columns of x/x_err/y/y_err_{}deg'.format(deg),0);
+        pass;
 
 
     out.OUT('Saving database ({}.db)...'.format(outdbpath),0);
@@ -512,6 +527,40 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
     pickle.dump(columns,outfile);
     outfile.close();
 
+    # delete objects
+    pklfile.close();
+    del pklfile;
+    del angleDataList
+    del reals_org     
+    del reals_err_org 
+    del imags_org     
+    del imags_err_org 
+    del mags_org      
+    del mags_err_org  
+    del reals_mK_org     
+    del reals_mK_err_org 
+    del imags_mK_org     
+    del imags_mK_err_org 
+    del mags_mK_org      
+    del mags_mK_err_org  
+    del fitfunc
+    del createfitsquare
+    del createfitsquareLM
+    del x_fit, xerr_fit, y_fit, yerr_fit;
+    del rtheta_tmp;
+    del resid;
+    del params;
+    del result;
+    del lmfit_result;
+    del fitsquare;
+    del fitRThetas;
+    del xrange, yrange, X, Y, Z;
+    del figres, axsres 
+    del theta_wires, d_thetas, d_theta_errs;
+    del columns;
+    del cursor, conn, outfile;
+
+    gc.collect();
 
     return 0;
 
@@ -559,26 +608,74 @@ if __name__=='__main__' :
 
     args = parser.parse_args();
 
-    boloname = args.boloname;
-    pickledir = args.pickledir;
-    picklname= args.picklename;
-    pickleprefix= args.pickleprefix;
-    picklesuffix= args.picklesuffix;
-    if picklename is None : picklename = '{}{}{}.pkl'.format(pickleprefix, boloname, picklesuffix);
-    outdir   = args.outdir;
-    outname  = args.outname;
-    outprefix= args.outprefix;
-    outsuffix= args.outsuffix;
-    if outname is None : outname = '{}{}{}'.format(outprefix, boloname, outsuffix);
-    ext      = args.ext;
+    # List arguments
+    bolonames = args.boloname.split(',');
+    Nbolo     = len(bolonames);
+    pickledirs = args.pickledir.split(',');
+    if args.picklename is None :
+        pickleprefixs= args.pickleprefix.split(',');
+        picklesuffixs= args.picklesuffix.split(',');
+        Ntmp = len(pickleprefixs);
+        if Ntmp<Nbolo: pickleprefixs.extend([pickleprefixs[-1]]*(Nbolo-Ntmp));
+        Ntmp = len(picklesuffixs);
+        if Ntmp<Nbolo: picklesuffixs.extend([picklesuffixs[-1]]*(Nbolo-Ntmp));
+        picklenames = [];
+        for n, boloname in enumerate(bolonames) :
+            picklenames.append('{}{}{}.pkl'.format(pickleprefixs[n], boloname, picklesuffixs[n]));
+            pass;
+    else :
+        picklenames= args.picklename.split(',');
+        pass;
+    outdirs   = args.outdir.split(',');
+    if args.outname is None :
+        outprefixs= args.outprefix.split(',');
+        outsuffixs= args.outsuffix.split(',');
+        Ntmp = len(outprefixs);
+        if Ntmp<Nbolo: outprefixs.extend([outprefixs[-1]]*(Nbolo-Ntmp));
+        Ntmp = len(outsuffixs);
+        if Ntmp<Nbolo: outsuffixs.extend([outsuffixs[-1]]*(Nbolo-Ntmp));
+        outnames = [];
+        for n, boloname in enumerate(bolonames) :
+            outnames.append('{}{}{}'.format(outprefixs[n], boloname, outsuffixs[n]));
+            pass;
+    else :
+        outnames = args.outname.split(',');
+        pass;
+    initalpha_fracs = args.initalpha_frac;
+    initalpha_fracs = [None] if args.initalpha_frac is None else [ (float)(tmp) for tmp in initalpha_frac.split(',')] ;
 
-    initalpha_frac = args.initalpha_frac;
+    # Single-value arguments
+    ext      = args.ext;
     refAngle = args.refAngle;
     excludeAngle = [] if args.excludeAngle is None else [ float(angle) for angle in args.excludeAngle.split(',') ];
 
     batchmode= args.batchmode;
     verbosity= args.verbosity;
 
-    main(pickledir+'/'+picklename, boloname=boloname, usemK=True, refAngle=refAngle, outdir=outdir, outname=outname, excludeAngle=excludeAngle, ext=ext, verbosity=verbosity, initalpha_frac=initalpha_frac, batchmode=batchmode);
+    # Check size of list arguments
+    Ntmp = len(pickledirs);
+    if Ntmp<Nbolo: pickledirs.extend([pickledirs[-1]]*(Nbolo-Ntmp));
+    Ntmp = len(picklenames);
+    if Ntmp<Nbolo: picklenames.extend([picklenames[-1]]*(Nbolo-Ntmp));
+    Ntmp = len(outdirs);
+    if Ntmp<Nbolo: outdirs.extend([outdirs[-1]]*(Nbolo-Ntmp));
+    Ntmp = len(outnames);
+    if Ntmp<Nbolo: outnames.extend([outnames[-1]]*(Nbolo-Ntmp));
+    Ntmp = len(initalpha_fracs);
+    if Ntmp<Nbolo: initalpha_fracs.extend([initalpha_fracs[-1]]*(Nbolo-Ntmp));
+
+
+    # Loop over bolonames
+    for n, boloname in enumerate(bolonames) :
+        try : 
+            main(pickledirs[n]+'/'+picklenames[n], boloname=boloname, usemK=True, refAngle=refAngle, outdir=outdirs[n], outname=outnames[n], excludeAngle=excludeAngle, ext=ext, verbosity=verbosity, initalpha_frac=initalpha_fracs[n], batchmode=batchmode);
+        except Exception as e:
+            print('####################################################################################');
+            print('ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!');
+            print(' ####Error#### for {}: {}'.format(boloname, e));
+            print('ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!');
+            print('####################################################################################');
+            pass;
+        pass;
     pass;
 

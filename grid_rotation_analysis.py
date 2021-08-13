@@ -250,7 +250,20 @@ def plotAll(angleDataList, db_theta=None, outdir='aho', outname='aho', pickledir
             # Plot cosmetic
             axs[0].set_title('WHWP angle');
             axs[0].set_xlabel('WHWP angle [deg.]');
+            #axs[0].set_title('HWP angle');
+            #axs[0].set_xlabel('HWP angle [deg.]');
             axs[0].set_ylabel('ADC output');
+            """
+            # For SHORT width plot
+            axs[0].set_xlim(0.,90.);
+            if j==0 :
+                bounds = list(axs[0].get_position().bounds);
+                print('bounds = ', bounds);
+                bounds[2] = bounds[2]*0.25;
+                axs[0].set_position(bounds);
+                pass;
+            """
+
             axs[0].grid(True);
             axs[0].legend(mode = 'expand',loc='upper left',bbox_to_anchor=(1.05,0.1),framealpha = 1,frameon = False,fontsize = 7,title='',borderaxespad=0.);
 

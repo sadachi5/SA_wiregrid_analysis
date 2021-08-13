@@ -2,20 +2,26 @@ import os, sys
 import time
 import subprocess
 import numpy as np
+import copy
 
 import libg3py3 as libg3
 
 doRun = True;
 doGridAna = False;
 doFit     = True;
+# Number of bolometers in one job
+Nbolobunch= 50; 
+# Arguments of multiple blometers are implemented only in Fit but not in GridAna.
+# So please doGridAna=False if Nbolobunch>1.
+
 ignoreFileExist = False;
 
 # All
 wafers=['PB20.13.13', 'PB20.13.15', 'PB20.13.28', 'PB20.13.11', 'PB20.13.12', 'PB20.13.10', 'PB20.13.31'];
-#wafers=['PB20.13.13'];
+#wafers=['PB20.13.10'];
 
 outdir1='output_ver2';
-outdir2='output_ver3';
+outdir2='output_ver5';
 #filename='/group/cmb/polarbear/data/pb2a/g3compressed/22300000_v05/Run22300609';
 filename='/group/cmb/polarbear/usr/sadachi/SparseWireCalibration/PB2a/g3compressed/Run22300609/';
 selections=[];
@@ -58,41 +64,61 @@ def runJob(maxNjob=50) :
         if not os.path.isdir(txtfitdir)     : os.makedirs(txtfitdir);
     
         # loop over bolos :
-        Njob = 0;
+        bolobunches = [];
+        bolobunch   = [];
         for bolo in bolos :
-            scriptfilename = '{}/{}.sh'.format(scriptdir, bolo);
-            txtgridana     = '{}/{}.out'.format(txtgridanadir, bolo);
-            txtfit         = '{}/{}.out'.format(txtfitdir, bolo);
+            print(bolo);
+            if (not bolo in selections) and len(selections)>0 : continue;
+            bolobunch.append(bolo);
+            if len(bolobunch)==Nbolobunch :
+                bolobunches.append(copy.copy(bolobunch));
+                bolobunch.clear();
+                pass;
+            pass;
+        print(bolobunches);
+
+        # loop over bolobunches :
+        Njob = 0;
+        for bolobunch in bolobunches :
+            bolo0 = bolobunch[0];
+            scriptfilename = '{}/{}.sh'.format(scriptdir, bolo0);
+            txtgridana     = '{}/{}.out'.format(txtgridanadir, bolo0);
+            txtfit         = '{}/{}.out'.format(txtfitdir, bolo0);
             #print('Creating script file: {}'.format(scriptfilename));
             scriptfile     = open(scriptfilename, 'w');
             commands='#!/bin/bash\ncd {};\n. ./env-shell.sh;\n'.format(os.environ['PWD']);
+
+            bolonames = ','.join(bolobunch);
+            plotdirs  = ','.join([ plotdir+'/'+bolo for bolo in bolobunch ]);
             if doGridAna :
                 commands += \
                 'python3 grid_rotation_analysis.py \
-                -b \"{boloname}\" -o \"{prefix}\" -f \"{filename}\" \
-                -d \"{plotdir}/{boloname}\" -p \"{pickledir}\" --loadpickledir \"{pickledir}\" \
+                -b \"{bolonames}\" -o \"{prefix}\" -f \"{filename}\" \
+                -d \"{plotdirs}\" -p \"{pickledir}\" --loadpickledir \"{pickledir}\" \
                 2>&1>& {txtout};\n'.format(\
-                boloname=bolo, filename=filename, \
-                plotdir=plotdir, pickledir=pickledir, prefix=prefix, \
+                bolonames=bolonames, filename=filename, \
+                plotdirs=plotdirs, pickledir=pickledir, prefix=prefix, \
                 txtout=txtgridana);
                 pass;
             if doFit :
                 commands += \
                 'python3 fitDemodResult.py \
-                -b \"{boloname}\" -p \"{pickledir}\" --pickleprefix \"{prefix}\" --picklesuffix \"\" \
+                -b \"{bolonames}\" -p \"{pickledir}\" --pickleprefix \"{prefix}\" --picklesuffix \"\" \
                 -d \"{outdir}\" --outprefix \"Fit_\" --outsuffix \"\" -v 1 \
                 2>&1>& {txtout};\n'.format(\
-                boloname=bolo, pickledir=pickledir, outdir=outdir2, prefix=prefix, txtout=txtfit)
+                bolonames=bolonames, pickledir=pickledir, outdir=outdir2, prefix=prefix, txtout=txtfit)
                 pass;
     
             scriptfile.write(commands);
     
-            command = 'bsub -q cmb_px "source {script} > {txtdir}/bsub_{boloname}.log 2>&1"'.format(script=scriptfilename, txtdir=txtbsubdir, boloname=bolo);
+            # -q : queue (cmb_px : long time & large memory)
+            # -oo: output file for stdout (overwrite the file)
+            # -eo: output file for stderr (overwrite the file)
+            command = 'bsub -q cmb_px -oo {txtdir}/bsub_{boloname}.out -eo {txtdir}/bsub_{boloname}.err  "source {script} 2>&1> {txtdir}/bsub_{boloname}.log"'.format(script=scriptfilename, txtdir=txtbsubdir, boloname=bolo0);
             print(command);
             if doRun:
-                if (not bolo in selections) and len(selections)>0 : continue;
                 if os.path.isfile(txtfit) and ignoreFileExist :
-                    print('WARNING! {} is ignored because {} exists.'.format(bolo, txtfit));
+                    print('WARNING! {} is ignored because {} exists.'.format(bolonames, txtfit));
                     continue;
                 Njob = len(subprocess.getoutput('bjobs').split('\n')) - 1;
                 while Njob>maxNjob :

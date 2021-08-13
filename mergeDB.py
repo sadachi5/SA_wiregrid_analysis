@@ -18,11 +18,12 @@ def getSQLColumnDefs(con, cur, tablename, verbose=0):
       default= column[4];
       pk     = column[5];
     
+      if name.endswith('deg') and '.' in name: name = '[{}]'.format(name);
       columndef = '{} {}'.format(name, ctype);
       if notnull : columndef += ' NOT NULL';
       if not default is None : columndef += ' DEFAULT {}'.format(default);
       if pk      : columndef += ' PRIMARY KEY';
-      else       : notPrimaryColumns.append(name);
+      else       : notPrimaryColumns.append('{}'.format(name));
     
       print('column definition : {}'.format(columndef));
       columndefs.append(columndef);
@@ -75,6 +76,7 @@ def mergeDB(newfile, filenames, tablename, verbose=0) :
         # Insert data  from attached file
         insertcmd = 'INSERT INTO {table}({columns}) SELECT {columns} FROM file{i}.{table}'\
             .format(table=tablename, columns=insertColumns, i=i);
+        #print(insertcmd);
         cur.execute(insertcmd);
         con.commit();
         # Detach the input file
@@ -83,6 +85,7 @@ def mergeDB(newfile, filenames, tablename, verbose=0) :
         pass;
     
     # Close the new file
+    print(cur);
     cur.close()
     con.close()
     
@@ -92,8 +95,8 @@ def mergeDB(newfile, filenames, tablename, verbose=0) :
     print('{} in {} :'.format(tablename, newfile));
     cur.execute("SELECT * FROM sqlite_master WHERE type='table'");
     print('    tables = {}'.format(cur.fetchall()));
-    cur.execute('SELECT * FROM {}'.format(tablename));
-    print('    {}'.format(cur.fetchall()));
+    #cur.execute('SELECT * FROM {}'.format(tablename));
+    #print('    {}'.format(cur.fetchall()));
     cur.close();
     con.close();
 
@@ -341,20 +344,22 @@ def mergeAllDB(inputdir, newfile, ispickle=True, tablename='wiregrid', verbose=1
 if __name__=='__main__' :
     tablename = 'wiregrid'
     #inputdir = './output_ver2';
-    inputdir = './output_ver3';
+    #inputdir = './output_ver3';
+    inputdir = './output_ver5';
     oldfile = '{}/db/all'.format(inputdir);
     #inputdir = '/home/cmb/sadachi/analysis_2021/output_ver2';
     #inputdir = '/Users/shadachi/Experiment/PB/analysis/analysis_2021/output_ver2';
     #newfile = '{}/db/all'.format(inputdir);
-    newfile = 'output_ver4/db/all';
+    #newfile = 'output_ver4/db/all';
+    newfile = 'output_ver5/db/all';
     doModify = False;
     doTauCalib = True;
     verbose = 1;
     
     # merge sqlite3 db files
-    #mergeAllDB(inputdir=inputdir, newfile=newfile, ispickle=False, tablename=tablename, verbose=verbose);
-    # modify table (boloname "???" --> ???, column: boloname NUM-->readout TEXT)
+    mergeAllDB(inputdir=inputdir, newfile=newfile, ispickle=False, tablename=tablename, verbose=verbose);
 
+    # modify table (boloname "???" --> ???, column: boloname NUM-->readout_name TEXT)
     if doModify : modifySQL(sqlfile=oldfile+'.db', newfile=oldfile+'_mod.db', tablename=tablename, verbose=verbose);
     # convert the merged sqlite3 db to pandas data (in a pickle file)
     convertSQLtoPandas(sqlfile=oldfile+('_mod.db' if doModify else '.db'), outputfile=newfile+'_pandas', tablename=tablename, verbose=verbose, doTauCalib=doTauCalib,
