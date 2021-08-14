@@ -1,6 +1,7 @@
 .*
 _*
 *.pyc
+*.out
 out*/
 out*/*
 plot*/

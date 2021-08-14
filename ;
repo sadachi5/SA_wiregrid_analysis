@@ -465,15 +465,14 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
 
         selection_sets = [
                 {'outname':'', 'sels':[''], 'labels':['']},
-                {'outname':'_pixel-handed', 'sels':["pixel_handedness=='A'", "pixel_handedness=='B'"], 'labels':['pixel A', 'pixel B'     ]},
-                {'outname':'_bolo-TB'     , 'sels':["bolo_type=='T'"       , "bolo_type=='B'"       ], 'labels':['Top bolo', 'Bottom bolo']},
-                {'outname':'_pixel-UQ'    , 'sels':["pixel_type=='U'"      , "pixel_type=='Q'"      ], 'labels':['U pixel' , 'Q pixel'    ]},
+                #{'outname':'_pixel-handed', 'sels':["pixel_handedness=='A'", "pixel_handedness=='B'"], 'labels':['pixel A', 'pixel B'     ]},
+                #{'outname':'_bolo-TB'     , 'sels':["bolo_type=='T'"       , "bolo_type=='B'"       ], 'labels':['Top bolo', 'Bottom bolo']},
+                #{'outname':'_pixel-UQ'    , 'sels':["pixel_type=='U'"      , "pixel_type=='Q'"      ], 'labels':['U pixel' , 'Q pixel'    ]},
                 {'outname':'_band'        , 'sels':["band==90"             , "band==150"            ], 'labels':['90 GHz'  , '150 GHz'    ]},
                 {'outname':'_polangle0-45-90'  , 'sels':["pol_angle==0" , "pol_angle==45", "pol_angle==90" ], 'labels':['0 deg'  , '45 deg', '90 deg' ]},
                 {'outname':'_polangle15-60-105', 'sels':["pol_angle==15", "pol_angle==60", "pol_angle==105"], 'labels':['15 deg' , '60 deg', '105 deg']},
                 {'outname':'_polangle135-150'  , 'sels':["pol_angle==135", "pol_angle==150"], 'labels':['135 deg', '150 deg']},
                 {'outname':'_tau10', 'sels':['tau*1000.<10.', 'tau*1000.>=10.'], 'labels':['tau>10 msec', 'tau<10 msec']},
-                {'outname':'_FPpos', 'sels':['det_offset_x<det_offset_y', 'det_offset_x>=det_offset_y'], 'labels':['Right top in FP', 'Left bottom in FP']},
                 ];
         
         
@@ -490,56 +489,28 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
             r_ratio_set = [];
             r_ratio_mean_set = [];
             r_ratio_std_set = [];
-            theta_set = [];
-            theta_err_set = [];
-            theta_diff_set = [];
-            theta_diff_mean_set = [];
-            theta_diff_std_set = [];
             for df in dfs :
                 rs = [];
                 r_errs = [];   
                 r_ratios = [];
                 r_ratio_means = [];
                 r_ratio_stds  = [];
-                thetas = [];
-                theta_errs = [];
-                theta_diffs = [];
-                theta_diff_means = [];
-                theta_diff_stds = [];
                 for n, angle in enumerate(wire_angles) :
                     r       = df[columns_r[n]      ];
                     r_err   = df[columns_r_err[n]  ];
                     r_ratio = df[columns_r_ratio[n]];
-                    theta      = df[columns_theta[n]     ];
-                    theta_err  = df[columns_theta_err[n] ];
-                    theta_diff = df[columns_theta_diff[n]];
                     rs.append(r);
                     r_errs.append(r_err);
                     r_ratios.append(r_ratio);
                     r_ratio_means.append(np.mean(r_ratio));
                     r_ratio_stds .append(np.std(r_ratio));
-                    thetas.append(theta);
-                    theta_errs.append(theta_err);
-                    theta_diffs.append(theta_diff);
-                    theta_diff_means.append(np.mean(theta_diff));
-                    theta_diff_stds .append(np.std(theta_diff));
                     pass;
                 r_set.append(rs);
                 r_err_set.append(r_errs);
                 r_ratio_set.append(r_ratios);
                 r_ratio_mean_set.append(r_ratio_means);
                 r_ratio_std_set.append(r_ratio_stds);
-                theta_set.append(thetas);
-                theta_err_set.append(theta_errs);
-                theta_diff_set.append(theta_diffs);
-                theta_diff_mean_set.append(theta_diff_means);
-                theta_diff_std_set.append(theta_diff_stds);
                 pass;
-
-
-            #########################
-            # r for each wire angle #
-            #########################
 
             i_figs = 3;
             j_figs = 4;
@@ -568,7 +539,7 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
             axs2[0][nsel].grid(True);
             axs2[0][nsel].legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 10,title='',borderaxespad=0.,labelspacing=1.0);
             axs2[0][nsel].set_title(r'Signal power ($r$) ratio for each wire angles');
-            axs2[0][nsel].set_xlabel(r'Wire angle [deg.]',fontsize=16);
+            axs2[0][nsel].set_xlabel(r'$\theta _{\mathrm{wire}}$',fontsize=16);
             axs2[0][nsel].set_ylabel(r'$r(\theta _{\mathrm{wire}})/r_{\mathrm{circle}} \pm $ std.',fontsize=16);
          
          
@@ -601,99 +572,20 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
                 __axs2.set_title(r'Signal power ($r$) ratio: {} deg.'.format(angle));
                 __axs2.set_xlabel(r'$r(\theta _{\mathrm{wire}})/r_{\mathrm{circle}}$ for $\theta_{\mathrm{wire}}=$'+'{} deg.'.format(angle),fontsize=16);
                 __axs2.set_ylabel(r'# of bolometers',fontsize=16);
+                __axs2.text
                 __xlim = __axs2.get_xlim();
                 __ylim = __axs2.get_ylim();
                 for s, slabel in enumerate(slabels) :
                     __nbolo = len(__r_ratio_set_nangle[s]);
                     print('# of bolos for {} = {}'.format(slabel, __nbolo));
-                    __axs2.text(__xlim[0]+0.05,__ylim[1]*(0.35-0.05*s), 'Mean for {:10s} = {:.3f} +- {:.3f} (std.) ({} bolos)'.format(slabel, r_ratio_mean_set[s][n], r_ratio_std_set[s][n], __nbolo), 
+                    __axs2.text(xlim[0]+0.05,ylim[1]*(0.35-0.05*s), 'Mean for {:10s} = {:.3f} +- {:.3f} (std.) ({} bolos)'.format(slabel, r_ratio_mean_set[s][n], r_ratio_std_set[s][n], __nbolo), 
                             fontsize=10, color='tab:blue');
                     pass;
                 pass;
          
          
-            print('savefig to '+outfile+'_eachwire-r{}.png'.format(selection_set['outname']));
-            fig2.savefig(outfile+'_eachwire-r{}.png'.format(selection_set['outname']));
-
-
-            #############################
-            # theta for each wire angle #
-            #############################
-
-            i_figs = 3;
-            j_figs = 4;
-            fig2, axs2 = plt.subplots(i_figs,j_figs);
-            fig2.set_size_inches(6*j_figs,6*i_figs);
-            #fig2.tight_layout(rect=[0,0,1,1]);
-            plt.subplots_adjust(wspace=0.3, hspace=0.3, left=0.15, right=0.95,bottom=0.15, top=0.95)
-         
-            # All histograms of theta - theta0 - angle*2 (theta_diff from expected one) for each wire angles
-            stacked=False;
-            for s in range(nsel) :
-                axs2[0][s].hist(theta_diff_set[s], bins=100, range=(-10,10), histtype='stepfilled',
-                    align='mid', orientation='vertical', log=False, linewidth=0.5, linestyle='-', edgecolor='k',
-                    color=colors[0:len(theta_diff_set[s])], alpha=0.4, label=alabels, stacked=stacked);
-                axs2[0][s].legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 10,title='',borderaxespad=0.,labelspacing=1.0);
-                axs2[0][s].grid(True);
-                axs2[0][s].set_title(r'Theta diff. from expected one for {}'.format(slabels[s])+ ( '(Stacked)' if stacked else '(Not stacked)'));
-                axs2[0][s].set_xlabel(r'$\theta_{\mathrm{meas.}} - \theta_{\mathrm{exp.}}$ for each angle [deg.]',fontsize=16);
-                axs2[0][s].set_ylabel(r'# of bolometers',fontsize=16);
-                pass;
-              
-            # Plots of wire angle v.s. theta_diff mean
-            for s in range(nsel) :
-                axs2[0][nsel].errorbar(wire_angles, theta_diff_mean_set[s], yerr=theta_diff_std_set[s], c=colors[s], marker='o', markersize=3.,capsize=2.,linestyle='',label=slabels[s]);
-                pass;
-            axs2[0][nsel].grid(True);
-            axs2[0][nsel].legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 10,title='',borderaxespad=0.,labelspacing=1.0);
-            axs2[0][nsel].set_title(r'Theta diff. from expected one for {}'.format(slabels[s])+ ( '(Stacked)' if stacked else '(Not stacked)'));
-            axs2[0][nsel].set_xlabel(r'Wire angle [deg.]',fontsize=16);
-            axs2[0][nsel].set_ylabel(r'$\theta_{\mathrm{meas.}} - \theta_{\mathrm{exp.}}$ for each angle [deg.]',fontsize=16);
-         
-         
-            # Each histogram of r/r0 (theta_diff) for each wire angles
-            for n, angle in enumerate(wire_angles) :
-                i = (int)(n/j_figs) +1;
-                j = n%j_figs;
-
-                #theta_diff_set_nangle = [ theta_diffs[n] for theta_diffs in theta_diff_set ];
-                __theta_diff_set_nangle = np.array(theta_diff_set)[:,n];
-                __colors = colors[n*nsel:n*nsel+nsel];
-                __labels = slabels;
-                # if only one dataset
-                if len(__theta_diff_set_nangle)==1:
-                    __datas    = __theta_diff_set_nangle[0];
-                    __colors   = __colors[0];
-                    __labels   = __labels[0];
-                else :
-                    __datas  = __theta_diff_set_nangle;
-                    pass;
-                print(__theta_diff_set_nangle);
-                #print('colors =', __colors);
-         
-                __axs2 = axs2[i][j];
-                __axs2.hist(__datas, bins=100, range=(-10,10), histtype='stepfilled',
-                    align='mid', orientation='vertical', log=False, linewidth=0.5, linestyle='-', edgecolor='k',
-                    color=__colors, alpha=0.4, label=__labels, stacked=False);
-                __axs2.legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 10,title='',borderaxespad=0.,labelspacing=1.0);
-                __axs2.grid(True);
-                __axs2.set_title(r'Theta diff. from expected one: {} deg'.format(angle));
-                __axs2.set_xlabel(r'$\theta_{\mathrm{meas.}} - \theta_{\mathrm{exp.}}$' + ' for {} deg. wire [deg.]'.format(angle),fontsize=16);
-                __axs2.set_ylabel(r'# of bolometers',fontsize=16);
-                __xlim = __axs2.get_xlim();
-                __ylim = __axs2.get_ylim();
-                for s, slabel in enumerate(slabels) :
-                    __nbolo = len(__theta_diff_set_nangle[s]);
-                    print('# of bolos for {} = {}'.format(slabel, __nbolo));
-                    __axs2.text(__xlim[0]+1.,__ylim[1]*(0.3-0.05*s), 'Mean for {:10s} = {:.3f} +- {:.3f} (std.) ({} bolos)'.format(slabel, theta_diff_mean_set[s][n], theta_diff_std_set[s][n], __nbolo), 
-                            fontsize=10, color='tab:blue');
-                    pass;
-                pass;
-         
-         
-            print('savefig to '+outfile+'_eachwire-theta{}.png'.format(selection_set['outname']));
-            fig2.savefig(outfile+'_eachwire-theta{}.png'.format(selection_set['outname']));
-
+            print('savefig to '+outfile+'_eachwire{}.png'.format(selection_set['outname']));
+            fig2.savefig(outfile+'_eachwire{}.png'.format(selection_set['outname']));
             pass;
         pass;
 

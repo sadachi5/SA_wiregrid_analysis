@@ -144,8 +144,10 @@ if __name__=='__main__' :
     #outdir   = 'output_ver2/summary';
     #database = 'output_ver3/db/all_pandas.pkl';
     #outdir0  = 'output_ver3/summary';
-    database = 'output_ver4/db/all_pandas.pkl';
-    outdir0  = 'output_ver4/summary';
+    #database = 'output_ver4/db/all_pandas.pkl';
+    #outdir0  = 'output_ver4/summary';
+    database = 'output_ver5/db/all_pandas.pkl';
+    outdir0  = 'output_ver5/summary';
     wafers=['13.13', '13.15', '13.28', '13.11', '13.12', '13.10', '13.31'];
     nbins = 360*1;
     ext = 'png';
