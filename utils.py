@@ -1,5 +1,5 @@
 
-colors = ['tab:blue','tab:orange','tab:green','tab:red','tab:purple','tab:brown','tab:pink','tab:olive','tab:cyan','tab:gray','red','royalblue','turquoise','darkolivegreen', 'magenta', 'blue', 'green'];
+colors = ['tab:blue','tab:orange','tab:green','tab:red','tab:purple','tab:brown','tab:pink','tab:olive','tab:cyan','tab:gray','red','royalblue','turquoise','darkolivegreen', 'magenta', 'blue', 'green']*5;
 
 ## plottmp() ##
 import os;
@@ -157,7 +157,7 @@ def thetapitopi(theta) :
 # theta range --> [0, 2pi]
 def theta0to2pi(theta) :
     return np.arctan2(-np.sin(theta),-np.cos(theta))+np.pi;
-# theta range --> [0, pi]
+# theta range --> [0, pi] or [upper-pi, upper] 
 def theta0topi(theta,upper=np.pi) :
     theta2 = np.multiply(theta, 2.);
     theta  = np.multiply(theta0to2pi(theta2),0.5);
@@ -175,17 +175,21 @@ def rad_to_deg_pitopi(rad) : return np.multiply( thetapitopi(rad), 180./(np.pi) 
 # degree to radian
 def deg_to_rad(deg) : return np.multiply(deg, np.pi/180.);
 
-# degree range --> [0, 180]
-def deg0topi(deg,upper=180.) :
+# degree range --> [0, 180] or [upper-pi, upper]
+def deg0to180(deg,upper=180.) :
     theta = deg_to_rad(deg);
     upper_rad = deg_to_rad(upper);
-    theta = theta0topi(theta, upper_rad);
+    theta = theta0topi(theta, upper_rad); # [upper-pi, upper]
     deg_new = rad_to_deg(theta);
     return deg_new;
 
+# degree range --> [-90, 90]
+def deg90to90(deg) :
+    deg_new = deg0to180(deg, 90.);
+    return deg_new;
 
 
-# diff. between two angles (rad.)
+# diff. between two angles (rad.) [0, pi/2] or [0, pi]
 def diff_angle(rad1,rad2,upper90deg=True) :
     diff = np.arccos(np.cos(rad1-rad2));
     if upper90deg : 
@@ -213,7 +217,8 @@ def between(x,y,xmin,xmax) :
 import math;
 def calculateRTheta(x,y,xerr=None,yerr=None) :
     r     = np.sqrt( np.power(x,2.) + np.power(y,2.) );
-    theta = math.atan2(y,x); # atan2 returns [-pi,pi]
+    #theta = math.atan2(y,x); # atan2 returns [-pi,pi]
+    theta = np.arctan2(y,x); # atan2 returns [-pi,pi]
     if xerr is None and yerr is None :
         return  [r, theta];
     else :
