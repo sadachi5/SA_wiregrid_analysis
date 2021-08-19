@@ -34,9 +34,10 @@ def checkspeed(indir, outdir='out_checkspeed', outname='HWP_speed.png') :
         v_getseconds = np.vectorize(getseconds);
         dt = v_getseconds(dt); # timedelta --> sec
         dangle=np.diff(angle)
-        dangle = dangle/(2.*np.pi)
+        dangle = dangle/(2.*np.pi) # rad. --> revo.
         dangle[dangle<-0.5] += 1
-        speed = np.divide(dangle, dt);
+        speed = np.divide(dangle, dt); # Hz = revo./sec
+        print('dangle<0 counts = {}'.format( (dangle<0.).sum() ));
         ave_speed = dangle.sum()/dt.sum();
         print('dt', dt);
         print('speed', speed);
@@ -80,7 +81,9 @@ def checkspeed(indir, outdir='out_checkspeed', outname='HWP_speed.png') :
         axs[1][0].set_ylabel('HWP Angle [deg.]');
         axs[1][0].set_xlim(0.,max_time_period);
 
-        axs[2][0].plot(time_period, angle_deg[k_start:]-ave_speed*360.*time_period, label=a, c=colors[i], linestyle='', linewidth=0., marker='o', markersize=0.5);
+        diff_angle_deg = angle_deg[k_start:]-ave_speed*360.*time_period;
+        print('ave. diff. angle deg. = {}'.format(np.mean(diff_angle_deg)));
+        axs[2][0].plot(time_period, diff_angle_deg, label=a, c=colors[i], linestyle='', linewidth=0., marker='o', markersize=0.5);
         if a==files[-1] : axs[2][0].plot([0.,np.max(time_period)], [0.,0.], c='k', linestyle='-', linewidth=1., marker='', markersize=0.);
         axs[2][0].legend();
         axs[2][0].grid(True);
@@ -96,6 +99,7 @@ def checkspeed(indir, outdir='out_checkspeed', outname='HWP_speed.png') :
         axs[0][1].set_xlim(0.,max_angle_deg);
 
 
+        #if i==0 :  for an in angle_deg : print(an);
         pass;
 
     fig.savefig('{}/{}'.format(outdir, outname));
