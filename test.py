@@ -297,7 +297,7 @@ plottmphist(datas,i='',outname='r_wt_different_theta_det_err',xlabel=r'$r$',ylab
 
 
 # Check diff of theta between circle and ellipse
-#'''
+'''
 import numpy as np;
 from utils import rad_to_deg, rad_to_deg_pitopi, deg_to_rad;
 theta = np.arange(0,2.*np.pi,deg_to_rad(22.5/2.));
@@ -320,5 +320,82 @@ plt.grid(True);
 plt.plot([-1000,1000.],[0,0],c='k',linewidth=1);
 plt.xlim(0,360);
 plt.savefig('aho.png');
-
 #'''
+
+
+
+# Check HWP rotation fluctuation
+#'''
+import numpy as np;
+from utils import plottmp, rad_to_deg, rad_to_deg_pitopi, deg_to_rad;
+from matplotlib import pyplot as plt;
+from Demod import Demod;
+import cmath;
+time = np.linspace(0.,0.,100*10+1);
+speed = 2.;
+tau   = 0.;
+#tau   = 0.01;
+HWP_theta = ((time-tau) * speed * 2.*np.pi)%(2.*np.pi);
+fluc_amp = deg_to_rad(0.5);
+theta_dfluc = fluc_amp * np.sin(2.*HWP_theta+deg_to_rad(45.));
+HWP_theta_wtfluc = HWP_theta + theta_dfluc;
+plottmp(time,rad_to_deg(HWP_theta),xlabel='Time',ylabel='HWP angle [deg.]',i=0,outname='HWP_angle',xlim=None, xtime=False);
+plottmp(time,rad_to_deg(theta_dfluc),xlabel='Time',ylabel='HWP angle fluc. [deg.]',i=0,outname='HWP_angle_dfulc',xlim=None, xtime=False);
+plottmp(rad_to_deg(HWP_theta),rad_to_deg(HWP_theta-HWP_theta_wtfluc),xlabel='HWP angle [deg.]',ylabel='HWP angle - HWP angle wt fluc. [deg.]',i=0,outname='HWP_angle_vs_dfulc',xlim=None, xtime=False);
+
+
+demod = Demod(time, HWP_theta);
+demod_wtfluc = Demod(time, HWP_theta_wtfluc);
+
+i_figs = 3;
+j_figs = 3;
+fig, axs = plt.subplots(i_figs,j_figs);
+fig.set_size_inches(6*j_figs,6*i_figs);
+plt.subplots_adjust(wspace=0.3, hspace=0.3, left=0.15, right=0.95,bottom=0.15, top=0.95)
+
+y_demods = [];
+y_demods_wtfluc = [];
+phis = [];
+phis_wtfluc = [];
+
+wire_angles = np.linspace(0.,180.,8+1)[0:8];
+wire_amp = 1.;
+for n, wire_angle in enumerate(wire_angles) :
+    wire_theta = deg_to_rad(wire_angle);
+    tod        = wire_amp*np.sin(4.*HWP_theta-2.*wire_theta);
+    tod_wtfluc = wire_amp*np.sin(4.*HWP_theta_wtfluc-2.*wire_theta);
+
+    y_demod = demod.demod(tod,HWP_theta,4.,narrow=True,theta_det=0.);
+    y_demod_wtfluc = demod_wtfluc.demod(tod_wtfluc,HWP_theta_wtfluc,4.,narrow=True,theta_det=0.);
+    y_demods.append(y_demod);
+    y_demods_wtfluc.append(y_demod_wtfluc);
+    phis.append(cmath.phase(np.mean(y_demod)));
+    phis_wtfluc.append(cmath.phase(np.mean(y_demod_wtfluc)));
+
+    i = (int)(n/3);
+    j = n%3;
+    axs[i][j].plot(time, tod, label='TOD' , c='k', linewidth=0.5, linestyle='-');
+    axs[i][j].plot(time, tod_wtfluc, label='TOD wt fluc.' , c='k', linewidth=0.5, linestyle='--');
+    axs[i][j].plot(time, y_demod_wtfluc.real, label='real wt fluc.' , c='r', linewidth=1., linestyle='-');
+    axs[i][j].plot(time, y_demod_wtfluc.imag, label='imag. wt fluc.', c='r', linewidth=1., linestyle='--');
+    axs[i][j].plot(time, y_demod.real, label='real' , c='tab:blue', linewidth=1., linestyle='-');
+    axs[i][j].plot(time, y_demod.imag, label='imag.', c='tab:blue', linewidth=1., linestyle='--');
+    axs[i][j].grid(True);
+    axs[i][j].legend();
+    axs[i][j].set_ylim(-1.2*wire_amp, 1.2*wire_amp);
+
+    axs[2][2].scatter(np.mean(y_demod.real), np.mean(y_demod.imag), c='tab:blue', marker='o', s=10.);
+    axs[2][2].scatter(np.mean(y_demod_wtfluc.real), np.mean(y_demod_wtfluc.imag), c='r', marker='o', s=10.);
+    axs[2][2].grid(True);
+    axs[2][2].legend();
+    axs[2][2].set_xlim(-1.2*wire_amp, 1.2*wire_amp);
+    axs[2][2].set_ylim(-1.2*wire_amp, 1.2*wire_amp);
+    pass;
+fig.savefig('tmp/HWP_sim_demod.png');
+plt.close();
+
+phis = np.array(phis);
+phis_wtfluc = np.array(phis_wtfluc);
+plottmp(wire_angles, rad_to_deg_pitopi(phis_wtfluc-phis), outname='diff_phi', ylabel='Angle diff. [deg.]');
+#'''
+
