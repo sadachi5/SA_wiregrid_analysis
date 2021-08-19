@@ -64,7 +64,7 @@ for k in range(k) :
 
 
 
-#'''
+'''
 import numpy as np;
 from utils import plottmp;
 
@@ -293,4 +293,32 @@ plottmphist(df['theta_det_err']*180./np.pi,i='',outname='all_theta_det_err',xlab
 #plottmphist(df['theta_det_err']*180./np.pi,y=df['chisqr']+df['r'],i=14,nbins=180,xrange=[0,90],yrange=[0,3600],log=True,show=False);
 #plottmphist(df['theta_det_err']*180./np.pi,y=df['chisqr']+df['r'],i=15,nbins=100,log=True,show=False);
 plottmphist(datas,i='',outname='r_wt_different_theta_det_err',xlabel=r'$r$',ylabel=r'Counts of bolometers',nbins=100,xrange=[0,1000.],log=True,show=False,drawflow=True,stacked=True,nHist=len(datas),label=cuts_strs);
+#'''
+
+
+# Check diff of theta between circle and ellipse
+#'''
+import numpy as np;
+from utils import rad_to_deg, rad_to_deg_pitopi, deg_to_rad;
+theta = np.arange(0,2.*np.pi,deg_to_rad(22.5/2.));
+deg   = rad_to_deg(theta);
+r = 1.;
+x = np.cos(theta);
+y = np.sin(theta);
+R = r*1.01;
+X = x;
+Y = R*np.sin(theta);
+Theta = np.arctan2(Y,X);
+
+diff_deg = rad_to_deg_pitopi(Theta - theta);
+
+from matplotlib import pyplot as plt;
+plt.plot(deg, diff_deg, marker='o');
+plt.xlabel(r'Circle angle $\theta$ [deg.]');
+plt.ylabel('Angle diff.\nbetween circle(r={}) and ellipse(R={}) [deg.]'.format(r,R));
+plt.grid(True);
+plt.plot([-1000,1000.],[0,0],c='k',linewidth=1);
+plt.xlim(0,360);
+plt.savefig('aho.png');
+
 #'''
