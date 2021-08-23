@@ -22,11 +22,12 @@ def checkspeed(indir, outdir='out_checkspeed', outname='HWP_speed.png') :
     fig.set_size_inches(6*j_figs,6*i_figs);
     plt.subplots_adjust(wspace=0.3, hspace=0.3, left=0.15, right=0.95,bottom=0.15, top=0.95)
 
+    time00 = 0.;
     for i, a in enumerate(files) : 
         file = open(indir+'/'+a+'deg.pkl','rb')
-        data = pickle.load(file);
-        time = pickle.load(file);
-        angle = pickle.load(file);
+        data = np.array(pickle.load(file));
+        time = np.array(pickle.load(file));
+        angle = np.array(pickle.load(file));
         angle_deg = angle * 180./np.pi;
     
         dt = np.diff(time)
@@ -43,7 +44,8 @@ def checkspeed(indir, outdir='out_checkspeed', outname='HWP_speed.png') :
         print('speed', speed);
         print('{:10s} : {:10f} Hz'.format(a,ave_speed));
 
-        time0 = np.array(time) - time[0];
+        if time00==0. : time00 = time[0];
+        time0 = time - time[0];
         time0 = v_getseconds(time0); # timedelta --> sec
 
         time_period = [];
@@ -98,6 +100,14 @@ def checkspeed(indir, outdir='out_checkspeed', outname='HWP_speed.png') :
         axs[0][1].set_ylabel('HWP Speed [Hz]');
         axs[0][1].set_xlim(0.,max_angle_deg);
 
+        time_1sec = v_getseconds(time - time00) %  (1./ave_speed); # timedelta --> sec
+        axs[1][1].plot([],[], label=a, c=colors[i], linestyle='', linewidth=0, marker='o', markersize=2.); # dummy for larger legend
+        axs[1][1].plot(time_1sec, angle_deg, c=colors[i], linestyle='', linewidth=0, marker='o', markersize=0.5);
+        axs[1][1].legend();
+        axs[1][1].grid(True);
+        axs[1][1].set_xlabel('Time One Period [sec]');
+        axs[1][1].set_ylabel('HWP Angle [deg.]');
+        axs[1][1].set_xlim(0.,max_time_period);
 
         #if i==0 :  for an in angle_deg : print(an);
         pass;
