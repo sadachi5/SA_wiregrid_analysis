@@ -47,6 +47,12 @@ output\_ver5
   - version description: DB with each wire angle demod data [(x,y) in demode complex plane]
     - reproduce from demod fit in ver3
 
+output\_ver6
+------------
+  - version description: add wire\_angle=180 deg. data
+    - reproduce from g3 data
+
+
 
 ## run scripts
  - (./plot.sh: make plot of TODs)

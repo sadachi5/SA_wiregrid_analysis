@@ -524,6 +524,7 @@ def main(boloname, filename='',
 
     # ver0
     if 'ver0' in outdir :
+        # all angle data but angle values are not correct and angle=0, 22.5 data are bad.
         angleDataList = [
             {'angle':  0. , 'start':'20210205_173930', 'end':'20210205_174430', 'outname':'A-1_-22.5deg'    },
             {'angle': 22.5, 'start':'20210205_174930', 'end':'20210205_175600', 'outname':'A0_0deg'    },
@@ -537,8 +538,9 @@ def main(boloname, filename='',
             {'angle':202.5, 'start':'20210205_181750', 'end':'20210205_181810', 'outname':'A8_180deg'  },
             {'angle':225. , 'start':'20210205_182000', 'end':'20210205_182400', 'outname':'A9_202.5deg'},
         ];
-    # otherwise
-    else :
+    # one of ver1--5
+    elif  any([(ver in outdir) for ver in ['ver1','ver2','ver3','ver4','ver5']])  :
+        # 0--157.5deg, 8 angles (No 180 deg)
         angleDataList = [
             {'angle':  0  , 'start':'20210205_180230', 'end':'20210205_180400', 'outname':'A1_0deg'    },
             {'angle': 22.5, 'start':'20210205_180510', 'end':'20210205_180530', 'outname':'A2_22.5deg' },
@@ -548,8 +550,22 @@ def main(boloname, filename='',
             {'angle':112.5, 'start':'20210205_181320', 'end':'20210205_181340', 'outname':'A6_112.5deg'},
             {'angle':135. , 'start':'20210205_181557', 'end':'20210205_181617', 'outname':'A7_135deg'  },
             {'angle':157.5, 'start':'20210205_181750', 'end':'20210205_181810', 'outname':'A8_157.5deg'},
-            #{'angle':180. , 'start':'20210205_182000', 'end':'20210205_182400', 'outname':'A9_180deg'  },
         ];
+    # otherwise 
+    else :
+        # 0--180deg, 9 angles
+        angleDataList = [
+            {'angle':  0  , 'start':'20210205_180230', 'end':'20210205_180400', 'outname':'A1_0deg'    },
+            {'angle': 22.5, 'start':'20210205_180510', 'end':'20210205_180530', 'outname':'A2_22.5deg' },
+            {'angle': 45. , 'start':'20210205_180640', 'end':'20210205_180700', 'outname':'A3_45deg'   },
+            {'angle': 67.5, 'start':'20210205_180800', 'end':'20210205_180820', 'outname':'A4_67.5deg' },
+            {'angle': 90. , 'start':'20210205_181000', 'end':'20210205_181130', 'outname':'A5_90deg'   },
+            {'angle':112.5, 'start':'20210205_181320', 'end':'20210205_181340', 'outname':'A6_112.5deg'},
+            {'angle':135. , 'start':'20210205_181557', 'end':'20210205_181617', 'outname':'A7_135deg'  },
+            {'angle':157.5, 'start':'20210205_181750', 'end':'20210205_181810', 'outname':'A8_157.5deg'},
+            {'angle':180. , 'start':'20210205_182000', 'end':'20210205_182400', 'outname':'A9_180deg'  },
+        ];
+
         pass;
 
 
