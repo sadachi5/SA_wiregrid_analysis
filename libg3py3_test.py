@@ -1083,7 +1083,8 @@ class WHWPAngle(object):
             0, np.diff(clk_at_ref.astype(np.int64)) < 0))
 
         # my check
-        #'''
+        from utils import plottmp, plottmphist;
+        '''
         print ('nrev:', clk_nrev[-1], irig_nrev[-1]);
         __clk_cnts = clk_cnts;
         __irig_clk = irig_clk;
@@ -1095,11 +1096,14 @@ class WHWPAngle(object):
         clk_at_ref = (clk_ref_nrev << 32) + clk_at_ref # int64
 
         # my check
-        #'''
-        from utils import plottmp;
-        plottmp(np.arange(len(clk_cnts)),[clk_cnts, __clk_cnts], ny=2, i=0, outname='clk_cnts');
-        plottmp(np.arange(len(irig_clk)),[irig_clk, __irig_clk], ny=2, i=0, outname='irig_clk');
-        plottmp(np.arange(len(clk_at_ref)),[clk_at_ref, __clk_at_ref], ny=2, i=0, outname='clk_at_ref');
+        '''
+        plottmp(np.arange(len(clk_cnts)),[clk_cnts, __clk_cnts], ny=2, i=0, outname='clk_cnts', ext='png');
+        plottmp(np.arange(len(irig_clk)),[irig_clk, __irig_clk], ny=2, i=0, outname='irig_clk', ext='png');
+        plottmp(np.arange(len(clk_at_ref)),[clk_at_ref, __clk_at_ref], ny=2, i=0, outname='clk_at_ref', ext='png');
+        plottmp(np.arange(len(clk_cnts))[1:],np.diff(clk_cnts), ny=1, i=0, outname='diff_clk_cnts', ext='png');
+        plottmp(np.arange(len(irig_clk))[1:],np.diff(irig_clk), ny=1, i=0, outname='diff_irig_clk', ext='png');
+        plottmp(np.arange(len(clk_at_ref))[1:],np.diff(clk_at_ref), ny=1, i=0, outname='diff_clk_at_ref', ext='png');
+        plottmphist(__clk_cnts[1:],nbins=100,y=np.diff(clk_cnts),xlabel='clk_cnts wt overflows',ylabel='diff(clk_cnts)',i=0,outname='clk-cnts_vs_diff-clk-cnts',xrange=None,yrange=None,xlim=None, ylim=None, xtime=False,show=False,log=True,drawflow=True, stacked=False, nHist=1, label='', outdir = 'tmp');
         del __clk_cnts, __irig_clk, __clk_at_ref; 
         #'''
         del(clk_nrev, irig_nrev, clk_ref_nrev)
@@ -1111,6 +1115,7 @@ class WHWPAngle(object):
             print(' '.join([core.G3Time(x).GetFileFormatString()
                             for x in irig_time[~irig_ok]]))
             #del(x)
+        else : print('All IRIG counts are in the bolometer time period (+-10sec)! ');
         if irig_ok.sum() <= 1:
             del(g3c)
             print(list(locals().keys()))
@@ -1124,29 +1129,35 @@ class WHWPAngle(object):
         else:
             irig_time = irig_time[irig_ok]
             irig_clk = irig_clk[irig_ok]
+            # another irig check
             irig_ok = np.diff(irig_time) > 0
             if not irig_ok.all():
                 print('Remove strange timestamp!:', end='')
                 print(' '.join([core.G3Time(x).GetFileFormatString()
                                 for x in irig_time[~irig_ok]]))
                 #del(x)
+            else : print('All IRIG counts have positive difference! ');
             irig_ok = np.append(irig_ok[0], irig_ok)
             if irig_ok.sum() <= 1:
                 raise ValueError('Timestamp of WHWP encoder is not available!')
             irig_time = irig_time[irig_ok]
             irig_clk = irig_clk[irig_ok]
 
+            # Indices between the first IRIG and the last IRIG for encoder pulses
             enc_ok = slice(
                 np.searchsorted(clk_cnts, irig_clk[0]),
                 np.searchsorted(clk_cnts, irig_clk[-1],
                                 'right'))
+            # Get encoder pulses data while IRIG is valid
             clk_cnts = clk_cnts[enc_ok]
             encoder_cnts = encoder_cnts[enc_ok]
 
+            # Indices between the first IRIG and the last IRIG for reference points
             ref_ok = slice(
                 np.searchsorted(clk_at_ref, irig_clk[0]),
                 np.searchsorted(clk_at_ref, irig_clk[-1],
                                 'right'))
+            # Get reference points data while IRIG is valid
             clk_at_ref = clk_at_ref[ref_ok]
             cnts_at_ref = cnts_at_ref[ref_ok]
 
@@ -1204,12 +1215,16 @@ class WHWPAngle(object):
         enc_cnts_err = np.unwrap(
             enc_cnts_err * (np.pi * 2 / 2**15)
             ) * (2**15 / np.pi / 2)
+        # Encoder pulse speed [pulses/sec]
         enc_speed = enc_speed0 \
             + enc_cnts_err[-1] / (clk_cnts[-1] - clk_cnts[0])
         #print 'speed:', \
         #    enc_speed / self.N_TICK * self.CLK_FREQ
+        # Encoder pulse counts expected from the time (clock)
         enc_const = encoder_cnts[0] \
             + enc_speed * (clk_cnts - clk_cnts[0])
+        # Number of revolutions of the encoder
+        # ex. of floor) np.floor(10.3)=10,  np.floor(-10.3)=-11
         enc_nrev = np.floor(
             enc_const / 2**16).astype(np.int32)
         encoder_cnts = (enc_nrev << 16) + encoder_cnts
@@ -1241,7 +1256,7 @@ class WHWPAngle(object):
 
         ### MY IMPLEMENTATION ###
         # Select good(ok) cnts_at_ref 
-        '''
+        ''' # Original selection by Satoru
         np.set_printoptions(edgeitems=10);
         cnts_at_ref_cumsum = np.cumsum( np.concatenate([[cnts_at_ref[0]],np.diff(cnts_at_ref)]) );
         print('cnts_at_ref (uint16) max ={}'.format(np.iinfo(cnts_at_ref.dtype)));
