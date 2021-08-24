@@ -53,12 +53,13 @@ output\_ver6
     - change the time period of 180 deg. data (select only first 20 sec. This is similar length of the other data.)
     - reproduce from g3 data
 
-output\_ver7
-------------
+output\_ver7/plot\_ver7
+------------------------
   - version description: *change the libg3py3.py & loadbolo.py*
     - Use libg3py3\_test.py and loadbolo\_test.py
     - Change to *import loadbolo\_test.py instead of loadbolo.py in OneAngleData.py*
     - Modify reference offset in HWP angle calculation (using getOffsets() func. in libg3py3\_test.py
+    - output\_ver7 is for bsub jobs. / plot\_ver7 is for test.
 
 
 ## run scripts
