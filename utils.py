@@ -6,7 +6,7 @@ import os;
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import dates as mdates
-def plottmp(x,y,xlabel='x',ylabel='y',i=0,outname='aho',xlim=None, xtime=False, ny=1) :
+def plottmp(x,y,xlabel='x',ylabel='y',i=0,outname='aho',xlim=None, xtime=False, ny=1, ext='pdf') :
     tmpdir = 'tmp';
     if not os.path.isdir(tmpdir): os.mkdir(tmpdir);
     if ny>1: ys = y;
@@ -24,7 +24,7 @@ def plottmp(x,y,xlabel='x',ylabel='y',i=0,outname='aho',xlim=None, xtime=False, 
         pass;
     plt.grid();
     if not xlim==None : plt.xlim(xlim);
-    outname = '{}/{}{}.pdf'.format(tmpdir,outname,i);
+    outname = '{}/{}{}.{}'.format(tmpdir,outname,i,ext);
     print('save {}'.format(outname));
     plt.savefig(outname);
     plt.close();
