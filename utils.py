@@ -6,17 +6,23 @@ import os;
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import dates as mdates
-def plottmp(x,y,xlabel='x',ylabel='y',i=0,outname='aho',xlim=None, xtime=False, ny=1, ext='pdf') :
+def plottmp(x,y,xlabel='x',ylabel='y',i=0,outname='aho',xlim=None,ylim=None, xtime=False, ny=1, ext='pdf', label=None) :
     tmpdir = 'tmp';
     if not os.path.isdir(tmpdir): os.mkdir(tmpdir);
     if ny>1: ys = y;
+    elif len(y)==1 and len(y[0])>1 : ys = y;
     else   : ys = [y];
     plt.title(outname);
+    if label is None:            labels=['']*len(ys);
+    elif isinstance(label, str): labels=[label];
+    else :                       labels=label;  
     for n, __y in enumerate(ys) :
-        plt.plot(x, __y, linestyle='', marker='o', markersize=1., color=colors[n]);
+        plt.plot(x, __y, linestyle='', marker='o', markersize=1., color=colors[n], label=labels[n]);
+        print(__y);
         pass;
     plt.xlabel(xlabel);
     plt.ylabel(ylabel);
+    if label is not None : plt.legend();
     plt.tight_layout(rect=[0,0,1,0.96])
     if xtime :
         plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
@@ -24,6 +30,7 @@ def plottmp(x,y,xlabel='x',ylabel='y',i=0,outname='aho',xlim=None, xtime=False, 
         pass;
     plt.grid();
     if not xlim==None : plt.xlim(xlim);
+    if not ylim==None : plt.ylim(ylim);
     outname = '{}/{}{}.{}'.format(tmpdir,outname,i,ext);
     print('save {}'.format(outname));
     plt.savefig(outname);

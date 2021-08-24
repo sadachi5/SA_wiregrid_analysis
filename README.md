@@ -53,6 +53,11 @@ output\_ver6
     - change the time period of 180 deg. data (select only first 20 sec. This is similar length of the other data.)
     - reproduce from g3 data
 
+output\_ver7
+------------
+  - version description: **change the libg3py3.py & loadbolo.py**
+    - Use libg3py3_test.py and loadbolo_test.py
+    - Modify reference offset in HWP angle calculation
 
 
 ## run scripts
@@ -203,5 +208,16 @@ output\_ver6
                 - memory limit error (TERM_MEMLIMIT)
                 - It has been rerun successfully.
             2. # of memory limit error = 1
-
-
+        - output_ver6 (all analysis from g3 files)
+            ### Summary for check_job for output_ver6 ################                                                 
+            bsub error log (5461) : ./output_ver6/txt/PB20.13.12/bsub/bsub_PB20.13.12_Comb11Ch17.err...
+            bsub log       (5461) : ./output_ver6/txt/PB20.13.12/bsub/bsub_PB20.13.12_Comb09Ch22.out...
+            fitDemodResult.py         log (5461) : ./output_ver6/txt/PB20.13.12/fit/PB20.13.12_Comb03Ch20.out...
+            grid_rotation_analysis.py log (5461) : ./output_ver6/txt/PB20.13.12/gridana/PB20.13.12_Comb03Ch20.out...
+            There are errors in some jobs for output_ver6
+            # of all failed checks = 203
+            # of failed checks except the error of "Function minimum is not valid." = 0
+            # of memory limit error = 0
+            #################################################
+    
+    
