@@ -1081,6 +1081,9 @@ class WHWPAngle(object):
             0, np.diff(irig_clk.astype(np.int64)) < 0))
         clk_ref_nrev = np.cumsum(np.append(
             0, np.diff(clk_at_ref.astype(np.int64)) < 0))
+        # MY INMPLEMENTATION
+        cnts_at_ref_nrev = np.cumsum(np.append(
+            0, np.diff(cnts_at_ref.astype(np.int64)) < 0))
 
         # my check
         from utils import plottmp, plottmphist;
@@ -1094,6 +1097,8 @@ class WHWPAngle(object):
         clk_cnts = (clk_nrev << 32) + clk_cnts # int64
         irig_clk = (irig_nrev << 32) + irig_clk # int64
         clk_at_ref = (clk_ref_nrev << 32) + clk_at_ref # int64
+        # MY INMPLEMENTATION
+        cnts_at_ref = (cnts_at_ref_nrev << 16) + cnts_at_ref # int32
 
         # my check
         '''
@@ -1192,15 +1197,18 @@ class WHWPAngle(object):
         plt.close();
         '''
 
+        # make for outliers from the mean of diff. in encoder clocks
         dclk = np.median(clk_cnts_diff)
         mask = np.isclose(clk_cnts_diff, dclk,
                           atol=60, rtol=0)
+        # make for outliers from the mean of diff. in encoder counts
         denc = np.median(enc_cnts_diff)
         mask *= np.isclose(enc_cnts_diff, denc,
                            atol=3, rtol=0)
         del(dclk, denc)
         dclk = np.mean(clk_cnts_diff[mask])
         denc = np.mean(enc_cnts_diff[mask])
+        # Encoder pulse speed0 = mean(encoder counts diff.)/mean(encoder clock diff.) [pulses/sec]
         enc_speed0 = denc/dclk
         #print 'dclk:', dclk
         #print 'denc:', denc
@@ -1208,10 +1216,14 @@ class WHWPAngle(object):
         #    enc_speed0 / self.N_TICK * self.CLK_FREQ
         del(mask, enc_cnts_diff)
 
+        # Encoder count diff. between measured and expected from the start (i=0)
         enc_cnts_err = encoder_cnts - encoder_cnts[0] \
             - (enc_speed0 * (clk_cnts - clk_cnts[0]))
+        # Correct the enc_cnts_err if the encoder_cnts has a overflow.
+        # If there is an overflow, enc_cnts_err = <actual number>/(2.**16)
         enc_cnts_err = \
             (enc_cnts_err + 2.**15)%(2.**16) - 2.**15
+        # Convert the [counts] to [rad.] of the rotation
         enc_cnts_err = np.unwrap(
             enc_cnts_err * (np.pi * 2 / 2**15)
             ) * (2**15 / np.pi / 2)
@@ -1223,10 +1235,13 @@ class WHWPAngle(object):
         # Encoder pulse counts expected from the time (clock)
         enc_const = encoder_cnts[0] \
             + enc_speed * (clk_cnts - clk_cnts[0])
-        # Number of revolutions of the encoder
+        # Expected # of overflows
         # ex. of floor) np.floor(10.3)=10,  np.floor(-10.3)=-11
         enc_nrev = np.floor(
             enc_const / 2**16).astype(np.int32)
+        # Correct the overflow in encoder counts
+        # my check
+        __encoder_cnts = encoder_cnts;
         encoder_cnts = (enc_nrev << 16) + encoder_cnts
         enc_cnts_err = encoder_cnts - enc_const
         encoder_cnts[enc_cnts_err < - 2**14] += 2**16
@@ -1238,6 +1253,17 @@ class WHWPAngle(object):
         enc_speed *= self.CLK_FREQ / self.N_TICK
         del(enc_cnts_err, enc_const, enc_nrev)
 
+        # My check
+        '''
+        plottmp(np.arange(len(encoder_cnts)),__encoder_cnts, ny=1, i=0, outname='encoder_cnts_wt_overflow', ext='png');
+        plottmp(np.arange(len(encoder_cnts)),__encoder_cnts, ny=1, i=0, outname='encoder_cnts_wt_overflow_zoom', xlim=(0.,len(encoder_cnts)*0.01), ext='png');
+        plottmp(np.arange(len(encoder_cnts)),[__encoder_cnts,encoder_cnts], ny=2, i=0, outname='encoder_cnts', ext='png');
+        plottmp(np.arange(len(encoder_cnts))[1:],np.diff(encoder_cnts), ny=1, i=0, outname='diff_encoder_cnts', ext='png');
+        plottmphist(__encoder_cnts[1:],nbins=100,y=np.diff(encoder_cnts),xlabel='encoder_cnts wt overflows',ylabel='diff(encoder_cnts)',i=0,outname='enc-cnts_vs_diff-enc-cnts',xrange=None,yrange=None,xlim=None, ylim=None, xtime=False,show=False,log=True,drawflow=True, stacked=False, nHist=1, label='', outdir = 'tmp');
+        del __encoder_cnts; 
+        #'''
+
+
         gaploc = np.where(clk_cnts_diff > 1000)[0] + 1
         gaplen = np.round(
             (clk_cnts_diff[gaploc - 1] - dclk) / dclk /50).astype(int)*50
@@ -1247,12 +1273,23 @@ class WHWPAngle(object):
         for i, l in zip(gaploc, gaplen):
             print('gap!', i, l)
             del(i,l)
+            
+        # My check
+        __encoder_cnts_beforefillgap = encoder_cnts;
+
         clk_cnts = fill_gaps(clk_cnts, gaploc, gaplen)
+        # No difference in first look before & after fill_gaps()
         encoder_cnts = fill_gaps(
             encoder_cnts, gaploc, gaplen)
         gapmask = fill_gaps(
             gapmask, gaploc, gaplen,
             zero_fill=True).astype(np.bool)
+
+        # My check
+        '''
+        plottmp(np.arange(len(encoder_cnts)),[__encoder_cnts_beforefillgap,encoder_cnts], ny=2, i=0, outname='encoder_cnts_fillgap', ext='png');
+        plottmp(np.arange(len(encoder_cnts)),(__encoder_cnts_beforefillgap-encoder_cnts), ny=1, i=0, outname='diff_encoder_cnts_beforeafter_fillgap', ext='png');
+        #'''
 
         ### MY IMPLEMENTATION ###
         # Select good(ok) cnts_at_ref 
@@ -1282,9 +1319,9 @@ class WHWPAngle(object):
         plt.savefig('aho.pdf');
         plt.close();
         '''
-        # Search for 1st reference clock counts
-        clk_at_ref0 = clk_at_ref[0];
+        # Input is single number
         def getOffset(clk0) :
+            print('getOffset(): Starting...');
             np.set_printoptions(edgeitems=10);
             print('clk_at_ref0 = {}'.format(clk0));
             print('clk_cnts ({}) = {}'.format(len(clk_cnts), clk_cnts));
@@ -1315,15 +1352,100 @@ class WHWPAngle(object):
                 print('offset_cnts_after_ref0  = {}'.format(offset_cnts_after_ref0 ));
                 reference_offset = offset_cnts_after_ref0;
                 pass;
+            print('getOffset(): Returning reference_offset={}'.format(reference_offset));
             return reference_offset;
-        reference_offset = getOffset(clk_at_ref0);
-        getOffset(clk_at_ref[-1]);
+
+        # Input is array
+        def getOffsets(ref_clks) :
+            print('getOffsets(): Starting...');
+            np.set_printoptions(edgeitems=10);
+            #print('clk_at_ref (clocks) ({}) = {}'.format(len(ref_clks), ref_clks));
+            #print('clk_cnts (clocks) ({}) = {}'.format(len(clk_cnts), clk_cnts));
+            #print('encoder_cnts (counts) ({}) = {}'.format(len(encoder_cnts), encoder_cnts));
+            enc_ref_index = [];
+            nclk = len(clk_cnts);
+            nref = len(ref_clks);
+            __ref = ref_clks[0];
+            __ref_index=-1;
+            for i, clk in enumerate(clk_cnts) :
+                #__ref = ref_clks[__ref_index+1] if __ref_index+1<nref else 1e+20; # 1e+20 is instead of the infinity
+                if i%10000000==0: print('clk_cnts loop i={}/{}'.format(i,nclk));
+                if clk>=__ref : 
+                    __ref_index += 1;
+                    __ref = ref_clks[__ref_index+1] if __ref_index+1<nref else 1e+20;
+                    pass;
+                enc_ref_index.append(__ref_index);
+                pass;
+            enc_ref_index = np.array(enc_ref_index);
+            print('enc_ref_index (counts) ({}) = {}'.format(len(enc_ref_index), enc_ref_index));
+
+            enc_ref_correction = [];
+            # Get encoder index for references (enc_index_after/before_ref)
+            diff_enc_ref_index  = np.hstack([[0], np.diff(enc_ref_index)]); # [0, diff(enc_ref_index)]
+            enc_index_after_ref = np.where( diff_enc_ref_index==1 )[0]; # encoder clk indices right after it has a ref.
+            print('enc_index_after_ref (counts) ({}) = {}'.format(len(enc_index_after_ref), enc_index_after_ref));
+            enc_index_before_ref= enc_index_after_ref - 1;
+            enc_index_before_ref[np.where(enc_index_before_ref<0)]=0;
+
+            # Get encoder clock/counts before&after references
+            clk_pair_ref   = np.array([clk_cnts[enc_index_before_ref]    , clk_cnts[enc_index_after_ref]]);
+            enc_pair_ref   = np.array([encoder_cnts[enc_index_before_ref], encoder_cnts[enc_index_after_ref]]);
+            if np.any(enc_pair_ref[0]>enc_pair_ref[1]) :
+                print('WARNING!! There is overflow in the enc_pair_ref:');
+                warning_index = np.where(enc_pair_ref[0]>enc_pair_ref[1])[0];
+                print('          The index = {}'.format(waring_index));
+                print('          The refs  (clock) = {}'.format(ref_clks[waring_index]));
+                pass;
+            # Get counts at references by interpolating encoder clocks and counts
+            ref_cnts = np.array([ np.interp( [ref_clks[i]], [clk_pair_ref[0][i],clk_pair_ref[1][i]],[enc_pair_ref[0][i], enc_pair_ref[1][i]])[0] for i in range(len(ref_clks)) ]);
+            #print('clk_cnts before ref = {}'.format(clk_pair_ref[0]));
+            #print('clk_cnts after  ref = {}'.format(clk_pair_ref[1]));
+            #print('enc_cnts before ref = {}'.format(enc_pair_ref[0]));
+            #print('enc_cnts after  ref = {}'.format(enc_pair_ref[1]));
+            #print('ref_cnts ({})= {}'.format(len(ref_cnts), ref_cnts ));
+            print('# of diff(ref_cnts)>40000 = {}'.format(sum(np.diff(ref_cnts)>40000)));
+            print('# of diff(ref_cnts)<0 = {}'.format(sum(np.diff(ref_cnts)<0)));
+            print('# of diff(ref_cnts)<-40000 = {}'.format(sum(np.diff(ref_cnts)<-40000)));
+            # Difference on the counts at the reference between measured and expected from reference
+            ref_correction = (((enc_pair_ref[1])/self.N_TICK).astype(int)) * self.N_TICK - ref_cnts;
+            # Correctoin for each encoder counts
+            enc_ref_correction = ref_correction[enc_ref_index];
+            print('enc_ref_correction = {}'.format(enc_ref_correction));
+
+            print('getOffsets(): Returning enc_ref_correction={}'.format(enc_ref_correction));
+            print('# of diff(ref_cnts)>40000 = {}'.format(sum(np.diff(ref_cnts)>40000)));
+            return enc_ref_correction, ref_cnts;
+
+        # Search for 1st reference clock counts
+        # There is also cnts_at_ref but it has many overflows and it is potential to mismatch with encoder counts.
+        # Clk_at_ref has less overflows, so I use it.
+        #clk_at_ref0 = clk_at_ref[0];
+        #reference_offset = getOffset(clk_at_ref0);
+        #print(' reference offset = {}'.format(reference_offset));
+        reference_offsets, reference_cnts = getOffsets(clk_at_ref);
+        print(' reference offsets = {}'.format(reference_offsets));
+
         ### END OF MY IMPLEMENTATION ###
 
         #print 'WARNING: Reconstruction of WHWP angle origin is not implemented yet.'
         angle0 = 0 # angle of the HWP corresponding to the encoder global reference mark
-        enc_angle = (encoder_cnts - reference_offset + angle0) \
-                    * (np.pi * 2 / self.N_TICK)
+        #enc_angle0 = (encoder_cnts - reference_offset) * (np.pi * 2 / self.N_TICK) + angle0
+
+        # MY IMPLEMENTATION
+        enc_angle = (encoder_cnts + reference_offsets) * (np.pi*2./self.N_TICK) + angle0
+
+        # My check
+        '''
+        plottmp(np.arange(len(enc_angle))[1:],[np.diff(enc_angle)*180./np.pi, np.diff(enc_angle0)*180./np.pi], ny=2, xlabel='Index', ylabel='Diff. angle [deg.]', label=['New','Old'], i=0, outname='diff_enc_angle', ext='png');
+        plottmp(np.arange(len(enc_angle)),(enc_angle-enc_angle0)*180./np.pi, ny=1, xlabel='Index', ylabel='enc_angle - enc_angle0 [deg.]', i=0, outname='diff_enc-angle_enc-angle0', ext='png');
+        plottmp(np.arange(len(enc_angle)),[enc_angle,enc_angle0], ny=2, i=0, outname='enc-angle_vs_enc-angle0', label=['New','Old'], ext='png');
+
+        plottmp(np.arange(len(cnts_at_ref)),[cnts_at_ref,reference_cnts], ny=2, xlabel='Index', ylabel='Counts at ref.', label=['Recorded data', 'calculated offline'], i=0, outname='cnts_at_ref', ext='png');
+        plottmp(np.arange(len(cnts_at_ref)),[cnts_at_ref,reference_cnts], ny=2, xlabel='Index', ylabel='Counts at ref.', label=['Recorded data', 'calculated offline'], i=0, xlim=[0,20], ylim=[0.,max([max(cnts_at_ref[0:20]),max(reference_cnts[0:20])])], outname='cnts_at_ref_zoom', ext='png');
+        plottmp(np.arange(len(cnts_at_ref)),np.array(cnts_at_ref-reference_cnts), ny=1, xlabel='Index', ylabel='Recorded counts at ref. - Calculated counts at ref.', i=0, outname='cnts_at_ref-referenceoffset', ext='png');
+        plottmp(np.arange(len(cnts_at_ref))[1:],[np.diff(cnts_at_ref), np.diff(reference_cnts)], ny=2, xlabel='Index', ylabel='Diff. counts at ref.', i=0, label=['Recorded data', 'calculated offline'], outname='diff_cnts_at_ref', ext='png');
+        plottmp(np.arange(len(reference_cnts))[1:],np.diff(reference_cnts), ny=1, xlabel='Index', ylabel='Diff. counts at ref. (calculated)', i=0, outname='diff_ref_cnts', ext='png');
+        #'''
 
         '''
         irig_ok = (irig_time > bolotime[0] - 10**10) * (irig_time < bolotime[-1] + 10**10) # margin 100 s

@@ -26,10 +26,6 @@ def check_jobs(outdir='output_ver5') :
     Nbsubout = len(bsub_outlog);
     Nfitout  = len(fit_outlog );
     Ngridout = len(grid_outlog);
-    print('bsub error log ({}) : {}...'.format(Nbsuberr,bsub_errlog[0] if Nbsuberr>0 else 'None'));
-    print('bsub log       ({}) : {}...'.format(Nbsubout,bsub_outlog[0]) if Nbsubout>0 else 'None');
-    print('fitDemodResult.py         log ({}) : {}...'.format(Nfitout , fit_outlog[0]  if Nfitout >0 else 'None'));
-    print('grid_rotation_analysis.py log ({}) : {}...'.format(Ngridout, grid_outlog[0] if Ngridout>0 else 'None'));
 
     # Check bsub error log
     print();
@@ -129,7 +125,7 @@ def check_jobs(outdir='output_ver5') :
         # Search for "warning" words (ignore difference between lower-/upper- cases)
         #grep_outputs.append(subprocess.run('grep -i warning {} '.format(log), encoding='utf-8', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True).stdout);
         Ngrep_outputs = np.array([len(out) for out in grep_outputs]);
-        if not Ngrep_outputs.all(0) :
+        if not (np.all(Ngrep_outputs==0)) :
             Nfail[0] += 1;
             Nfail[1] += 1;
             print(RED+'WARNING! A gridana log file have error/warning sentence.: {}'.format(log)+RESET);
@@ -145,6 +141,10 @@ def check_jobs(outdir='output_ver5') :
     print();
     print();
     print('### Summary for check_job for {} ################'.format(outdir));
+    print('bsub error log ({}) : {}...'.format(Nbsuberr,bsub_errlog[0] if Nbsuberr>0 else 'None'));
+    print('bsub log       ({}) : {}...'.format(Nbsubout,bsub_outlog[0]) if Nbsubout>0 else 'None');
+    print('fitDemodResult.py         log ({}) : {}...'.format(Nfitout , fit_outlog[0]  if Nfitout >0 else 'None'));
+    print('grid_rotation_analysis.py log ({}) : {}...'.format(Ngridout, grid_outlog[0] if Ngridout>0 else 'None'));
     if  Nfail[0]==0:
         print('Successfully finished all jobs for {}'.format(outdir));
     else :
