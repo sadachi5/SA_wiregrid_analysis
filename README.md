@@ -55,9 +55,10 @@ output\_ver6
 
 output\_ver7
 ------------
-  - version description: **change the libg3py3.py & loadbolo.py**
-    - Use libg3py3_test.py and loadbolo_test.py
-    - Modify reference offset in HWP angle calculation
+  - version description: *change the libg3py3.py & loadbolo.py*
+    - Use libg3py3\_test.py and loadbolo\_test.py
+    - Change to *import loadbolo\_test.py instead of loadbolo.py in OneAngleData.py*
+    - Modify reference offset in HWP angle calculation (using getOffsets() func. in libg3py3\_test.py
 
 
 ## run scripts

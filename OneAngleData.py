@@ -16,7 +16,7 @@ from slowdaq_map import *;
 # my library
 import Out;
 from utils import rad_to_deg, theta0to2pi, colors;
-from loadbolo import loadbolo;
+from loadbolo_test import loadbolo;
 
 class OneAngleData :
 
