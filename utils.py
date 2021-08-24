@@ -6,11 +6,15 @@ import os;
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import dates as mdates
-def plottmp(x,y,xlabel='x',ylabel='y',i=0,outname='aho',xlim=None, xtime=False) :
+def plottmp(x,y,xlabel='x',ylabel='y',i=0,outname='aho',xlim=None, xtime=False, ny=1) :
     tmpdir = 'tmp';
     if not os.path.isdir(tmpdir): os.mkdir(tmpdir);
+    if ny>1: ys = y;
+    else   : ys = [y];
     plt.title(outname);
-    plt.plot(x, y, linestyle='', marker='o', markersize=1.);
+    for n, __y in enumerate(ys) :
+        plt.plot(x, __y, linestyle='', marker='o', markersize=1., color=colors[n]);
+        pass;
     plt.xlabel(xlabel);
     plt.ylabel(ylabel);
     plt.tight_layout(rect=[0,0,1,0.96])

@@ -50,6 +50,7 @@ output\_ver5
 output\_ver6
 ------------
   - version description: add wire\_angle=180 deg. data
+    - change the time period of 180 deg. data (select only first 20 sec. This is similar length of the other data.)
     - reproduce from g3 data
 
 

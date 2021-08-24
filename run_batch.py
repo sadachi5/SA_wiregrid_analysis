@@ -7,10 +7,11 @@ import copy
 import libg3py3 as libg3
 
 doRun = True;
-doGridAna = False;
+doGridAna = True;
 doFit     = True;
 # Number of bolometers in one job
-Nbolobunch= 50; 
+#Nbolobunch= 50; # to execute only fit-script
+Nbolobunch= 1; 
 # Arguments of multiple blometers are implemented only in Fit but not in GridAna.
 # So please doGridAna=False if Nbolobunch>1.
 
@@ -20,8 +21,12 @@ ignoreFileExist = False;
 wafers=['PB20.13.13', 'PB20.13.15', 'PB20.13.28', 'PB20.13.11', 'PB20.13.12', 'PB20.13.10', 'PB20.13.31'];
 #wafers=['PB20.13.10'];
 
-outdir1='output_ver2';
-outdir2='output_ver5';
+#outdir1='output_ver2';
+#outdir2='output_ver5';
+
+outdir1='output_ver6';
+outdir2='output_ver6';
+
 #filename='/group/cmb/polarbear/data/pb2a/g3compressed/22300000_v05/Run22300609';
 filename='/group/cmb/polarbear/usr/sadachi/SparseWireCalibration/PB2a/g3compressed/Run22300609/';
 selections=[];
