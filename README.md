@@ -59,10 +59,19 @@ output\_ver7/plot\_ver7
     - Use libg3py3\_test.py and loadbolo\_test.py
     - Change to *import loadbolo\_test.py instead of loadbolo.py in OneAngleData.py*
     - Modify reference offset in HWP angle calculation (using getOffsets() func. in libg3py3\_test.py
+    - Add implementation of stimulator template DB to retrieve measured stimulator temperature in grid\_rotation\_analysis.py
+        - Use averaged temperature measured by Jupiter
     - output\_ver7 is for bsub jobs. / plot\_ver7 is for test.
 
 output\_ver8/plot\_ver8
 ------------------------
+  - version description: *restore the change of the libg3py3.py & loadbolo.py*
+    - Use libg3py3.py and loadbolo.py
+    - Change to *import loadbolo.py instead of loadbolo_test.py in OneAngleData.py*
+    - Main change from ver6: Add implementation of stimulator template DB to retrieve measured stimulator temperature in grid\_rotation\_analysis.py
+        - Use averaged temperature measured by Jupiter
+    - demod wire\_angle=180 deg data, but do not use it in fitDemodResult.py.
+    - reproduce from TOD pickle file in ver6, which (output\_ver6/pkl/<wafer>/<boloname>/A..\_..deg.pkl were copied to output\_ver8/pkl/<wafer>/<boloname>/
 
 ## run scripts
  - (./plot.sh: make plot of TODs)

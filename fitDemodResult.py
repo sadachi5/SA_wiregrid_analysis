@@ -1,6 +1,7 @@
 import os, sys
-import argparse;
+import argparse
 import gc
+import traceback
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -21,7 +22,7 @@ from minuitfit import *;
 import lmfit;
 from LMfit import LMfit, getParamsValues;
 
-def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., usemK=False, out0=None, verbosity=0, ext='png', initalpha_frac=None, nLMfit=1, batchmode=False) :
+def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., usemK=False, out0=None, verbosity=0, ext='png', initalpha_frac=None, nLMfit=1, batchmode=False, drawExcludeAngle=False) :
     print('##### fitDemodResult for {} ########################'.format(boloname));
 
     # initialize Out
@@ -33,6 +34,7 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
     outdbdir  = '{}/db/{}'.format(outdir, wafername);
     outdbpath = '{}/db/{}/{}'.format(outdir, wafername, outname);
     out.OUT('outpath = {}'.format(outpath),0);
+    out.OUT('input picklefile = {}'.format(picklefile),0);
 
     if not os.path.isfile(picklefile) :
         out.ERROR('No {}'.format(picklefile));
@@ -317,6 +319,7 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
         y1err = imags_err[k];
         #(r1, r1_err), (theta1, theta1_err) = calculateRTheta(x1-x0, y1-y0, np.sqrt(x1err**2.+x0err**2.), np.sqrt(y1err**2.+y0err**2.));
         (r1, r1_err), (theta1, theta1_err) = calculateRThetaEllipse(x1-x0, y1-y0, alpha, a, b, np.sqrt(x1err**2.+x0err**2.), np.sqrt(y1err**2.+y0err**2.), alphaerr, aerr, berr);
+        out.OUT('k={} wire angle = {:.1f}, (x,y) = ({:.1f},{:.1f}), (r,theta) = ({:.1f},{:.1f} [deg.])'.format(k, angleData['angle_deg'], x1-x0,y1-y0,r1,rad_to_deg(theta1)),0);
         theta1_deg     = rad_to_deg_0to2pi(theta1);     # rad
         theta1_err_deg = rad_to_deg_0to2pi(theta1_err); # rad
         wireangle0     = theta0to2pi(2.*angleData['angle_rad'] + theta0to2pi(theta1))/2.; # rad
@@ -335,14 +338,16 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
 
     
     # Make funciton of the fitted circle
-    delta = 1. if r>1. else r;
-    xrange = np.arange(-r*1.2,r*1.2,delta);
-    yrange = np.arange(-r*1.2,r*1.2,delta);
+    xymax = max(np.abs(reals+imags)); # max of |x| or |y|
+    xylim = ((int)(xymax/2500.)+1)*2500;
+    delta = xylim*2*1.2/2000;
+    xrange = np.arange(-xylim*1.2,xylim*1.2,delta);
+    yrange = np.arange(-xylim*1.2,xylim*1.2,delta);
     X,Y = np.meshgrid(xrange, yrange);
     #Z = (X-pars[0])**2. + pars[2]/pars[3]*(Y-pars[1])**2. + pars[2]*pars[4]*(X-pars[0])*(Y-pars[1]) - pars[2];
     Z = fitfunc(X,Y,pars);
 
-    # Draw plot
+    ## Draw circle plot ##
     figres, axsres = plt.subplots(2,1);
     figres.tight_layout(rect=[0,0,1,1]);
     plt.subplots_adjust(wspace=1, hspace=1, left=0.15, right=0.85,bottom=0.15, top=0.85)
@@ -358,65 +363,52 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
     axsres[1].set_position([(marginW+marginasymmW),1.-sum(axsScale[:1+1])+axsScale[1]*(marginH+marginasymmH2),fillspaceW,axsScale[1]*fillspaceH]); # left, bottom, width, height
     figres.set_size_inches(6,9);
     # Draw data points
-    axsres[0].errorbar(reals,imags,xerr=reals_err,yerr=imags_err,linestyle='',marker='o',markersize=1.,capsize=2.);
+    drawIndex = [];
+    if drawExcludeAngle :
+        drawIndex = np.arrange(len(reals));
+    else :
+        drawIndex = np.array([ i for i in range(len(reals)) if i not in exclude_indices]);
+        pass;
+    axsres[0].errorbar(
+            np.array(reals)[drawIndex]          ,np.array(imags)[drawIndex],
+            xerr=np.array(reals_err)[drawIndex] ,yerr=np.array(imags_err)[drawIndex],
+            linestyle='',marker='o',markersize=1.,capsize=2.);
     shiftx=r*0.04;
     shifty=r*0.04;
     fitTheta0 = None;
-    for k in  range(len(reals)) :
-        fitTheta = fitRThetas[k]['theta_deg']; # deg
-        if fitRThetas[k]['wireangle_deg'] == refAngle : fitTheta0 = fitTheta; # deg
-        
-        x_tmp = reals[k];
-        y_tmp = imags[k]+shifty;
-        #if k==0 : x_tmp = reals[k]-0.*shiftx;
-        #if k==0 : y_tmp = imags[k]+4.*shifty;
-        #if k==1 : x_tmp = reals[k]+0.*shiftx   ;
-        #if k==1 : y_tmp = imags[k]-5.*shifty;
-        #if k==10 : x_tmp = reals[k]+0.*shiftx   ;
-        #if k==10 : y_tmp = imags[k]-5.*shifty;
-        #axsres[0].text(x_tmp, y_tmp, '{} deg.\n({:.1f} , {:.1f})\n'.format(angleDataList[k]['angle'], reals[k],imags[k])+r'$\theta$'+' = {:.2f} +- {:.2f} deg.'.format(fitTheta[0],fitTheta[1]), color='tab:blue');
-        axsres[0].text(x_tmp, y_tmp, '{} deg.\n'.format(angleDataList[k]['angle_deg'])+r'$\theta$'+' = {:.2f} +- {:.2f} deg.'.format(fitTheta[0],fitTheta[1]), fontsize=10, color='tab:blue');
-        pass;
     # Draw center
     axsres[0].errorbar([0.,x0],[0.,y0],xerr=[0.,x0err],yerr=[0.,y0err],linestyle='-',marker='o',markersize=1.,capsize=2.,color='tab:brown');
-    axsres[0].text(x0+shiftx, y0+0.5*shifty, 'Center: \n({:.2f}+-{:.2f} , {:.2f}+-{:.2f})'.format(x0,x0err,y0,y0err),color='tab:brown');
-    axsres[0].text(shiftx, -4.*shifty, r'$r_0$={:.2f}+-{:.2f}'.format(r0,r0_err)+'\n'+r'$\theta_0=${:.2f}+-{:.2f} deg.'.format(theta0_deg,theta0_err_deg),fontsize=10,color='tab:brown');
-    # Draw circle
-    axsres[0].contour(X,Y,Z,[0],colors='r',linewidths=0.5);
-    axsres[0].text(-4800,-4000, 'Radius: \n{:.2f}+-{:.2f}'.format(r,rerr),color='tab:red');
     # Cosmetic
     xlabel = r'Real [$mK_\mathrm{RJ}$]' if usemK else 'Real [ADC]';
     ylabel = r'Imag. [$mK_\mathrm{RJ}$]' if usemK else 'Imag. [ADC]';
     axsres[0].set_title(outname);
     axsres[0].set_xlabel(xlabel,fontsize=16);
     axsres[0].set_ylabel(ylabel,fontsize=16);
-    axsres[0].set_xlim(-5000,5000);
-    axsres[0].set_ylim(-5000,5000);
+    axsres[0].set_xlim(-xylim,xylim);
+    axsres[0].set_ylim(-xylim,xylim);
     axsres[0].tick_params(labelsize=12);
     axsres[0].grid(True);
 
-    # Draw ideal radial lines at each 45 deg
-    for k in range(8) :
-        theta_ideal = deg_to_rad(-k*45. + fitTheta0[0]); # deg
-        x_line = x0+r*np.cos(theta_ideal);
-        y_line = y0+r*np.sin(theta_ideal);
-        # Draw
-        axsres[0].plot([x0,x_line],[y0,y_line],linestyle=':',linewidth=0.8,color='tab:red');
-        pass;
+    # Draw circle
+    axsres[0].contour(X,Y,Z,[0],colors='r',linewidths=0.5);
 
-
-    # Angle plot
+    ## Draw angle diff. plot ##
     # Calculate the d_theta
     theta_wires  = []; # deg
     d_thetas     = []; # deg
     d_theta_errs = []; # deg
-    for k in  range(len(reals)) :
+    # Get reference theta (fitTheta0)
+    for k in range(len(reals)):
+        if fitRThetas[k]['wireangle_deg'] == refAngle : fitTheta0 = fitRThetas[k]['theta_deg']; # deg
+        pass;
+    for k in range(len(reals))  :
         fitTheta = fitRThetas[k]['theta_deg']; # deg
         theta_wires.append(fitRThetas[k]['wireangle_deg']); # deg
         out.OUT('k={} wire angle = {:.1f}, fit angle = {:.1f}, fit angle (0deg) = {:.1f}'.format(k, theta_wires[-1], fitTheta[0], fitTheta0[0]),0);
-        d_fittheta = fitTheta0[0] - (fitTheta[0] if (fitTheta[0]<=fitTheta0[0]) else (fitTheta[0]-360.)); # deg
+        #d_fittheta = fitTheta0[0] - (fitTheta[0] if (fitTheta[0]<=fitTheta0[0]) else (fitTheta[0]-360.)); # deg
+        d_fittheta = rad_to_deg_0to2pi(deg_to_rad(fitTheta0[0]) - deg_to_rad(fitTheta[0])); # deg
         out.OUT('k={} d_fittheta = {:.1f}'.format(k, d_fittheta),0);
-        d_theta =  d_fittheta - (theta_wires[-1]-refAngle)*2.; # deg
+        d_theta =  deg180to180(d_fittheta - (theta_wires[-1]-refAngle)*2.); # deg
         d_thetas.append(d_theta); # deg
         d_theta_errs.append(fitTheta[1]); # deg
         pass;
@@ -424,6 +416,7 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
     d_thetas    = np.array(d_thetas);
     # Draw
     axsres[1].errorbar(theta_wires,d_thetas,None,d_theta_errs,linestyle='-',marker='o',markersize=1.,capsize=2.,color='tab:blue');
+    #axsres[1].errorbar(np.array(theta_wires)[drawIndex],np.array(d_thetas)[drawIndex],None,d_theta_errs,linestyle='-',marker='o',markersize=1.,capsize=2.,color='tab:blue');
     # Cosmetic
     xlabel = r'$\theta_{wire}$ [deg.]';
     #ylabel = r'$2\theta_{wire}$ - ' +'\n' +r'$\Delta (\theta_{fit}(\theta_{wire})$,$\theta_{fit}(0))$ [deg.]';
@@ -436,6 +429,42 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
     axsres[1].set_ylim(min(d_thetas[theta_wires>=refAngle]),max(d_thetas[theta_wires>=refAngle]));
     axsres[1].tick_params(labelsize=12);
     axsres[1].grid(True);
+
+    ## Save figure without text
+    saveFig(figres, '{}_fitresult_notext'.format(outpath), ext);
+
+    ## Add text in circle plot ##
+    # Write center info
+    axsres[0].text(x0+shiftx, y0+0.5*shifty, 'Center: \n({:.2f}+-{:.2f} , {:.2f}+-{:.2f})'.format(x0,x0err,y0,y0err),color='tab:brown');
+    axsres[0].text(shiftx, -4.*shifty, r'$r_0$={:.2f}+-{:.2f}'.format(r0,r0_err)+'\n'+r'$\theta_0=${:.2f}+-{:.2f} deg.'.format(theta0_deg,theta0_err_deg),fontsize=10,color='tab:brown');
+
+    # Write circle info
+    axsres[0].text(-xylim*0.95,-xylim*0.9, 'Radius: \n{:.2f}+-{:.2f}'.format(r,rerr),color='tab:red');
+
+    # Write data point info
+    for k in  drawIndex :
+        fitTheta = fitRThetas[k]['theta_deg']; # deg
+        
+        x_tmp = reals[k];
+        y_tmp = imags[k]+shifty;
+        #if k==0 : x_tmp = reals[k]-0.*shiftx;
+        #if k==0 : y_tmp = imags[k]+4.*shifty;
+        #if k==1 : x_tmp = reals[k]+0.*shiftx   ;
+        #if k==1 : y_tmp = imags[k]-5.*shifty;
+        #if k==10 : x_tmp = reals[k]+0.*shiftx   ;
+        #if k==10 : y_tmp = imags[k]-5.*shifty;
+        #axsres[0].text(x_tmp, y_tmp, '{} deg.\n({:.1f} , {:.1f})\n'.format(angleDataList[k]['angle'], reals[k],imags[k])+r'$\theta$'+' = {:.2f} +- {:.2f} deg.'.format(fitTheta[0],fitTheta[1]), color='tab:blue');
+        axsres[0].text(x_tmp, y_tmp, '{} deg.\n'.format(angleDataList[k]['angle_deg'])+r'$\theta$'+' = {:.2f} +- {:.2f} deg.'.format(fitTheta[0],fitTheta[1]), fontsize=10, color='tab:blue');
+        pass;
+
+    # Draw ideal radial lines at each 45 deg
+    for k in range(8) :
+        theta_ideal = deg_to_rad(-k*45. + fitTheta0[0]); # deg
+        x_line = x0+r*np.cos(theta_ideal);
+        y_line = y0+r*np.sin(theta_ideal);
+        # Draw
+        axsres[0].plot([x0,x_line],[y0,y_line],linestyle=':',linewidth=0.8,color='tab:red');
+        pass;
      
 
     # Save plot
@@ -675,6 +704,7 @@ if __name__=='__main__' :
             print(' ####Error#### for {}: {}'.format(boloname, e));
             print('ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!');
             print('####################################################################################');
+            print(traceback.format_exc())
             pass;
         pass;
     pass;
