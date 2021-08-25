@@ -513,8 +513,10 @@ def main(boloname, filename='',
     #stimulator_temp = 52. ; # 52. [mK_RJ/amp[ADC counts]] @ 90GHz, 103. [mK_RJ/amp[ADC counts]] @ 150GHz
     # New version: Get the number from stimulator template DB
     db_stim_temp = DBreaderStimulator('./data/pb2a_stim_template_20210607.db', tablename='pb2a_stim_template');
-    temps = db_stim_temp.getintensity(channelname=boloname,nearRunID=22300610,source='Jupiter'); # [K_RJ/amp, K_CMB/amp]
-    stimulator_temp = temps[0];
+    #temps = db_stim_temp.getintensity(channelname=boloname,nearRunID=22300610,source='Jupiter'); # [K_RJ/amp, K_CMB/amp]
+    #stimulator_temp = temps[0] * 1000.; # near run jupiter [mK_RJ/amp]
+    temps = db_stim_temp.getintensity(channelname=boloname,nearRunID=None,source='Jupiter'); # [K_RJ/amp, K_CMB/amp]
+    stimulator_temp = np.mean(np.array(temps)[:,0]) * 1000.; # averaged jupiter [mK_RJ/amp]
 
 
     # DB for theta_det calibration
