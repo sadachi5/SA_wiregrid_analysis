@@ -82,7 +82,7 @@ class DBreaderStimulator:
             for i in range(len(channels)-1, -1, -1) :
                 if channels[i][6] is None or channels[i][7] is None: del channels[i];
                 pass;
-            if self.verbose>1 : print('DBreaderStimulator::getintensity(): Selected channels: {}':channels);
+            if self.verbose>1 : print('DBreaderStimulator::getintensity(): Selected channels: {}'.format(channels));
             if len(channels)>0 : return [[float(channel[6]), float(channel[7])] for channel in channels]; # return K_RJ, K_CMB
             else               : return None;
 

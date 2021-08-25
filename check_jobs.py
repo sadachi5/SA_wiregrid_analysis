@@ -10,8 +10,9 @@ memory_errorline= 'TERM_MEMLIMIT';
 def check_jobs(outdir='output_ver5') :
     # 0: all failures,
     # 1: except error of Fmin_errorline = "Function minimum is not valid."
-    # 2: memory limit error
-    Nfail = np.array([0,0,0]); 
+    # 2: Fmin_errorline
+    # 3: memory limit error
+    Nfail = np.array([0,0,0,0]); 
 
     #RED   = '\033[31m'; # print color: red
     #RESET = '\033[0m' ; # print color: reset to default
@@ -68,7 +69,7 @@ def check_jobs(outdir='output_ver5') :
             Nfail[1] += 1;
             print(RED+'WARNING! A bsub log file does not have the success sentence.: {}'.format(log)+RESET);
             if Ngrep_outputs[1]>0 :
-                Nfail[2] += 1;
+                Nfail[3] += 1;
                 print('Memory limit error sentence : {}'.format(grep_outputs[1]));
                 pass;
             print('--- Please check it by the following command --------');
@@ -101,15 +102,18 @@ def check_jobs(outdir='output_ver5') :
             if Fmin_errorline in grep_outputs[0] :
                 isFmin_error = True;
                 errorout = 'Fmin error'
+                Nfail[2] += 1;
             else :
                 Nfail[1] += 1;
                 pass;
             print(RED+'WARNING! A fit log file have error sentence.: {}'.format(log)+RESET);
             print('Error   sentence : {}'.format(errorout));
             #print('Warning sentence : {}'.format( grep_outputs[1] if Ngrep_outputs[1]>0 else 'None' ));
-            print('--- Please check it by the following command --------');
-            print(RED+'cat {}'.format(log)+RESET);
-            print('-----------------------------------------------------');
+            if not isFmin_error :
+                print('--- Please check it by the following command --------');
+                print(RED+'cat {}'.format(log)+RESET);
+                print('-----------------------------------------------------');
+                pass;
             pass;
         pass;
 
@@ -153,7 +157,8 @@ def check_jobs(outdir='output_ver5') :
         print('There are errors in some jobs for {}'.format(outdir));
         print('# of all failed checks = {}'.format(Nfail[0]));
         print('# of failed checks except the error of "{}" = {}'.format(Fmin_errorline, Nfail[1]));
-        print('# of memory limit error = {}'.format(Nfail[2]));
+        print('# of "{}" error = {}'.format(Fmin_errorline, Nfail[2]));
+        print('# of memory limit error = {}'.format(Nfail[3]));
     pass;
     print('#################################################'.format(outdir));
     print();
