@@ -232,5 +232,15 @@ output\_ver8/plot\_ver8
             # of failed checks except the error of "Function minimum is not valid." = 0
             # of memory limit error = 0
             #################################################
-    
-    
+        - output_ver8 (analysis from TOD obtained in output_ver6)
+            ### Summary for check_job for output_ver8 ################
+            bsub error log (5461) : ./output_ver8/txt/PB20.13.12/bsub/bsub_PB20.13.12_Comb11Ch17.err...
+            bsub log       (5461) : ./output_ver8/txt/PB20.13.12/bsub/bsub_PB20.13.12_Comb09Ch22.out...
+            fitDemodResult.py         log (5461) : ./output_ver8/txt/PB20.13.12/fit/PB20.13.12_Comb03Ch20.out...
+            grid_rotation_analysis.py log (5461) : ./output_ver8/txt/PB20.13.12/gridana/PB20.13.12_Comb03Ch20.out...
+            There are errors in some jobs for output_ver8
+            # of all failed checks = 186
+            # of failed checks except the error of "Function minimum is not valid." = 0
+            # of "Function minimum is not valid." error = 186
+            # of memory limit error = 0
+            #################################################
