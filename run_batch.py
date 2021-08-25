@@ -20,7 +20,7 @@ maxNjob=100;
 
 # filename of boloname list to be run
 #bolofile='' # In this case, bololist is used.
-bolofile='output_ver8/job_check/2nd/fails_bololist_gridana.out'
+bolofile='output_ver8/job_check/3rd/fails_bololist2.out'
 # boloname list. NOTE: This is valid only when bolofile is empty
 bololist=[];
 #blolist=['PB20.13.13_Comb01Ch02','PB20.13.13_Comb01Ch03'];

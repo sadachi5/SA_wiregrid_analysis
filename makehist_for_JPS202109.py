@@ -81,7 +81,7 @@ def main(database, baseselect=[''],outfile='aho.png',verbose=0,
  
     y = df_select[dataname];
     if calib_tau : y -= 2. * df_select['tau'] * (hwp_speed*2.*np.pi);
-    if draw_all : axs.hist(theta0topi(y)*convertF, bins=nbins, range=(0.,360.), histtype='stepfilled',
+    if draw_all : axs.hist(theta0topi(y)*convertF, bins=nbins, range=(0.,180.), histtype='stepfilled',
              align='mid', orientation='vertical', log=False, linewidth=0.5, linestyle='-', edgecolor='k',
              color=colors[ihist], alpha=0.3, label=baselabel, stacked=stacked);
     ihist +=1;
@@ -121,14 +121,14 @@ def main(database, baseselect=[''],outfile='aho.png',verbose=0,
     print('Sum of selected bolos = {}'.format(sum(n_sels)));
 
 
-    axs.hist(data_selects, bins=nbins, range=(0.,360.), histtype='stepfilled',
+    axs.hist(data_selects, bins=nbins, range=(0.,180.), histtype='stepfilled',
              align='mid', orientation='vertical', log=False, linewidth=0.5, linestyle='-', edgecolor='k',
              color=colors[ihist:ihist+ndata], alpha=0.4, label=labels, stacked=stacked);
  
     axs.set_title(baseselect[1] if len(baseselect)>1 else '');
     axs.set_xlabel(r'$\theta(Wire angle=0)/2 = \theta_{\mathrm{det}}$ [deg.]',fontsize=16);
     axs.set_ylabel(r'# of bolometers',fontsize=16);
-    axs.set_xticks(np.arange(0,360,22.5));
+    axs.set_xticks(np.arange(0,180,22.5));
     axs.set_xlim(0,180);
     #axs.set_ylim(-5000,5000);
     axs.tick_params(labelsize=12);
@@ -149,7 +149,7 @@ if __name__=='__main__' :
     database = 'output_ver5/db/all_pandas_correct_label.pkl';
     outdir0  = 'plot_for_JPS202109/makehist';
     wafers=['13.13', '13.15', '13.28', '13.11', '13.12', '13.10', '13.31'];
-    nbins = 360*1;
+    nbins = (int)(180/2.5);
     ext = 'png';
     for stacked, stacklabel in (False,'nostack'),(True,'stack') :
         draw_all = stacked; # stacked histograms has a total histogram.
