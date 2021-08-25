@@ -61,6 +61,8 @@ output\_ver7/plot\_ver7
     - Modify reference offset in HWP angle calculation (using getOffsets() func. in libg3py3\_test.py
     - output\_ver7 is for bsub jobs. / plot\_ver7 is for test.
 
+output\_ver8/plot\_ver8
+------------------------
 
 ## run scripts
  - (./plot.sh: make plot of TODs)

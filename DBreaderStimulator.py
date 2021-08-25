@@ -86,7 +86,9 @@ if __name__ == '__main__':
     '''
 
     db = DBreaderStimulator('./data/pb2a_stim_template_20210607.db', tablename='pb2a_stim_template');
-    print(db.getintensity(channelname='PB20.13.13_Comb01Ch08',nearRunID=22300610,source='Jupiter'));
+    print(db.getintensity(channelname='PB20.13.13_Comb01Ch01',nearRunID=22300610,source='Jupiter'));
+    for a in db.getintensity(channelname='PB20.13.13_Comb01Ch01',source='Jupiter'): print(a);
+    print(np.mean(np.array(db.getintensity(channelname='PB20.13.13_Comb01Ch01',source='Jupiter'))[:,0])); # averaged jupiter [mK_RJ/amp]
 
 ### schema for pb2a_stim_template DB (pb2a_stim_template_20210607.db) ###
 # CREATE TABLE pb2a_stim_template (                                     #
