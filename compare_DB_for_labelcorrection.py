@@ -6,7 +6,7 @@ from compare_db import compare_db;
 from utils import theta0topi, rad_to_deg, deg_to_rad, diff_angle;
 
 if __name__=='__main__' :
-    dbname_out = 'output_ver5/db/all_pandas_correct_label.db'
+    dbname_out = 'output_ver5/db/all_pandas_correct_label'
     dbnames =[
             'output_ver5/db/all_pandas.db',
             #'data/pb2a-20210205/pb2a_mapping.db',
@@ -239,8 +239,14 @@ if __name__=='__main__' :
     #    print(name);
     #    pass;
 
-    # Save
-    conn = sqlite3.connect(dbname_out);
+    # Save to pickle file
+    outputname = dbname_out + '.pkl';
+    print('Saving the pandas to a pickle file ({})...'.format(outputname));
+    df_new.to_pickle(outputname);
+    # Save to sqlite3 file
+    outputname = dbname_out + '.db';
+    print('Saving the pandas to a sqlite3 file ({})...'.format(outputname));
+    conn = sqlite3.connect(outputname);
     df_new.to_sql('wiregrid',conn,if_exists='replace',index=None);
     conn.close();
 
