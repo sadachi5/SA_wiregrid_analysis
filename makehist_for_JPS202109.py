@@ -83,7 +83,7 @@ def main(database, baseselect=[''],outfile='aho.png',verbose=0,
     if calib_tau : y -= 2. * df_select['tau'] * (hwp_speed*2.*np.pi);
     if draw_all : axs.hist(theta0topi(y)*convertF, bins=nbins, range=(0.,180.), histtype='stepfilled',
              align='mid', orientation='vertical', log=False, linewidth=0.5, linestyle='-', edgecolor='k',
-             color=colors[ihist], alpha=0.3, label=baselabel, stacked=stacked);
+             color=colors[ihist], alpha=0.4, label=baselabel, stacked=stacked);
     ihist +=1;
  
     selections = [\
@@ -126,7 +126,8 @@ def main(database, baseselect=[''],outfile='aho.png',verbose=0,
              color=colors[ihist:ihist+ndata], alpha=0.4, label=labels, stacked=stacked);
  
     axs.set_title(baseselect[1] if len(baseselect)>1 else '');
-    axs.set_xlabel(r'$\theta(Wire angle=0)/2 = \theta_{\mathrm{det}}$ [deg.]',fontsize=16);
+    #axs.set_xlabel(r'$\theta(Wire angle=0)/2 = \theta_{\mathrm{det}}$ [deg.]',fontsize=16);
+    axs.set_xlabel(r'$\theta_{\mathrm{det}}$ [deg.]',fontsize=16);
     axs.set_ylabel(r'# of bolometers',fontsize=16);
     axs.set_xticks(np.arange(0,180,22.5));
     axs.set_xlim(0,180);
@@ -155,18 +156,20 @@ if __name__=='__main__' :
         draw_all = stacked; # stacked histograms has a total histogram.
         outdir = outdir0+'/'+stacklabel;
         main(database, baseselect=["readout_name==readout_name",''], outfile=outdir+'/all_nocut.'+ext,stacked=stacked,calib_tau=False,draw_all=draw_all,nbins=36*5,verbose=1);
-        for calib_tau, tausuffix, taulabel in (False,'',r' (No $\tau$-corr.)'),(True,'_taucorr',r' (Wt $\tau$-corr.)') :
+        #for calib_tau, tausuffix, taulabel in (False,'',r' (No $\tau$-corr.)'),(True,'_taucorr',r' (Wt $\tau$-corr.)') :
+        for calib_tau, tausuffix, taulabel in [(False,'',r'')] :
             # 0.017453292519943295 rad. = 1 deg.
             wg_qualitycut = 'theta_det_err<0.017453292519943295*0.5';
             main(database, baseselect=["tau>0.",'Wt stimulator / No wiregrid quality cut'], outfile=outdir+'/all'+tausuffix+'_noWGQcut.'+ext,calib_tau=calib_tau,draw_all=draw_all,stacked=stacked,nbins=nbins,verbose=1);
             main(database, baseselect=["tau>0.&"+wg_qualitycut,'Wt stimulator / Wt wiregrid quality cut'], outfile=outdir+'/all'+tausuffix+'.'+ext,calib_tau=calib_tau,draw_all=draw_all,stacked=stacked,nbins=nbins,verbose=1);
             for wafer in wafers :
+                print();
                 main(database, baseselect=["wafer_number=='{}'&".format(wafer)+wg_qualitycut,wafer+' All'+taulabel], 
                         calib_tau=calib_tau,draw_all=draw_all,stacked=stacked,nbins=nbins,verbose=1,outfile=outdir+'/'+wafer+'_all'+tausuffix+'.'+ext);
-                main(database, baseselect=["band==90&wafer_number=='{}'&".format(wafer) +wg_qualitycut,wafer+' 90GHz'+taulabel],
-                        calib_tau=calib_tau,draw_all=draw_all,stacked=stacked,nbins=nbins,verbose=1,outfile=outdir+'/'+wafer+'_90GHz'+tausuffix+'.'+ext);
-                main(database, baseselect=["band==150&wafer_number=='{}'&".format(wafer)+wg_qualitycut,wafer+' 150GHz'+taulabel],
-                        calib_tau=calib_tau,draw_all=draw_all,stacked=stacked,nbins=nbins,verbose=1,outfile=outdir+'/'+wafer+'_150GHz'+tausuffix+'.'+ext);
+                #main(database, baseselect=["band==90&wafer_number=='{}'&".format(wafer) +wg_qualitycut,wafer+' 90GHz'+taulabel],
+                #        calib_tau=calib_tau,draw_all=draw_all,stacked=stacked,nbins=nbins,verbose=1,outfile=outdir+'/'+wafer+'_90GHz'+tausuffix+'.'+ext);
+                #main(database, baseselect=["band==150&wafer_number=='{}'&".format(wafer)+wg_qualitycut,wafer+' 150GHz'+taulabel],
+                #        calib_tau=calib_tau,draw_all=draw_all,stacked=stacked,nbins=nbins,verbose=1,outfile=outdir+'/'+wafer+'_150GHz'+tausuffix+'.'+ext);
                 pass;
             pass;
     pass;
