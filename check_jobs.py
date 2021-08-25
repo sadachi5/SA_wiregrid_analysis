@@ -13,8 +13,10 @@ def check_jobs(outdir='output_ver5') :
     # 2: memory limit error
     Nfail = np.array([0,0,0]); 
 
-    RED   = '\033[31m'; # print color: red
-    RESET = '\033[0m' ; # print color: reset to default
+    #RED   = '\033[31m'; # print color: red
+    #RESET = '\033[0m' ; # print color: reset to default
+    RED   = ''; # No color
+    RESET = '' ; # No color
 
     # Get all log file names
     bsub_errlog = glob.glob('./{}/txt/PB*/bsub/*.err'.format(outdir));

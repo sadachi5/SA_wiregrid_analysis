@@ -54,7 +54,8 @@ class DBreaderStimulator:
     def getintensity(self, runID=None, channelname='', nearRunID=None, source=None) :
         channels = self.getchannel(runID, channelname);
         if self.verbose>1 : print('get channels: {}'.format(channels));
-        if channels is None : return None;
+        if channels is None : 
+            return None;
         else                : 
             # selection for source
             if source is not None :
@@ -64,12 +65,24 @@ class DBreaderStimulator:
                     pass;
                 channels = __channels;
                 pass;
+            # select near run data
             if nearRunID is not None :
                 if nearRunID>22300000 : nearRunID -= 22300000;
-                runIDs = np.array([(int)(channel[0]) for channel in channels]);
-                diffrun= np.abs(runIDs - nearRunID);
-                nearest_index = diffrun.argmin();
-                return [float(channels[nearest_index][6]), float(channels[nearest_index][7])];
+                while len(channels)>0 : 
+                    runIDs = np.array([(int)(channel[0]) for channel in channels]);
+                    diffrun= np.abs(runIDs - nearRunID);
+                    nearest_index = diffrun.argmin();
+                    if channels[nearest_index][6] is not None and channels[nearest_index][7] is not None:
+                        channels = [channels[nearest_index]]; # select one channel
+                    else :
+                        del channels[nearest_index]; # remove the channel
+                        pass;
+                    pass;
+            # check there is None data channels
+            for i in range(len(channels)-1, -1, -1) :
+                if channels[i][6] is None or channels[i][7] is None: del channels[i];
+                pass;
+            if self.verbose>1 : print('DBreaderStimulator::getintensity(): Selected channels: {}':channels);
             if len(channels)>0 : return [[float(channel[6]), float(channel[7])] for channel in channels]; # return K_RJ, K_CMB
             else               : return None;
 
