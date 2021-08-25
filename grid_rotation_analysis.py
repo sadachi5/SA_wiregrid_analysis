@@ -516,7 +516,14 @@ def main(boloname, filename='',
     #temps = db_stim_temp.getintensity(channelname=boloname,nearRunID=22300610,source='Jupiter'); # [K_RJ/amp, K_CMB/amp]
     #stimulator_temp = temps[0] * 1000.; # near run jupiter [mK_RJ/amp]
     temps = db_stim_temp.getintensity(channelname=boloname,nearRunID=None,source='Jupiter'); # [K_RJ/amp, K_CMB/amp]
-    stimulator_temp = np.mean(np.array(temps)[:,0]) * 1000.; # averaged jupiter [mK_RJ/amp]
+    if temps is None :
+        out.WARNING('There is no matched stimulator temperature data for {}/ Jupiter'.format(boloname));
+        out.WARNING('The output is {}'.format(temps));
+        out.WARNING(' --> Gain calibration constant is set to 0.');
+        stimulator_temp = 0.;
+    else :
+        stimulator_temp = np.mean(np.array(temps)[:,0]) * 1000.; # averaged jupiter [mK_RJ/amp]
+        pass;
 
 
     # DB for theta_det calibration
@@ -527,8 +534,8 @@ def main(boloname, filename='',
         pass;
 
     # set calibration constant and its error from ADC output to mK_RJ
-    cal     = stimulator_temp/stimulator_amp[1][0]  if stimulator_amp[1][0]>0. else 0.; # chose 90GHz after calibration
-    cal_err = cal/stimulator_amp[1][0] * stimulator_amp[1][1] if stimulator_amp[1][0]>0. else 0.; # chose 90GHz after calibration 
+    cal     = stimulator_temp/stimulator_amp[1][0]  if stimulator_amp[1][0]>0. else 0.; # chose sitmulator run after calibration
+    cal_err = cal/stimulator_amp[1][0] * stimulator_amp[1][1] if stimulator_amp[1][0]>0. else 0.; # chose stimulator run after calibration 
     out.OUT('calibration constant (ADC->mK_RJ) = {:.3f} +- {:.3f}'.format(cal,cal_err),0);
 
     # ver0

@@ -199,6 +199,10 @@ def deg90to90(deg) :
     deg_new = deg0to180(deg, 90.);
     return deg_new;
 
+# degree range --> [-180, 180]
+def deg180to180(deg) :
+    deg_new = rad_to_deg_pitopi(deg_to_rad(deg));
+    return deg_new;
 
 # diff. between two angles (rad.) [0, pi/2] or [0, pi]
 def diff_angle(rad1,rad2,upper90deg=True) :

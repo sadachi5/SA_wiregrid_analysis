@@ -42,19 +42,19 @@ class DBreaderStimulator:
         return None;
 
     def getamp(self, runID=0, channelname='') :
-        channel = self.getchannel(runID, channelname)[0];
+        channel = self.getchannel(runID, channelname);
         if channel is None : return (0.,0.);
-        else               : return (float(channel[6]), float(channel[7]));
+        else               : return (float(channel[0][6]), float(channel[0][7]));
 
     def gettau(self, runID=0, channelname='') :
-        channel = self.getchannel(runID, channelname)[0];
+        channel = self.getchannel(runID, channelname);
         if channel is None : return (0.,0.);
-        else               : return (float(channel[4]), float(channel[5]));
+        else               : return (float(channel[0][4]), float(channel[0][5]));
 
     def getintensity(self, runID=None, channelname='', nearRunID=None, source=None) :
         channels = self.getchannel(runID, channelname);
         if self.verbose>1 : print('get channels: {}'.format(channels));
-        if channels is None : return [(0.,0.)];
+        if channels is None : return None;
         else                : 
             # selection for source
             if source is not None :
@@ -70,7 +70,8 @@ class DBreaderStimulator:
                 diffrun= np.abs(runIDs - nearRunID);
                 nearest_index = diffrun.argmin();
                 return [float(channels[nearest_index][6]), float(channels[nearest_index][7])];
-            return [[float(channel[6]), float(channel[7])] for channel in channels]; # return K_RJ, K_CMB
+            if len(channels)>0 : return [[float(channel[6]), float(channel[7])] for channel in channels]; # return K_RJ, K_CMB
+            else               : return None;
 
 
 if __name__ == '__main__':

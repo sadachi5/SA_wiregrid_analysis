@@ -161,7 +161,7 @@ def check_jobs(outdir='output_ver5') :
 
 
 if __name__=='__main__' :
-    outdir = 'output_ver6';
+    outdir = 'output_ver8';
     check_jobs(outdir);
 
 

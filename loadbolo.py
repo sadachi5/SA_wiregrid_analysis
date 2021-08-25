@@ -35,8 +35,10 @@ def loadbolo(
     bolonames=[];
     if boloname is None or boloname=="" :
         bolonames = np.array(g3c.bolonames_all) 
-    else :
+    elif isinstance(boloname, str) : 
         bolonames = np.array([boloname]);
+    else :
+        bolonames = np.array(boloname);
         pass;
  
     # get G3Time of start/end time
