@@ -30,7 +30,7 @@ endStr_tmp   = "20210205_180400";
 
 
 def plot(filename, boloname=None, 
-        start=None, end=None, calibGain=False,
+        start=None, end=None, calibGain=True,
         outname='output', outdir='plot', loaddata=True, loadWHWP=True,loadSlow=True) :
 
     # initialize data list
@@ -39,9 +39,10 @@ def plot(filename, boloname=None,
     whwp_angle = [];
     bolotime_boloarray = [];
     y_boloarray        = [];
-    print('boloname = {}'.format(boloname));
 
     outpath = outdir+'/'+outname;
+    out.OUT('boloname = {}'.format(boloname));
+    out.OUT('outpath = {}'.format(outpath));
     # check directory
     if not os.path.isdir(outdir) : 
         out.WARNING('There is no output directory: {}'.format(outdir));
@@ -174,8 +175,8 @@ def plot(filename, boloname=None,
     # loop over bolonames to make plots
     all_fig, all_axs = plt.subplots(3,1);
     all_fig.tight_layout(rect=[0,0,0.8,0.96])
-    plt.subplots_adjust(wspace=0.2, hspace=0.7)
-    all_fig.set_size_inches(14,6);
+    plt.subplots_adjust(wspace=0.2, hspace=0.7, bottom=0.12, left=0.15)
+    all_fig.set_size_inches(14,6.5);
     all_fig.suptitle(outname);
     for i, name in enumerate(bolonames):
         bolotime = bolotime_boloarray[i];
@@ -183,8 +184,8 @@ def plot(filename, boloname=None,
 
         fig, axs = plt.subplots(3,1);
         fig.tight_layout(rect=[0,0,0.8,0.96])
-        plt.subplots_adjust(wspace=0.2, hspace=0.7)
-        fig.set_size_inches(14,6);
+        plt.subplots_adjust(wspace=0.2, hspace=0.7, bottom=0.12, left=0.15)
+        fig.set_size_inches(14,6.5);
         fig.suptitle(name)
         time_ax    = axs[0];
         timeTemp_ax= axs[1];
@@ -201,17 +202,19 @@ def plot(filename, boloname=None,
         y_subDC = y - linearfunc(bolotime);
 
         # Draw x: time / y: output
+        #time_ax.plot(time,y,label='Raw data', linestyle='-')
         time_ax.plot(time,y_subave,label='Raw data - ave. ({:.1e})'.format(ave), linestyle='-')
+        #all_time_ax.plot(time,y,label='Raw data: {}'.format(name), linestyle='-', color=colors[i])
         all_time_ax.plot(time,y_subave,label='Raw data - ave. ({:.1e}): {}'.format(ave,name), linestyle='-', color=colors[i])
-        #time_ax.plot(time,y_subDC,label='Raw data - DC', linestyle='--')
         # Plot cosmetic
         for ax in [time_ax, all_time_ax] :
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
-            ax.tick_params(axis='x',labelrotation=0,labelsize=10);
-            ax.set_title('TOD');
-            ax.set_xlabel('Time');
+            ax.tick_params(axis='x',labelrotation=0,labelsize=16);
+            ax.tick_params(axis='y',labelrotation=0,labelsize=16);
+            ax.set_title('TOD', fontsize=10);
+            ax.set_xlabel('Time', fontsize=16);
             ax.set_xlim(time[0],time[-1]);
-            ax.set_ylabel('ADC output' if not calibGain else r'Power [$mK_\mathrm{RJ}$]');
+            ax.set_ylabel('ADC output' if not calibGain else r'Power [$mK_\mathrm{RJ}$]', fontsize=16);
             ax.grid(True);
             ax.legend(mode = 'expand',loc='upper left',bbox_to_anchor=(1.02,1.0), framealpha = 1,frameon = False,fontsize = 7,title='',borderaxespad=0.);
             pass;
@@ -229,11 +232,12 @@ def plot(filename, boloname=None,
                 ax.set_ylim(3.85,3.95);
                 ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
                 ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.4f'))
-                ax.tick_params(axis='x',labelrotation=0,labelsize=10);
-                ax.set_title('Temperature [K]');
-                ax.set_xlabel('Time');
+                ax.tick_params(axis='x',labelrotation=0,labelsize=16);
+                ax.tick_params(axis='y',labelrotation=0,labelsize=16);
+                ax.set_title('Temperature [K]', fontsize=10);
+                ax.set_xlabel('Time', fontsize=16);
                 ax.set_xlim(time[0],time[-1]);
-                ax.set_ylabel('Temperature [K]');
+                ax.set_ylabel('Temperature [K]', fontsize=16);
                 ax.grid(True);
                 #ax.set_yscale('log')
                 ax.legend(mode = 'expand',loc='upper left',bbox_to_anchor=(1.02,1.0),framealpha = 1,frameon = False,fontsize = 7,title='',borderaxespad=0.);
@@ -242,20 +246,25 @@ def plot(filename, boloname=None,
 
         # Draw x: WHWP angle / y: output
         if loadWHWP :
+            #angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y,label='Raw data'.format(ave), marker='.', markersize=1,linestyle='',color='tab:blue')
             angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y_subave,label='Raw data - average({:e})'.format(ave), marker='.', markersize=1,linestyle='',color='tab:orange')
-            angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y_subDC,label='Raw data - DC', marker='.', markersize=1,linestyle='',color='tab:blue')
-            all_angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y_subDC,label='Raw data - DC: {}'.format(name), marker='.', markersize=1,linestyle='',color=colors[i])
+            #angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y_subDC,label='Raw data - DC', marker='.', markersize=1,linestyle='',color='tab:green')
+            #all_angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y,label='Raw data: {}'.format(name), marker='.', markersize=1,linestyle='',color=colors[i])
+            all_angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y_subDC,label='Raw data - average({:e}): {}'.format(ave,name), marker='.', markersize=1,linestyle='',color=colors[i])
+            #all_angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y_subDC,label='Raw data - DC: {}'.format(name), marker='.', markersize=1,linestyle='',color=colors[i])
             pass;
         # Plot cosmetic
         for ax in [angle_ax, all_angle_ax] :
-            ax.set_title('HWP angle');
-            ax.set_xlabel('HWP angle [deg.]');
-            ax.set_ylabel('ADC output' if not calibGain else r'Power [$mK_\mathrm{RJ}$]');
+            ax.set_title('HWP angle', fontsize=10);
+            ax.set_xlabel('HWP angle [deg.]', fontsize=16);
+            ax.set_ylabel('ADC output' if not calibGain else r'Power [$mK_\mathrm{RJ}$]', fontsize=16);
+            ax.tick_params(axis='x',labelrotation=0,labelsize=16);
+            ax.tick_params(axis='y',labelrotation=0,labelsize=16);
             ax.grid(True);
             ax.legend(mode = 'expand',loc='upper left',bbox_to_anchor=(1.02,1.0),framealpha = 1,frameon = False,fontsize = 7,title='',borderaxespad=0.);
             pass;
 
-        out.OUT('Saving plot ({}.png) for [{}]:{}'.format(outpath, i, boloname),0);
+        out.OUT('Saving plot ({}.png) for [{}]:{}'.format(outpath, i, name),0);
         fig.savefig(outpath+'_{}.png'.format(name))
         fig.clear();
         pass
@@ -271,19 +280,26 @@ if __name__=='__main__' :
     filename='/group/cmb/polarbear/data/pb2a/g3compressed/22300000_v05/Run22300609';
     boloname='PB20.13.13_Comb01Ch03,PB20.13.13_Comb01Ch24';
     outdir ='plot_for_JPS202109';
-    outname =boloname;
     #boloname=None;
 
     #startStr = None;
     #endStr   = None;
 
-    startStr = "20210205_180230";
-    endStr   = "20210205_180400";
-    #outname  = '1749-1759';
+    startStr = "20210205_180510";
+    endStr   = "20210205_180530";
+    outname ='tod_A2_22.5deg';
 
-    #startStr = "20210205_174930";
-    #endStr   = "20210205_175100";
-    #outname  = 'A0_0deg';
+    #startStr = "20210205_180230";
+    #endStr   = "20210205_180400";
+    #outname ='tod_A0_0deg';
+
+    #startStr = "20210205_180230";
+    #endStr   = "20210205_180231";
+    #outname ='tod_A0_0deg_1sec';
+
+    #startStr = "20210205_180200";
+    #endStr   = "20210205_181830";
+    #outname ='tod_A0-8_0-157.5angles';
 
     parser = argparse.ArgumentParser();
     parser.add_argument('--filename', default=filename, help='input g3 filename (default: {})'.format(filename));
@@ -299,8 +315,9 @@ if __name__=='__main__' :
     args = parser.parse_args();
 
     out.setverbosity(args.verbose);
+    out.OUT('outname = {}'.format(args.outname),1)
     out.OUT('loaddata = {}'.format(args.loaddata),1)
     if not (',' in boloname) : boloname = [args.boloname];
     else                     : boloname = args.boloname.split(',');
-    plot(args.filename,boloname,args.start,args.end,args.outname,outdir=args.outdir,loaddata=args.loaddata,loadWHWP=args.loadWHWP);
+    plot(args.filename,boloname,args.start,args.end,outname=args.outname,outdir=args.outdir,loaddata=args.loaddata,loadWHWP=args.loadWHWP);
     pass;

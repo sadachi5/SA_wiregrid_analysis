@@ -5,10 +5,12 @@ import pandas;
 from compare_db import compare_db;
 from utils import theta0topi, rad_to_deg, deg_to_rad, diff_angle;
 
+ver='ver8'
+
 if __name__=='__main__' :
-    dbname_out = 'output_ver5/db/all_pandas_correct_label'
+    dbname_out = 'output_{}/db/all_pandas_correct_label'.format(ver)
     dbnames =[
-            'output_ver5/db/all_pandas.db',
+            'output_{}/db/all_pandas.db'.format(ver),
             #'data/pb2a-20210205/pb2a_mapping.db',
             'data/ykyohei/mapping/pb2a_mapping_postv2.db',
             ];
