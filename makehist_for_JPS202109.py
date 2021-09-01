@@ -147,7 +147,8 @@ if __name__=='__main__' :
     #outdir0  = 'output_ver3/summary';
     #database = 'output_ver4/db/all_pandas.pkl';
     #outdir0  = 'output_ver4/summary';
-    database = 'output_ver5/db/all_pandas_correct_label.pkl';
+    #database = 'output_ver5/db/all_pandas_correct_label.pkl';
+    database = 'output_ver8/db/all_pandas_correct_label.pkl';
     outdir0  = 'plot_for_JPS202109/makehist';
     wafers=['13.13', '13.15', '13.28', '13.11', '13.12', '13.10', '13.31'];
     nbins = (int)(180/2.5);

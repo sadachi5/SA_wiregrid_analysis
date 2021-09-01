@@ -7,7 +7,7 @@ from utils import theta0topi, colors, printVar, rad_to_deg, rad_to_deg_pitopi, r
 from matplotlib import pyplot as plt;
 from lmfit.models import GaussianModel
 
-ver='_ver5';
+ver='_ver8';
 
 
 def plotEachWire(dfs, var_set, var_mean_set, var_std_set, slabels, 
@@ -71,7 +71,7 @@ def plotEachWire(dfs, var_set, var_mean_set, var_std_set, slabels,
         else :
             __datas  = __var_set_nangle;
             pass;
-        print(__var_set_nangle);
+        #print(__var_set_nangle);
         #print('colors =', __colors);
  
         __axs2 = axs2[i][j];
@@ -114,7 +114,7 @@ def plotEachWire(dfs, var_set, var_mean_set, var_std_set, slabels,
     return 0;
 
 
-def drawAngleHist(ax, iselections, selections, fit_models, fit_results, xbinrange, baseselect, showText=True) :
+def drawAngleHist(ax, iselections, selections, fit_models, fit_results, nzerobins, xbinrange, baseselect, showText=True) :
     # Draw data
     __datas = [ data_selects[i] for i in iselections ];
     __labels= [ labels[i]       for i in iselections ];
@@ -131,9 +131,9 @@ def drawAngleHist(ax, iselections, selections, fit_models, fit_results, xbinrang
         result = fit_results[i];
         center = result.params['center'];
         sigma  = result.params['sigma'];
-        redchi = result.redchi;
         chi    = result.chisqr;
-        nfree  = result.nfree;
+        nfree  = result.nfree - nzerobins[i];
+        redchi = chi / nfree;
         if center.value  is None : center.value  = 0.
         if center.stderr is None : center.stderr = 0.
         if sigma.value  is None : sigma.value  = 0.
@@ -161,7 +161,7 @@ def drawAngleHist(ax, iselections, selections, fit_models, fit_results, xbinrang
 
 
 
-def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
+def check_absolute(outfile='plot_for_JPS202109/check_absolute/check_absolute'+ver):
 
     # Configure for base selections
     stim_quality_cut = 'tau>0.';
@@ -288,7 +288,7 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
     dataname2= 'pol_angle';
 
     # histogram setting
-    binwidth = 1.;
+    binwidth = 1.0; 
     xbinrange = [-20,20];
     nbins = int((xbinrange[1]-xbinrange[0])/binwidth);
     
@@ -296,6 +296,7 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
     fit_models  = [];
     fit_results = [];
     fit_bins    = [];
+    nzerobins   = [];
     for i, selectinfo in enumerate(selections) :
         print('*********** i={}th selection ***************'.format(i));
         selection   = selectinfo[0] + ('' if len(baseselect[0])==0 else ('&' + baseselect[0]));
@@ -322,17 +323,22 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
         print('init for sigma  of gauusian in {}th selection = {}'.format(i, params['sigma'].value));
         printVar(histo);
         printVar(bins_center);
-        result = model.fit(data=histo, x=bins_center, params=params)
+        #weights = None;
+        #n = [ y for y in histo if y!=0 else 1. ];
+        weights = [ 1./np.sqrt(N) if N>0. else 0. for N in histo ]; # weights will be multiply to (data - model). sum{(data-model)*weights)
+        nzerobin = np.sum(histo==0.);
+        result = model.fit(data=histo, x=bins_center, params=params, weights=weights)
         #newparams = result.params;
         #result = model.fit(data=histo, x=bins_center, params=newparams)
         print(result.fit_report());
         print('weights = ', result.weights);
         print('sqrt(N) = ', np.sqrt(result.data));
-        print('red-chi-square = {}: chi-square={}/Nfree={}'.format(result.redchi, result.chisqr, result.nfree));
+        print('red-chi-square = {}: chi-square={}/(Nfree-Nzero)=({}-{})'.format(result.chisqr/(result.nfree-nzerobin), result.chisqr, result.nfree, nzerobin));
         print(result.ci_report());
         fit_models .append(copy.deepcopy(model));
         fit_results.append(copy.deepcopy(result));
         fit_bins   .append(copy.deepcopy(bins_center));
+        nzerobins  .append(nzerobin);
         #del result, bins, histo, model, params;
         pass;
     print('Sum of selected bolos = {}'.format(sum(n_sels)));
@@ -342,30 +348,32 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
     # Absolute angle plots (Measured - design angles) #
     ###################################################
 
-    Nrow    = 3;
-    Ncolumn = 4;
-    abs_fig, abs_axs = plt.subplots(Nrow,Ncolumn);
-    abs_fig.set_size_inches(6*Ncolumn,6*Nrow);
-    plt.subplots_adjust(wspace=0.3, hspace=0.3, left=0.15, right=0.95,bottom=0.15, top=0.95)
-
-    # Diff. angle plot for 90GHz
-    drawAngleHist(abs_axs[0,0], iselections=[0,1], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect);
-
-    # Diff. angle plot for 150GHz
-    drawAngleHist(abs_axs[0,1], iselections=[2,3], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect);
-
-    # Diff. angle plot for 90GHz A-handed
-    drawAngleHist(abs_axs[1,0], iselections=[0], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect);
-    # Diff. angle plot for 90GHz B-handed
-    drawAngleHist(abs_axs[1,1], iselections=[1], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect);
-    # Diff. angle plot for 150GHz A-handed
-    drawAngleHist(abs_axs[1,2], iselections=[2], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect);
-    # Diff. angle plot for 150GHz B-handed
-    drawAngleHist(abs_axs[1,3], iselections=[3], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect);
+    for showText, suffix in [(True, ''), (False,'_notext')]:
+        Nrow    = 3;
+        Ncolumn = 4;
+        abs_fig, abs_axs = plt.subplots(Nrow,Ncolumn);
+        abs_fig.set_size_inches(6*Ncolumn,6*Nrow);
+        plt.subplots_adjust(wspace=0.3, hspace=0.3, left=0.15, right=0.95,bottom=0.15, top=0.95)
  
-    # Save fig
-    print('savefig to '+outfile+'.png');
-    abs_fig.savefig(outfile+'.png');
+        # Diff. angle plot for 90GHz
+        drawAngleHist(abs_axs[0,0], iselections=[0,1], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, showText=showText);
+ 
+        # Diff. angle plot for 150GHz
+        drawAngleHist(abs_axs[0,1], iselections=[2,3], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, showText=showText);
+ 
+        # Diff. angle plot for 90GHz A-handed
+        drawAngleHist(abs_axs[1,0], iselections=[0], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, showText=showText);
+        # Diff. angle plot for 90GHz B-handed
+        drawAngleHist(abs_axs[1,1], iselections=[1], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, showText=showText);
+        # Diff. angle plot for 150GHz A-handed
+        drawAngleHist(abs_axs[1,2], iselections=[2], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, showText=showText);
+        # Diff. angle plot for 150GHz B-handed
+        drawAngleHist(abs_axs[1,3], iselections=[3], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, showText=showText);
+  
+        # Save fig
+        print('savefig to '+outfile+suffix+'.png');
+        abs_fig.savefig(outfile+suffix+'.png');
+        pass;
 
 
 
@@ -542,6 +550,7 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
     ########################
     # each wire angle plot #
     ########################
+    '''
 
     # Define columns names
     wire_angles = [0,22.5,45.,67.5,90.,112.5,135.,157.5]; # wire_angles[0] will be used as reference point.
@@ -748,6 +757,7 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
 
             pass;
         pass;
+    '''
 
     return 0;
 

@@ -22,7 +22,7 @@ from minuitfit import *;
 import lmfit;
 from LMfit import LMfit, getParamsValues;
 
-def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., usemK=False, out0=None, verbosity=0, ext='png', initalpha_frac=None, nLMfit=1, batchmode=False, drawExcludeAngle=False) :
+def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., usemK=False, out0=None, verbosity=0, ext='png', initalpha_frac=None, nLMfit=1, batchmode=False, drawExcludeAngle=False, fineCircle=False) :
     print('##### fitDemodResult for {} ########################'.format(boloname));
 
     # initialize Out
@@ -72,13 +72,33 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
         # C = (1/(a*a) - 1/(b*b))*2.*sin(alpha)*cos(alpha)
         x0 = pars[0];
         y0 = pars[1];
+        x1 = x-pars[0];
+        y1 = y-pars[1];
+        theta = np.arctan2(y,x);
         a  = pars[2];
         b  = pars[3];
         alpha = pars[4];
         A = np.power(np.cos(alpha)/a, 2.) + np.power(np.sin(alpha)/b, 2.);
         B = np.power(np.sin(alpha)/a, 2.) + np.power(np.cos(alpha)/b, 2.);
         C = np.multiply(  np.divide(1, np.power(a,2.)) - np.divide(1, np.power(b,2.)) ,  2.*np.sin(alpha)*np.cos(alpha) );
-        return (x-pars[0])**2. + B/A*(y-pars[1])**2. + C/A*(x-pars[0])*(y-pars[1]) - 1./A;
+        X_fit = a*np.cos(theta-alpha);
+        Y_fit = b*np.sin(theta-alpha);
+        cosa  = np.cos(alpha);
+        sina  = np.sin(alpha);
+        x_fit = cosa*X_fit - sina*Y_fit;
+        y_fit = sina*X_fit + cosa*Y_fit;
+        r_fit = np.sqrt(np.power(x_fit,2.) + np.power(y_fit,2.));
+        r1    = np.sqrt(np.power(x1,2.) + np.power(y1,2.));
+        diff0   = (x1**2. + B/A*y1**2. + C/A*x1*y1 - 1./A);
+        diff1   = (r_fit - r1)*np.abs(r_fit - r1);
+        #print('0th term: {}'.format(x1**2.));
+        #print('1st term: {}'.format(B/A*y1**2.));
+        #print('2nd term: {}'.format(C/A*x1*y1));
+        #print('r^2: {}'.format(1/A));
+        #print('x1**2. + B/A*y1**2. + C/A*x1*y1 - 1./A: {}'.format(diff0));
+        #print('|r_fit - r1|*(r_fit - r1) : {}'.format(diff1));
+        #return diff0;
+        return diff1;
 
     def createfitsquare(func, x,y,xerr,yerr) :
         def fitsquare(*pars) :
@@ -87,7 +107,10 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
             #err_square = np.power(xerr,2.)+np.power(np.multiply(yerr,pars[2]/pars[3]),2.); # NOTE: Should be improved.
             err_square = np.power(xerr,2.)+np.power(yerr,2.); # NOTE: Should be improved.
             square = np.sum( np.abs(diffsquare) / (err_square) );
-            #print(square);
+            print('diff^2 = ',diffsquare);
+            print('err^2  = ',err_square);
+            print('(diff/err)^2  = ',np.abs(diffsquare)/err_square);
+            print('suqre = ',square);
             return square;
         return fitsquare;
 
@@ -254,12 +277,18 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
     out.OUT('init_pars for minuit = {}'.format(init_pars),0);
 
     # minuit fit (to calculate parameter errors)
+    out.OUT('x_fit: {}'.format(x_fit),0);
+    out.OUT('y_fit: {}'.format(y_fit),0);
+    out.OUT('xerr_fit: {}'.format(xerr_fit),0);
+    out.OUT('yerr_fit: {}'.format(yerr_fit),0);
     fitsquare   = createfitsquare(fitfunc, x_fit, y_fit, xerr_fit, yerr_fit);
     result, minuit = minuitminosfit(fitsquare, init=init_pars, fix=fix_pars, limit=limit_pars, error=error_pars, errordef=errdef, precision=1.e-10, verbosity=2);
     out.OUT('result of minuit: {}'.format(result),0);
     pars = result[0];
     errs = result[3];
     chisqr = result[1];
+    out.OUT('pars = {}'.format(*pars),0);
+    out.OUT('chisquare calculated by myself = {}'.format( fitsquare(*pars) ));
 
     # Print fit results
     #parlabels = ['Center of real', 'Center of imag.', 'Pseudo-raidus^2', 'Coefficient on y^2 term', 'Coefficient on xy term'];
@@ -361,7 +390,8 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
     marginasymmH2= 0.16;
     axsres[0].set_position([(marginW+marginasymmW),1.-sum(axsScale[:0+1])+axsScale[0]*(marginH+marginasymmH),fillspaceW,axsScale[0]*fillspaceH]); # left, bottom, width, height
     axsres[1].set_position([(marginW+marginasymmW),1.-sum(axsScale[:1+1])+axsScale[1]*(marginH+marginasymmH2),fillspaceW,axsScale[1]*fillspaceH]); # left, bottom, width, height
-    figres.set_size_inches(6,9);
+    if fineCircle : figres.set_size_inches(6*4,9*4);
+    else          : figres.set_size_inches(6,9);
     # Draw data points
     drawIndex = [];
     if drawExcludeAngle :
@@ -372,12 +402,12 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
     axsres[0].errorbar(
             np.array(reals)[drawIndex]          ,np.array(imags)[drawIndex],
             xerr=np.array(reals_err)[drawIndex] ,yerr=np.array(imags_err)[drawIndex],
-            linestyle='',marker='o',markersize=1.,capsize=2.);
+            linestyle='',marker='o',markersize=2.,capsize=0.);
     shiftx=r*0.04;
     shifty=r*0.04;
     fitTheta0 = None;
     # Draw center
-    axsres[0].errorbar([0.,x0],[0.,y0],xerr=[0.,x0err],yerr=[0.,y0err],linestyle='-',marker='o',markersize=1.,capsize=2.,color='tab:brown');
+    axsres[0].errorbar([0.,x0],[0.,y0],xerr=[0.,x0err],yerr=[0.,y0err],linestyle='-',marker='o',markersize=2.,capsize=0.,color='tab:brown');
     # Cosmetic
     xlabel = r'Real [$mK_\mathrm{RJ}$]' if usemK else 'Real [ADC]';
     ylabel = r'Imag. [$mK_\mathrm{RJ}$]' if usemK else 'Imag. [ADC]';
@@ -386,11 +416,17 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
     axsres[0].set_ylabel(ylabel,fontsize=16);
     axsres[0].set_xlim(-xylim,xylim);
     axsres[0].set_ylim(-xylim,xylim);
-    axsres[0].tick_params(labelsize=12);
+    if fineCircle : 
+        axsres[0].tick_params(labelsize=6);
+        axsres[0].set_xticks(np.arange(-xylim,xylim,20));
+        axsres[0].set_yticks(np.arange(-xylim,xylim,20));
+    else :
+        axsres[0].tick_params(labelsize=12);
+        pass;
     axsres[0].grid(True);
 
     # Draw circle
-    axsres[0].contour(X,Y,Z,[0],colors='r',linewidths=0.5);
+    axsres[0].contour(X,Y,Z,[0],colors='r',linewidths=1.0 if not fineCircle else 0.5);
 
     ## Draw angle diff. plot ##
     # Calculate the d_theta
@@ -431,7 +467,7 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
     axsres[1].grid(True);
 
     ## Save figure without text
-    saveFig(figres, '{}_fitresult_notext'.format(outpath), ext);
+    saveFig(figres, '{}_fitresult_notext{}'.format(outpath, '' if not fineCircle else '_fineplot'), ext);
 
     ## Add text in circle plot ##
     # Write center info
@@ -469,7 +505,7 @@ def main(picklefile, boloname, outdir, outname, excludeAngle=[], refAngle=0., us
 
     # Save plot
     out.OUT('Saving plot ({}_fitresult)...'.format(outpath),0);
-    saveFig(figres, '{}_fitresult'.format(outpath), ext);
+    saveFig(figres, '{}_fitresult{}'.format(outpath, '' if not fineCircle else '_fineplot'), ext);
 
     # Save database
     columns = [
@@ -633,6 +669,7 @@ if __name__=='__main__' :
     parser.add_argument('--init-alpha', dest='initalpha_frac', default=initalpha_frac, help='Fixed value of alpha(alpha will be fixed in the fit)');
     parser.add_argument('--refAngle', default=refAngle, help='Reference wire angle for the angle calibration');
     parser.add_argument('--excludeAngle', default=None, help='Exclued wire angles in the fit. Multiple angles can be specified by joining \",\". (ex. 0,45) default=\"\"');
+    parser.add_argument('--fineCircle', default=False, action='store_true', help='Make a fine circle plot default=False');
     parser.add_argument('-v', '--verbosity', default=verbosity, type=int, help='verbosity level: A larger number means more printings. (default: {})'.format(verbosity));
 
     args = parser.parse_args();
@@ -697,7 +734,7 @@ if __name__=='__main__' :
     # Loop over bolonames
     for n, boloname in enumerate(bolonames) :
         try : 
-            main(pickledirs[n]+'/'+picklenames[n], boloname=boloname, usemK=True, refAngle=refAngle, outdir=outdirs[n], outname=outnames[n], excludeAngle=excludeAngle, ext=ext, verbosity=verbosity, initalpha_frac=initalpha_fracs[n], batchmode=batchmode);
+            main(pickledirs[n]+'/'+picklenames[n], boloname=boloname, usemK=True, refAngle=refAngle, outdir=outdirs[n], outname=outnames[n], excludeAngle=excludeAngle, ext=ext, verbosity=verbosity, initalpha_frac=initalpha_fracs[n], fineCircle=args.fineCircle, batchmode=batchmode);
         except Exception as e:
             print('####################################################################################');
             print('ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!ERROR!');
