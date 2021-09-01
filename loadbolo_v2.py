@@ -1,6 +1,6 @@
 import os, sys
 import numpy as np
-import libg3py3_test as libg3
+import libg3py3_v2 as libg3
 from spt3g import core
 from datetime import datetime
 import Out;
