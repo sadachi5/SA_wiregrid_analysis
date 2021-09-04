@@ -3,11 +3,12 @@
 import numpy as np;
 import sqlite3, pandas;
 import copy;
-from utils import theta0topi, colors, printVar, rad_to_deg, rad_to_deg_pitopi, rad_to_deg_0to2pi, deg_to_rad, deg90to90, calculateRTheta;
+from utils import deg0to180, theta0topi, colors, printVar, rad_to_deg, rad_to_deg_pitopi, rad_to_deg_0to2pi, deg_to_rad, deg90to90, calculateRTheta;
 from matplotlib import pyplot as plt;
 from lmfit.models import GaussianModel
 
-ver='_ver8';
+#ver='_ver8';
+ver='_ver9';
 
 
 def plotEachWire(dfs, var_set, var_mean_set, var_std_set, slabels, 
@@ -114,9 +115,15 @@ def plotEachWire(dfs, var_set, var_mean_set, var_std_set, slabels,
     return 0;
 
 
-def drawAngleHist(ax, iselections, selections, fit_models, fit_results, nzerobins, xbinrange, baseselect, showText=True) :
+def drawAngleHist(ax, iselections, selections, fit_models, fit_results, nzerobins, xbinrange, baseselect, showText=True, zeroCenter=False) :
+    # Get shift value
+    if zeroCenter :
+        shift = [ res.params['center'].value for res in fit_results ];
+    else :
+        shift = [ 0. for res in fit_results ];
+        pass;
     # Draw data
-    __datas = [ data_selects[i] for i in iselections ];
+    __datas = [ data_selects[i] - shift[i] for i in iselections ];
     __labels= [ labels[i]       for i in iselections ];
     __colors= [ colors[i]       for i in iselections ];
     ax.hist(__datas, bins=nbins, range=xbinrange, histtype='stepfilled',
@@ -142,20 +149,20 @@ def drawAngleHist(ax, iselections, selections, fit_models, fit_results, nzerobin
         if chi    is None : chi = 0.;
         if nfree  is None : nfree = 0.;
         x = np.linspace(xlim[0],xlim[1],1000);
-        y = func(x, result.params['amplitude'].value, result.params['center'].value, result.params['sigma'].value );
-        ax.plot(x, y, color=colors[i], linestyle='-', label='Fit result for {}:\n  Center = ${:.2f} \pm {:.2f}$\n  $\sigma = {:.2f} \pm {:.2f}$\n  $\chi^2/n={:.1f}/{:.1f}={:.1f}$'.format(selection[1],center.value,center.stderr,sigma.value,sigma.stderr,chi,nfree,redchi));
+        y = func(x+shift[i], result.params['amplitude'].value, result.params['center'].value, result.params['sigma'].value );
+        ax.plot(x, y, color=colors[i], linestyle='-', label='Fit result for {}:\n  Center = ${:.2f} \pm {:.2f}$\n  $\sigma = {:.2f} \pm {:.2f}$\n  $\chi^2/n={:.1f}/{:.1f}={:.1f}$'.format(selection[1],0 if zeroCenter else center.value,center.stderr,sigma.value,sigma.stderr,chi,nfree,redchi));
         centers.append(center);
         pass;
     ax.set_title(baseselect[1] if len(baseselect)>1 else '');
     ax.set_xlabel(r'$\theta_{\mathrm{det}} - \theta_{\mathrm{design}}$ [deg.]',fontsize=16);
     ax.set_ylabel(r'# of bolometers',fontsize=16);
-    ax.set_xticks(np.arange(xbinrange[0],xbinrange[1],5));
+    ax.set_xticks(np.arange((int)(xlim[0]/5)*5,(int)(xlim[1]/5+1)*5,5));
     ax.tick_params(labelsize=12);
     ax.grid(True);
     if showText: ax.legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 7,title='',borderaxespad=0.,labelspacing=1.2);
     center_ave = sum([ center.value for center in centers])/float(len(centers));
     center_ave_err = np.sqrt(sum([ center.stderr**2. for center in centers]))/float(len(centers));
-    if showText: ax.text(-20,20, 'Averaged center:\n {:.2f} $\pm$ {:.2f}'.format(center_ave,center_ave_err), fontsize=10, color='tab:blue');
+    if showText and not zeroCenter : ax.text(-20,20, 'Averaged center of peaks:\n {:.2f} $\pm$ {:.2f}'.format(center_ave,center_ave_err), fontsize=10, color='tab:blue');
     return 0;
 
 
@@ -221,11 +228,21 @@ def check_absolute(outfile='plot_for_JPS202109/check_absolute/check_absolute'+ve
 
 
     # Add variables
+    ### For previous HWP encoder ###
+    '''
     # Add theta_det_angle column for comparison with pol_angle
     convertF = 180./np.pi; # convert from rad --> deg
     df_all['theta_det_angle'] = theta0topi(df_all['theta_det']-np.pi/2., upper=180.*np.pi/180.)*convertF;
     # Add diff. between theta_det_angle and pol_angle [-90., 90]
     df_all['diff_angle']      = deg90to90(df_all['theta_det_angle'] - df_all['pol_angle']);
+    '''
+    ### For correct HWP encoder ###
+    convertF = 180./np.pi; # convert from rad --> deg
+    df_all['theta_det_angle'] = theta0topi(df_all['theta_det'] + 2.*deg_to_rad(-16.5), upper=180.*np.pi/180.)*convertF; 
+    # Convert pol_angle to the coordinates of theta_det_angle;
+    df_all['theta_design_angle'] = deg0to180(df_all['pol_angle']-90., upper=180.);
+    # Add diff. between theta_det_angle and pol_angle [-90., 90]
+    df_all['diff_angle']      = deg90to90(df_all['theta_det_angle'] - df_all['theta_design_angle']);
 
 
     # Create DB after selections
@@ -238,7 +255,6 @@ def check_absolute(outfile='plot_for_JPS202109/check_absolute/check_absolute'+ve
     df_notmislabel = df_base.query('mislabel==False');
 
     # DB of outliers in angles (possible mis-label) (|diff.| > 45 deg.)
-    #df_angle_outlier = df_base[diff_angle(deg_to_rad(df_base['pol_angle']),deg_to_rad(df_base['theta_det_angle']),upper90deg=True)>=np.pi/4.];
     bools_angle_outlier = np.abs(df_base['diff_angle']) >= 45.;
     print( '*** booleans for angle outliers (|diff.| > 45 deg.) ***');
     print( bools_angle_outlier );
@@ -267,14 +283,6 @@ def check_absolute(outfile='plot_for_JPS202109/check_absolute/check_absolute'+ve
 
 
     selections = [\
-        #["bolo_type=='T' & pixel_type=='U' & pixel_handedness=='A'", 'UT/A'],\
-        #["bolo_type=='T' & pixel_type=='U' & pixel_handedness=='B'", 'UT/B'],\
-        #["bolo_type=='B' & pixel_type=='U' & pixel_handedness=='A'", 'UB/A'],\
-        #["bolo_type=='B' & pixel_type=='U' & pixel_handedness=='B'", 'UB/B'],\
-        #["bolo_type=='T' & pixel_type=='Q' & pixel_handedness=='A'", 'QT/A'],\
-        #["bolo_type=='T' & pixel_type=='Q' & pixel_handedness=='B'", 'QT/B'],\
-        #["bolo_type=='B' & pixel_type=='Q' & pixel_handedness=='A'", 'QB/A'],\
-        #["bolo_type=='B' & pixel_type=='Q' & pixel_handedness=='B'", 'QB/B'],\
         ["band==90 & pixel_handedness=='A'", '90 GHz A'],\
         ["band==90 & pixel_handedness=='B'", '90 GHz B'],\
         ["band==150 & pixel_handedness=='A'", '150 GHz A'],\
@@ -285,11 +293,12 @@ def check_absolute(outfile='plot_for_JPS202109/check_absolute/check_absolute'+ve
     ndata = len(selections);
     baseselect = [[]];
     dataname = 'theta_det_angle';
-    dataname2= 'pol_angle';
+    #dataname2= 'pol_angle';
+    dataname2= 'theta_design_angle';
 
     # histogram setting
     binwidth = 1.0; 
-    xbinrange = [-20,20];
+    xbinrange = [-15,15];
     nbins = int((xbinrange[1]-xbinrange[0])/binwidth);
     
     n_sels = [];
@@ -370,6 +379,15 @@ def check_absolute(outfile='plot_for_JPS202109/check_absolute/check_absolute'+ve
         # Diff. angle plot for 150GHz B-handed
         drawAngleHist(abs_axs[1,3], iselections=[3], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, showText=showText);
   
+        # Diff. angle plot for 90GHz A-handed, zeroCenter
+        drawAngleHist(abs_axs[2,0], iselections=[0], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, showText=showText, zeroCenter=True);
+        # Diff. angle plot for 90GHz B-handed, zeroCenter
+        drawAngleHist(abs_axs[2,1], iselections=[1], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, showText=showText, zeroCenter=True);
+        # Diff. angle plot for 150GHz A-handed, zeroCenter
+        drawAngleHist(abs_axs[2,2], iselections=[2], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, showText=showText, zeroCenter=True);
+        # Diff. angle plot for 150GHz B-handed, zeroCenter
+        drawAngleHist(abs_axs[2,3], iselections=[3], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, showText=showText, zeroCenter=True);
+ 
         # Save fig
         print('savefig to '+outfile+suffix+'.png');
         abs_fig.savefig(outfile+suffix+'.png');
@@ -395,8 +413,10 @@ def check_absolute(outfile='plot_for_JPS202109/check_absolute/check_absolute'+ve
     axs[0][0].plot([0,0],[-360,360],linestyle='-',color='k',linewidth=0.5);
     axs[0][0].grid(True);
     axs[0][0].set_title('Bolos with correct labels originally (no mis-label)');
-    axs[0][0].set_xlabel(r'$\theta_{\mathrm{det,design}}$ [deg.]'+'\n("pol_angle" in focalplane database)',fontsize=16);
-    axs[0][0].set_ylabel(r'$\theta_{\mathrm{det,wiregrid}}$ - 90 [deg.]',fontsize=16);
+    #axs[0][0].set_xlabel(r'$\theta_{\mathrm{det,design}}$ [deg.]'+'\n("pol_angle" in focalplane database)',fontsize=16);
+    #axs[0][0].set_ylabel(r'$\theta_{\mathrm{det,wiregrid}}$ - 90 [deg.]',fontsize=16);
+    axs[0][0].set_xlabel(r'$\theta_{\mathrm{det,design}}$ [deg.]'+'\n("pol_angle-90deg" in focalplane database)',fontsize=16);
+    axs[0][0].set_ylabel(r'$\theta_{\mathrm{det,wiregrid}}$ [deg.]',fontsize=16);
     axs[0][0].set_xticks(np.arange(-360,360,45));
     axs[0][0].set_yticks(np.arange(-360,360,45));
     axs[0][0].set_xlim(-22.5,180);
@@ -412,8 +432,10 @@ def check_absolute(outfile='plot_for_JPS202109/check_absolute/check_absolute'+ve
     axs[0][1].grid(True);
     axs[0][1].legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 10, title='',borderaxespad=0.,labelspacing=1.0);
     axs[0][1].set_title('Bolos with base cuts after label correction (all/outliers)');
-    axs[0][1].set_xlabel(r'$\theta_{\mathrm{det,design}}$ [deg.]'+'\n("pol_angle" in focalplane database)',fontsize=16);
-    axs[0][1].set_ylabel(r'$\theta_{\mathrm{det,wiregrid}}$ - 90 [deg.]',fontsize=16);
+    #axs[0][1].set_xlabel(r'$\theta_{\mathrm{det,design}}$ [deg.]'+'\n("pol_angle" in focalplane database)',fontsize=16);
+    #axs[0][1].set_ylabel(r'$\theta_{\mathrm{det,wiregrid}}$ - 90 [deg.]',fontsize=16);
+    axs[0][1].set_xlabel(r'$\theta_{\mathrm{det,design}}$ [deg.]'+'\n("pol_angle-90deg" in focalplane database)',fontsize=16);
+    axs[0][1].set_ylabel(r'$\theta_{\mathrm{det,wiregrid}}$ [deg.]',fontsize=16);
     axs[0][1].set_xticks(np.arange(-360,360,45));
     axs[0][1].set_yticks(np.arange(-360,360,45));
     axs[0][1].set_xlim(-22.5,180);

@@ -348,8 +348,8 @@ if __name__=='__main__' :
     #newfile = 'output_ver4/db/all';
     #inputdir = './output_ver5';
     #newfile = 'output_ver5/db/all';
-    inputdir = './output_ver8';
-    newfile = 'output_ver8/db/all';
+    inputdir = './output_ver9';
+    newfile = 'output_ver9/db/all';
     oldfile = '{}/db/all'.format(inputdir);
     #inputdir = '/home/cmb/sadachi/analysis_2021/output_ver2';
     #inputdir = '/Users/shadachi/Experiment/PB/analysis/analysis_2021/output_ver2';
