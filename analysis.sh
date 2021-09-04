@@ -48,8 +48,8 @@ done
 
 wafer='PB20.13.13';
 bolonames=(
-'PB20.13.13_Comb01Ch02'
 'PB20.13.13_Comb01Ch01'
+'PB20.13.13_Comb01Ch02'
 );
 #'PB20.13.13_Comb01Ch01'
 #'PB20.13.13_Comb01Ch02'
@@ -67,11 +67,11 @@ bolonames=(
 #filename='/group/cmb/polarbear/data/pb2a/g3compressed/22300000_v05/Run22300609';
 filename='/group/cmb/polarbear/usr/sadachi/SparseWireCalibration/PB2a/g3compressed/Run22300609/';
 
-outdir='plot_ver8';
-loadpickledir="plot_ver8/pkl/${wafer}";
-pickledir="plot_ver8/pkl/${wafer}";
-#optgrid=''
-optgrid='-L'
+outdir='plot_ver9';
+loadpickledir="plot_ver9/pkl/${wafer}";
+pickledir="plot_ver9/pkl/${wafer}";
+optgrid=''
+#optgrid='-L'
 #optfit=''
 #optfit='--excludeAngle 157.5,180 -e pdf,png'
 #optfit='--excludeAngle 180 -e pdf,png --fineCircle'

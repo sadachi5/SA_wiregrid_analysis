@@ -3,11 +3,12 @@
 import numpy as np;
 import sqlite3, pandas;
 import copy;
-from utils import theta0topi, colors, printVar, rad_to_deg, rad_to_deg_pitopi, rad_to_deg_0to2pi, deg_to_rad, deg90to90, calculateRTheta;
+from utils import deg0to180, theta0topi, colors, printVar, rad_to_deg, rad_to_deg_pitopi, rad_to_deg_0to2pi, deg_to_rad, deg90to90, calculateRTheta;
 from matplotlib import pyplot as plt;
 from lmfit.models import GaussianModel
 
-ver='_ver5';
+ver='_ver8';
+isCorrectHWPenc=False;
 
 
 def plotEachWire(dfs, var_set, var_mean_set, var_std_set, slabels, 
@@ -56,11 +57,12 @@ def plotEachWire(dfs, var_set, var_mean_set, var_std_set, slabels,
  
  
     # Each histogram for each wire angles
+    var_set = np.array(var_set, dtype=object);
     for n, angle in enumerate(wire_angles) :
         i = (int)(n/j_figs) +1;
         j = n%j_figs;
 
-        __var_set_nangle = np.array(var_set)[:,n];
+        __var_set_nangle = var_set[:,n];
         __colors = colors[n*nsel:n*nsel+nsel];
         __labels = slabels;
         # if only one dataset
@@ -71,7 +73,7 @@ def plotEachWire(dfs, var_set, var_mean_set, var_std_set, slabels,
         else :
             __datas  = __var_set_nangle;
             pass;
-        print(__var_set_nangle);
+        #print(__var_set_nangle);
         #print('colors =', __colors);
  
         __axs2 = axs2[i][j];
@@ -87,7 +89,7 @@ def plotEachWire(dfs, var_set, var_mean_set, var_std_set, slabels,
         __ylim = __axs2.get_ylim();
         for s, slabel in enumerate(slabels) :
             __nbolo = len(__var_set_nangle[s]);
-            print('# of bolos for {} = {}'.format(slabel, __nbolo));
+            #print('# of bolos for {} = {}'.format(slabel, __nbolo));
             __axs2.text(__xlim[0]+(__xlim[1]-__xlim[0])*0.05,__ylim[1]*(0.25-0.05*s), 
                     'Mean for {:15s}({:4d} bolos) = {:.2f} +- {:.2f} (std.)'.format(slabel, __nbolo, var_mean_set[s][n], var_std_set[s][n]), 
                     fontsize=8, color='tab:blue');
@@ -114,7 +116,7 @@ def plotEachWire(dfs, var_set, var_mean_set, var_std_set, slabels,
     return 0;
 
 
-def drawAngleHist(ax, iselections, selections, fit_models, fit_results, xbinrange, baseselect, showText=True) :
+def drawAngleHist(ax, iselections, selections, fit_models, fit_results, xbinrange, baseselect, data_selects, labels, nbins, showText=True) :
     # Draw data
     __datas = [ data_selects[i] for i in iselections ];
     __labels= [ labels[i]       for i in iselections ];
@@ -223,9 +225,18 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
     # Add variables
     # Add theta_det_angle column for comparison with pol_angle
     convertF = 180./np.pi; # convert from rad --> deg
-    df_all['theta_det_angle'] = theta0topi(df_all['theta_det']-np.pi/2., upper=180.*np.pi/180.)*convertF;
+    if isCorrectHWPenc :
+        # -16.71 is obtained from HWP offset angle in out_check_HWPzeroangle/check_HWPzeroangle_ver9.out 
+        # -16.708 is obtained from HWP offset angle in out_check_HWPzeroangle/check_HWPzeroangle_ver9_includeMislabel_afterLabelCorr.out 
+        # Use -16.5 as default.
+        df_all['theta_det_angle'] = theta0topi(df_all['theta_det'] + 2.*deg_to_rad(-16.5), upper=180.*np.pi/180.)*convertF; 
+    else :
+        df_all['theta_det_angle'] = theta0topi(df_all['theta_det'], upper=180.*np.pi/180.)*convertF;
+        pass;
+    # Convert pol_angle to the coordinates of theta_det_angle;
+    df_all['theta_design_angle'] = deg0to180(df_all['pol_angle']-90., upper=180.);
     # Add diff. between theta_det_angle and pol_angle [-90., 90]
-    df_all['diff_angle']      = deg90to90(df_all['theta_det_angle'] - df_all['pol_angle']);
+    df_all['diff_angle']      = deg90to90(df_all['theta_det_angle'] - df_all['theta_design_angle']);
 
 
     # Create DB after selections
@@ -238,11 +249,12 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
     df_notmislabel = df_base.query('mislabel==False');
 
     # DB of outliers in angles (possible mis-label) (|diff.| > 45 deg.)
-    #df_angle_outlier = df_base[diff_angle(deg_to_rad(df_base['pol_angle']),deg_to_rad(df_base['theta_det_angle']),upper90deg=True)>=np.pi/4.];
     bools_angle_outlier = np.abs(df_base['diff_angle']) >= 45.;
+    '''
     print( '*** booleans for angle outliers (|diff.| > 45 deg.) ***');
     print( bools_angle_outlier );
     print( '*******************************************************');
+    '''
     df_angle_outlier = df_base[bools_angle_outlier];
     df_angle_outlier.to_csv(outfile+'.csv');
 
@@ -267,25 +279,15 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
 
 
     selections = [\
-        #["bolo_type=='T' & pixel_type=='U' & pixel_handedness=='A'", 'UT/A'],\
-        #["bolo_type=='T' & pixel_type=='U' & pixel_handedness=='B'", 'UT/B'],\
-        #["bolo_type=='B' & pixel_type=='U' & pixel_handedness=='A'", 'UB/A'],\
-        #["bolo_type=='B' & pixel_type=='U' & pixel_handedness=='B'", 'UB/B'],\
-        #["bolo_type=='T' & pixel_type=='Q' & pixel_handedness=='A'", 'QT/A'],\
-        #["bolo_type=='T' & pixel_type=='Q' & pixel_handedness=='B'", 'QT/B'],\
-        #["bolo_type=='B' & pixel_type=='Q' & pixel_handedness=='A'", 'QB/A'],\
-        #["bolo_type=='B' & pixel_type=='Q' & pixel_handedness=='B'", 'QB/B'],\
         ["band==90 & pixel_handedness=='A'", '90 GHz A'],\
         ["band==90 & pixel_handedness=='B'", '90 GHz B'],\
         ["band==150 & pixel_handedness=='A'", '150 GHz A'],\
         ["band==150 & pixel_handedness=='B'", '150 GHz B'],\
         ];
-    data_selects = [];
-    labels = [];
     ndata = len(selections);
     baseselect = [[]];
     dataname = 'theta_det_angle';
-    dataname2= 'pol_angle';
+    dataname2= 'theta_design_angle';
 
     # histogram setting
     binwidth = 1.;
@@ -296,6 +298,8 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
     fit_models  = [];
     fit_results = [];
     fit_bins    = [];
+    data_selects = [];
+    labels = [];
     for i, selectinfo in enumerate(selections) :
         print('*********** i={}th selection ***************'.format(i));
         selection   = selectinfo[0] + ('' if len(baseselect[0])==0 else ('&' + baseselect[0]));
@@ -320,8 +324,8 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
         #params['sigma'].set(value = 2.);
         print('init for center of gauusian in {}th selection = {}'.format(i, params['center'].value));
         print('init for sigma  of gauusian in {}th selection = {}'.format(i, params['sigma'].value));
-        printVar(histo);
-        printVar(bins_center);
+        #printVar(histo);
+        #printVar(bins_center);
         result = model.fit(data=histo, x=bins_center, params=params)
         #newparams = result.params;
         #result = model.fit(data=histo, x=bins_center, params=newparams)
@@ -349,19 +353,19 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
     plt.subplots_adjust(wspace=0.3, hspace=0.3, left=0.15, right=0.95,bottom=0.15, top=0.95)
 
     # Diff. angle plot for 90GHz
-    drawAngleHist(abs_axs[0,0], iselections=[0,1], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect);
+    drawAngleHist(abs_axs[0,0], iselections=[0,1], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
 
     # Diff. angle plot for 150GHz
-    drawAngleHist(abs_axs[0,1], iselections=[2,3], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect);
+    drawAngleHist(abs_axs[0,1], iselections=[2,3], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
 
     # Diff. angle plot for 90GHz A-handed
-    drawAngleHist(abs_axs[1,0], iselections=[0], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect);
+    drawAngleHist(abs_axs[1,0], iselections=[0], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
     # Diff. angle plot for 90GHz B-handed
-    drawAngleHist(abs_axs[1,1], iselections=[1], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect);
+    drawAngleHist(abs_axs[1,1], iselections=[1], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
     # Diff. angle plot for 150GHz A-handed
-    drawAngleHist(abs_axs[1,2], iselections=[2], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect);
+    drawAngleHist(abs_axs[1,2], iselections=[2], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
     # Diff. angle plot for 150GHz B-handed
-    drawAngleHist(abs_axs[1,3], iselections=[3], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect);
+    drawAngleHist(abs_axs[1,3], iselections=[3], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
  
     # Save fig
     print('savefig to '+outfile+'.png');
@@ -387,8 +391,8 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
     axs[0][0].plot([0,0],[-360,360],linestyle='-',color='k',linewidth=0.5);
     axs[0][0].grid(True);
     axs[0][0].set_title('Bolos with correct labels originally (no mis-label)');
-    axs[0][0].set_xlabel(r'$\theta_{\mathrm{det,design}}$ [deg.]'+'\n("pol_angle" in focalplane database)',fontsize=16);
-    axs[0][0].set_ylabel(r'$\theta_{\mathrm{det,wiregrid}}$ - 90 [deg.]',fontsize=16);
+    axs[0][0].set_xlabel(r'$\theta_{\mathrm{det,design}}$ [deg.]'+'\n("pol_angle-90deg" in focalplane database)',fontsize=16);
+    axs[0][0].set_ylabel(r'$\theta_{\mathrm{det,wiregrid}}$ [deg.]',fontsize=16);
     axs[0][0].set_xticks(np.arange(-360,360,45));
     axs[0][0].set_yticks(np.arange(-360,360,45));
     axs[0][0].set_xlim(-22.5,180);
@@ -404,8 +408,8 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
     axs[0][1].grid(True);
     axs[0][1].legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 10, title='',borderaxespad=0.,labelspacing=1.0);
     axs[0][1].set_title('Bolos with base cuts after label correction (all/outliers)');
-    axs[0][1].set_xlabel(r'$\theta_{\mathrm{det,design}}$ [deg.]'+'\n("pol_angle" in focalplane database)',fontsize=16);
-    axs[0][1].set_ylabel(r'$\theta_{\mathrm{det,wiregrid}}$ - 90 [deg.]',fontsize=16);
+    axs[0][1].set_xlabel(r'$\theta_{\mathrm{det,design}}$ [deg.]'+'\n("pol_angle-90deg" in focalplane database)',fontsize=16);
+    axs[0][1].set_ylabel(r'$\theta_{\mathrm{det,wiregrid}}$ [deg.]',fontsize=16);
     axs[0][1].set_xticks(np.arange(-360,360,45));
     axs[0][1].set_yticks(np.arange(-360,360,45));
     axs[0][1].set_xlim(-22.5,180);
@@ -642,6 +646,9 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
             slabels = selection_set['labels'];
             nsel = len(sels);
             dfs = [df_base.query(sel) if sel!='' else df_base for sel in sels];
+            for n, df in enumerate(dfs) :
+                print('# of bolos for {}({}) = {}'.format(sels[n], slabels[n], len(df)));
+                pass;
 
             # calculate r for each x,y
             r_set = [];
@@ -669,12 +676,12 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
                 theta_diff_means = [];
                 theta_diff_stds = [];
                 for n, angle in enumerate(wire_angles) :
-                    r       = df[columns_r[n]      ];
-                    r_err   = df[columns_r_err[n]  ];
-                    r_ratio = df[columns_r_ratio[n]];
-                    theta      = df[columns_theta[n]     ];
-                    theta_err  = df[columns_theta_err[n] ];
-                    theta_diff = df[columns_theta_diff[n]];
+                    r       = df[columns_r[n]      ].values;
+                    r_err   = df[columns_r_err[n]  ].values;
+                    r_ratio = df[columns_r_ratio[n]].values;
+                    theta      = df[columns_theta[n]     ].values;
+                    theta_err  = df[columns_theta_err[n] ].values;
+                    theta_diff = df[columns_theta_diff[n]].values;
                     rs.append(r);
                     r_errs.append(r_err);
                     r_ratios.append(r_ratio);
@@ -705,6 +712,7 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
                 theta_diffmean_mean_set.append(theta_diff_means-theta_diff_mean_mean);
                 theta_diffmean_std_set.append(theta_diff_stds);
                 pass;
+            #print('r_ratio_set', r_ratio_set);
 
 
             #########################

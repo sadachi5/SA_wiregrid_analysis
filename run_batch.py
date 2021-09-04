@@ -19,8 +19,8 @@ Nbolobunch= 1;
 maxNjob=100;
 
 # filename of boloname list to be run
-#bolofile='' # In this case, bololist is used.
-bolofile='output_ver8/job_check/3rd/fails_bololist2.out'
+bolofile='' # In this case, bololist is used.
+#bolofile='output_ver9/job_check/3rd/fails_bololist2.out'
 # boloname list. NOTE: This is valid only when bolofile is empty
 bololist=[];
 #blolist=['PB20.13.13_Comb01Ch02','PB20.13.13_Comb01Ch03'];
@@ -34,14 +34,14 @@ wafers=['PB20.13.13', 'PB20.13.15', 'PB20.13.28', 'PB20.13.11', 'PB20.13.12', 'P
 #outdir1='output_ver2';
 #outdir2='output_ver5';
 
-outdir1='output_ver8';
-outdir2='output_ver8';
+outdir1='output_ver9';
+outdir2='output_ver9';
 
 #filename='/group/cmb/polarbear/data/pb2a/g3compressed/22300000_v05/Run22300609';
 filename='/group/cmb/polarbear/usr/sadachi/SparseWireCalibration/PB2a/g3compressed/Run22300609/';
 
-#optgrid = '' # read TOD from g3 files
-optgrid = '-L' # read TOD from pickle files
+optgrid = '' # read TOD from g3 files
+#optgrid = '-L' # read TOD from pickle files
 optfit = '--excludeAngle 180'
 
 # get bolonames
@@ -59,6 +59,7 @@ for boloname in bolonames :
 
 def runJob() :
 
+    bololist='';
     if len(bolofile)>0 :
         f = open(bolofile);
         bololist = [ s.strip() for s in f.readlines() ];

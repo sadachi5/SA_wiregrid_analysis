@@ -5,7 +5,8 @@ import pandas;
 from compare_db import compare_db;
 from utils import theta0topi, rad_to_deg, deg_to_rad, diff_angle;
 
-ver='ver8'
+ver='ver9'
+isCorrectHWPenc=True;
 
 if __name__=='__main__' :
     dbname_out = 'output_{}/db/all_pandas_correct_label'.format(ver)
@@ -157,8 +158,13 @@ if __name__=='__main__' :
                             nwarns_angle[0]+=1;
                             print('pol_angle : No theta_det = {}'.format(theta_det));
                         else :
-                            #calib_angle = rad_to_deg(theta0topi(theta_det - np.pi/2.));
-                            calib_angle = theta0topi(theta_det - np.pi/2.);
+                            if isCorrectHWPenc:
+                                calib_angle = theta0topi(theta_det - np.pi/2. + 2.*deg_to_rad(-16.71)); 
+                                # -16.71 is obtained from HWP offset angle in out_check_HWPzeroangle/check_HWPzeroangle_ver9.out 
+                            else :
+                                #calib_angle = rad_to_deg(theta0topi(theta_det - np.pi/2.));
+                                calib_angle = theta0topi(theta_det - np.pi/2.);
+                                pass;
                             print('calib_angle = {} [rad]'.format(calib_angle));
                             diff_angles = rad_to_deg(diff_angle(deg_to_rad(pol_angles_fix), calib_angle, upper90deg=True));
                             # change nan --> 9999.

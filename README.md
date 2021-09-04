@@ -53,7 +53,7 @@ output\_ver6
     - change the time period of 180 deg. data (select only first 20 sec. This is similar length of the other data.)
     - reproduce from g3 data
 
-output\_ver7/plot\_ver7
+output\_ver7, plot\_ver7
 ------------------------
   - version description: *change the libg3py3.py & loadbolo.py*
     - Use libg3py3\_v2.py and loadbolo\_v2.py (Old name: libg3py3\_test.py, loadbolo\_test.py)
@@ -63,7 +63,7 @@ output\_ver7/plot\_ver7
         - Use averaged temperature measured by Jupiter
     - output\_ver7 is for bsub jobs. / plot\_ver7 is for test.
 
-output\_ver8/plot\_ver8
+output\_ver8, plot\_ver8
 ------------------------
   - version description: *restore the change of the libg3py3.py & loadbolo.py*
     - Use libg3py3.py and loadbolo.py
@@ -73,7 +73,7 @@ output\_ver8/plot\_ver8
     - demod wire\_angle=180 deg data, but do not use it in fitDemodResult.py.
     - reproduce from TOD pickle file in ver6, which (output\_ver6/pkl/<wafer>/<boloname>/A..\_..deg.pkl were copied to output\_ver8/pkl/<wafer>/<boloname>/
 
-output\_ver9/plot\_ver9
+output\_ver9, plot\_ver9
 ------------------------
   - version description: Use libg3py3\_v2.py & loadbolo\_v2.py*
     - Use libg3py3.py and loadbolo.py

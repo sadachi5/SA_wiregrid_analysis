@@ -16,7 +16,8 @@ from DBreaderStimulator import DBreaderStimulator;
 from DBreader import DBreader;
 
 from slowdaq_map import *;
-from loadbolo import loadbolo;
+#from loadbolo import loadbolo; # ver8
+from loadbolo_v2 import loadbolo; # ver9
 from utils import colors, printVar, theta0to2pi, rad_to_deg;
 import Out;
 out = Out.Out(verbosity=0);
@@ -30,7 +31,7 @@ endStr_tmp   = "20210205_180400";
 
 
 def plot(filename, boloname=None, 
-        start=None, end=None, calibGain=True,
+        start=None, end=None, calibGain=True, baseline=1,
         outname='output', outdir='plot', loaddata=True, loadWHWP=True,loadSlow=True) :
 
     # initialize data list
@@ -202,10 +203,20 @@ def plot(filename, boloname=None,
         y_subDC = y - linearfunc(bolotime);
 
         # Draw x: time / y: output
-        #time_ax.plot(time,y,label='Raw data', linestyle='-')
-        time_ax.plot(time,y_subave,label='Raw data - ave. ({:.1e})'.format(ave), linestyle='-')
-        #all_time_ax.plot(time,y,label='Raw data: {}'.format(name), linestyle='-', color=colors[i])
-        all_time_ax.plot(time,y_subave,label='Raw data - ave. ({:.1e}): {}'.format(ave,name), linestyle='-', color=colors[i])
+        if baseline==0 :
+            time_ax.plot(time,y,label='Raw data', linestyle='-')
+            all_time_ax.plot(time,y,label='Raw data: {}'.format(name), linestyle='-', color=colors[i])
+        elif baseline==1 :
+            time_ax.plot(time,y_subave,label='Raw data - ave. ({:.1e})'.format(ave), linestyle='-')
+            all_time_ax.plot(time,y_subave,label='Raw data - ave. ({:.1e}): {}'.format(ave,name), linestyle='-', color=colors[i])
+        elif baseline==2 :
+            time_ax.plot(time,y_subDC,label='Raw data - DC', linestyle='-')
+            all_time_ax.plot(time,y_subDC,label='Raw data - DC: {}'.format(name), linestyle='-', color=colors[i])
+        else :
+            out.WARNING('There is no option for baseline: baseline={} (options=0,1,2)'.format(baseline));
+            time_ax.plot(time,y_subave,label='Raw data - ave. ({:.1e})'.format(ave), linestyle='-')
+            all_time_ax.plot(time,y_subave,label='Raw data - ave. ({:.1e}): {}'.format(ave,name), linestyle='-', color=colors[i])
+            pass;
         # Plot cosmetic
         for ax in [time_ax, all_time_ax] :
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
@@ -246,12 +257,20 @@ def plot(filename, boloname=None,
 
         # Draw x: WHWP angle / y: output
         if loadWHWP :
-            #angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y,label='Raw data'.format(ave), marker='.', markersize=1,linestyle='',color='tab:blue')
-            angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y_subave,label='Raw data - average({:e})'.format(ave), marker='.', markersize=1,linestyle='',color='tab:orange')
-            #angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y_subDC,label='Raw data - DC', marker='.', markersize=1,linestyle='',color='tab:green')
-            #all_angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y,label='Raw data: {}'.format(name), marker='.', markersize=1,linestyle='',color=colors[i])
-            all_angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y_subDC,label='Raw data - average({:e}): {}'.format(ave,name), marker='.', markersize=1,linestyle='',color=colors[i])
-            #all_angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y_subDC,label='Raw data - DC: {}'.format(name), marker='.', markersize=1,linestyle='',color=colors[i])
+            if baseline==0 :
+                angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y,label='Raw data'.format(ave), marker='.', markersize=1,linestyle='',color='tab:blue')
+                all_angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y,label='Raw data: {}'.format(name), marker='.', markersize=1,linestyle='',color=colors[i])
+            elif baseline==1 :
+                angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y_subave,label='Raw data - average({:e})'.format(ave), marker='.', markersize=1,linestyle='',color='tab:orange')
+                all_angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y_subDC,label='Raw data - average({:e}): {}'.format(ave,name), marker='.', markersize=1,linestyle='',color=colors[i])
+            elif baseline==2 :
+                angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y_subDC,label='Raw data - DC', marker='.', markersize=1,linestyle='',color='tab:green')
+                all_angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y_subDC,label='Raw data - DC: {}'.format(name), marker='.', markersize=1,linestyle='',color=colors[i])
+            else :
+                out.WARNING('There is no option for baseline: baseline={} (options=0,1,2)'.format(baseline));
+                angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y_subave,label='Raw data - average({:e})'.format(ave), marker='.', markersize=1,linestyle='',color='tab:orange')
+                all_angle_ax.plot(rad_to_deg(theta0to2pi(whwp_angle)),y_subDC,label='Raw data - average({:e}): {}'.format(ave,name), marker='.', markersize=1,linestyle='',color=colors[i])
+                pass;
             pass;
         # Plot cosmetic
         for ax in [angle_ax, all_angle_ax] :
@@ -279,15 +298,16 @@ if __name__=='__main__' :
     verbose = 1;
     filename='/group/cmb/polarbear/data/pb2a/g3compressed/22300000_v05/Run22300609';
     boloname='PB20.13.13_Comb01Ch03,PB20.13.13_Comb01Ch24';
-    outdir ='plot_for_JPS202109';
+    outdir ='plot_for_JPS202109/tod_ver9';
+    baseline=1;
     #boloname=None;
 
     #startStr = None;
     #endStr   = None;
 
-    startStr = "20210205_180510";
-    endStr   = "20210205_180530";
-    outname ='tod_A2_22.5deg';
+    #startStr = "20210205_180510";
+    #endStr   = "20210205_180530";
+    #outname ='tod_A2_22.5deg';
 
     #startStr = "20210205_180230";
     #endStr   = "20210205_180400";
@@ -301,6 +321,12 @@ if __name__=='__main__' :
     #endStr   = "20210205_181830";
     #outname ='tod_A0-8_0-157.5angles';
 
+    startStr = "20210205_173940";
+    endStr   = "20210205_174020";
+    outname ='tod_fluc';
+    baseline=0;
+
+
     parser = argparse.ArgumentParser();
     parser.add_argument('--filename', default=filename, help='input g3 filename (default: {})'.format(filename));
     parser.add_argument('--boloname', default=boloname, help='boloname (default: {})'.format(boloname));
@@ -309,6 +335,7 @@ if __name__=='__main__' :
     parser.add_argument('--start', default=startStr, help='start time string (default: {})'.format(startStr));
     parser.add_argument('--end', default=endStr, help='end time string (default: {})'.format(endStr));
     parser.add_argument('--noHWP', dest='loadWHWP', default=True, action='store_false', help='Not load WHWP data (default: {})'.format(True));
+    parser.add_argument('--baseline', dest='baseline', default=baseline, help='How to subtract the baseline 0:None 1:Average 2:Poly fit (default: {})'.format(baseline));
     parser.add_argument('-L', '--loadpickle', dest='loaddata', action='store_false', default=True, 
             help='Whether load g3 data file or not. If not load it, it will load pickle file before run. (default: True)');
     parser.add_argument('-v', '--verbose', default=verbose, type=int, help='verbosity level: A larger number means more printings. (default: {})'.format(verbose));
@@ -319,5 +346,5 @@ if __name__=='__main__' :
     out.OUT('loaddata = {}'.format(args.loaddata),1)
     if not (',' in boloname) : boloname = [args.boloname];
     else                     : boloname = args.boloname.split(',');
-    plot(args.filename,boloname,args.start,args.end,outname=args.outname,outdir=args.outdir,loaddata=args.loaddata,loadWHWP=args.loadWHWP);
+    plot(args.filename,boloname,args.start,args.end,outname=args.outname,outdir=args.outdir,loaddata=args.loaddata,loadWHWP=args.loadWHWP,baseline=args.baseline);
     pass;
