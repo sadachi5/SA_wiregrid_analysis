@@ -298,7 +298,9 @@ if __name__=='__main__' :
     verbose = 1;
     filename='/group/cmb/polarbear/data/pb2a/g3compressed/22300000_v05/Run22300609';
     boloname='PB20.13.13_Comb01Ch03,PB20.13.13_Comb01Ch24';
+    #boloname='PB20.13.13_Comb01Ch03,PB20.13.13_Comb01Ch01';
     outdir ='plot_for_JPS202109/tod_ver9';
+    #outdir ='plot_for_JPS202109/tod_ver8';
     baseline=1;
     #boloname=None;
 
@@ -309,22 +311,32 @@ if __name__=='__main__' :
     #endStr   = "20210205_180530";
     #outname ='tod_A2_22.5deg';
 
-    #startStr = "20210205_180230";
-    #endStr   = "20210205_180400";
-    #outname ='tod_A0_0deg';
+    startStr = "20210205_180230";
+    endStr   = "20210205_180400";
+    outname ='tod_A1_0deg';
 
     #startStr = "20210205_180230";
     #endStr   = "20210205_180231";
-    #outname ='tod_A0_0deg_1sec';
+    #outname ='tod_A1_0deg_1sec';
 
     #startStr = "20210205_180200";
     #endStr   = "20210205_181830";
-    #outname ='tod_A0-8_0-157.5angles';
+    #outname ='tod_A1-8_0-157.5angles';
 
-    startStr = "20210205_173940";
-    endStr   = "20210205_174020";
-    outname ='tod_fluc';
-    baseline=0;
+    #startStr = "20210205_173940";
+    #endStr   = "20210205_174020";
+    #outname ='tod_fluc';
+    #baseline=0;
+
+
+    #startStr = "20210205_181320";
+    #endStr   = "20210205_181340";
+    #outname ='tod_A6_112.5deg';
+
+    #startStr = "20210205_180640";
+    #endStr   = "20210205_180700";
+    #outname ='tod_A3_45deg';
+
 
 
     parser = argparse.ArgumentParser();
