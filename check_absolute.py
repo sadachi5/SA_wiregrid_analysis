@@ -7,8 +7,8 @@ from utils import deg0to180, theta0topi, colors, printVar, rad_to_deg, rad_to_de
 from matplotlib import pyplot as plt;
 from lmfit.models import GaussianModel
 
-ver='_ver8';
-isCorrectHWPenc=False;
+ver='_ver9';
+isCorrectHWPenc=True;
 
 
 def plotEachWire(dfs, var_set, var_mean_set, var_std_set, slabels, 
@@ -116,7 +116,13 @@ def plotEachWire(dfs, var_set, var_mean_set, var_std_set, slabels,
     return 0;
 
 
-def drawAngleHist(ax, iselections, selections, fit_models, fit_results, xbinrange, baseselect, data_selects, labels, nbins, showText=True) :
+def drawAngleHist(ax, iselections, selections, fit_models, fit_results, nzerobins, xbinrange, baseselect, data_selects, labels, nbins, showText=True, zeroCenter=False) :
+    # Get shift value
+    if zeroCenter :
+        shift = [ res.params['center'].value for res in fit_results ];
+    else :
+        shift = [ 0. for res in fit_results ];
+        pass;
     # Draw data
     __datas = [ data_selects[i] for i in iselections ];
     __labels= [ labels[i]       for i in iselections ];
@@ -133,9 +139,9 @@ def drawAngleHist(ax, iselections, selections, fit_models, fit_results, xbinrang
         result = fit_results[i];
         center = result.params['center'];
         sigma  = result.params['sigma'];
-        redchi = result.redchi;
         chi    = result.chisqr;
-        nfree  = result.nfree;
+        nfree  = result.nfree - nzerobins[i];
+        redchi = chi / nfree;
         if center.value  is None : center.value  = 0.
         if center.stderr is None : center.stderr = 0.
         if sigma.value  is None : sigma.value  = 0.
@@ -144,8 +150,8 @@ def drawAngleHist(ax, iselections, selections, fit_models, fit_results, xbinrang
         if chi    is None : chi = 0.;
         if nfree  is None : nfree = 0.;
         x = np.linspace(xlim[0],xlim[1],1000);
-        y = func(x, result.params['amplitude'].value, result.params['center'].value, result.params['sigma'].value );
-        ax.plot(x, y, color=colors[i], linestyle='-', label='Fit result for {}:\n  Center = ${:.2f} \pm {:.2f}$\n  $\sigma = {:.2f} \pm {:.2f}$\n  $\chi^2/n={:.1f}/{:.1f}={:.1f}$'.format(selection[1],center.value,center.stderr,sigma.value,sigma.stderr,chi,nfree,redchi));
+        y = func(x+shift[i], result.params['amplitude'].value, result.params['center'].value, result.params['sigma'].value );
+        ax.plot(x, y, color=colors[i], linestyle='-', label='Fit result for {}:\n  Center = ${:.2f} \pm {:.2f}$\n  $\sigma = {:.2f} \pm {:.2f}$\n  $\chi^2/n={:.1f}/{:.1f}={:.1f}$'.format(selection[1],0 if zeroCenter else center.value,center.stderr,sigma.value,sigma.stderr,chi,nfree,redchi));
         centers.append(center);
         pass;
     ax.set_title(baseselect[1] if len(baseselect)>1 else '');
@@ -157,7 +163,7 @@ def drawAngleHist(ax, iselections, selections, fit_models, fit_results, xbinrang
     if showText: ax.legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 7,title='',borderaxespad=0.,labelspacing=1.2);
     center_ave = sum([ center.value for center in centers])/float(len(centers));
     center_ave_err = np.sqrt(sum([ center.stderr**2. for center in centers]))/float(len(centers));
-    if showText: ax.text(-20,20, 'Averaged center:\n {:.2f} $\pm$ {:.2f}'.format(center_ave,center_ave_err), fontsize=10, color='tab:blue');
+    if showText and not zeroCenter : ax.text(-20,20, 'Averaged center of peak:\n {:.2f} $\pm$ {:.2f}'.format(center_ave,center_ave_err), fontsize=10, color='tab:blue');
     return 0;
 
 
@@ -300,6 +306,7 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
     fit_bins    = [];
     data_selects = [];
     labels = [];
+    nzerobins   = [];
     for i, selectinfo in enumerate(selections) :
         print('*********** i={}th selection ***************'.format(i));
         selection   = selectinfo[0] + ('' if len(baseselect[0])==0 else ('&' + baseselect[0]));
@@ -326,17 +333,20 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
         print('init for sigma  of gauusian in {}th selection = {}'.format(i, params['sigma'].value));
         #printVar(histo);
         #printVar(bins_center);
-        result = model.fit(data=histo, x=bins_center, params=params)
+        weights = [ 1./np.sqrt(N) if N>0. else 0. for N in histo ]; # weights will be multiply to (data - model). sum{(data-model)*weights)
+        nzerobin = np.sum(histo==0.);
+        result = model.fit(data=histo, x=bins_center, params=params, weights=weights)
         #newparams = result.params;
         #result = model.fit(data=histo, x=bins_center, params=newparams)
         print(result.fit_report());
         print('weights = ', result.weights);
         print('sqrt(N) = ', np.sqrt(result.data));
-        print('red-chi-square = {}: chi-square={}/Nfree={}'.format(result.redchi, result.chisqr, result.nfree));
+        print('red-chi-square = {}: chi-square={}/(Nfree-Nzero)=({}-{})'.format(result.chisqr/(result.nfree-nzerobin), result.chisqr, result.nfree, nzerobin));
         print(result.ci_report());
         fit_models .append(copy.deepcopy(model));
         fit_results.append(copy.deepcopy(result));
         fit_bins   .append(copy.deepcopy(bins_center));
+        nzerobins  .append(nzerobin);
         #del result, bins, histo, model, params;
         pass;
     print('Sum of selected bolos = {}'.format(sum(n_sels)));
@@ -353,19 +363,19 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
     plt.subplots_adjust(wspace=0.3, hspace=0.3, left=0.15, right=0.95,bottom=0.15, top=0.95)
 
     # Diff. angle plot for 90GHz
-    drawAngleHist(abs_axs[0,0], iselections=[0,1], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
+    drawAngleHist(abs_axs[0,0], iselections=[0,1], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
 
     # Diff. angle plot for 150GHz
-    drawAngleHist(abs_axs[0,1], iselections=[2,3], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
+    drawAngleHist(abs_axs[0,1], iselections=[2,3], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
 
     # Diff. angle plot for 90GHz A-handed
-    drawAngleHist(abs_axs[1,0], iselections=[0], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
+    drawAngleHist(abs_axs[1,0], iselections=[0], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
     # Diff. angle plot for 90GHz B-handed
-    drawAngleHist(abs_axs[1,1], iselections=[1], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
+    drawAngleHist(abs_axs[1,1], iselections=[1], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
     # Diff. angle plot for 150GHz A-handed
-    drawAngleHist(abs_axs[1,2], iselections=[2], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
+    drawAngleHist(abs_axs[1,2], iselections=[2], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
     # Diff. angle plot for 150GHz B-handed
-    drawAngleHist(abs_axs[1,3], iselections=[3], selections=selections, fit_models=fit_models, fit_results=fit_results, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
+    drawAngleHist(abs_axs[1,3], iselections=[3], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
  
     # Save fig
     print('savefig to '+outfile+'.png');
@@ -530,11 +540,22 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
     # plot: tau
     axs[4][0].hist(df_base['tau']*1000., bins=100, range=[0.,50.], histtype='stepfilled',
              align='mid', orientation='vertical', log=False, linewidth=0.5, linestyle='-', edgecolor='k',
-             color=colors[0], alpha=1.0, label='theta0', stacked=False);
+             color=colors[0], alpha=1.0, label='tau', stacked=False);
     axs[4][0].set_title(r'Time constant $\tau$ measured by stimulator [msec]');
     axs[4][0].set_xlabel(r'Time constant $\tau$ [msec]');
     axs[4][0].set_ylabel(r'# of bolometers');
     axs[4][0].grid(True);
+
+    # Other histogram 5
+    # plot: r
+    axs[4][1].hist(df_base['r']*1e-3, bins=100, range=[0.,10.], histtype='stepfilled',
+             align='mid', orientation='vertical', log=False, linewidth=0.5, linestyle='-', edgecolor='k',
+             color=colors[0], alpha=1.0, label='r', stacked=False);
+    axs[4][1].set_title(r'Amplitude $r$ [K]');
+    axs[4][1].set_xlabel(r'Amplitude $r$ [K]');
+    axs[4][1].set_ylabel(r'# of bolometers');
+    axs[4][1].grid(True);
+
 
 
     # Save fig

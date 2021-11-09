@@ -325,7 +325,7 @@ plt.savefig('aho.png');
 
 
 # Check HWP rotation fluctuation
-#'''
+'''
 import numpy as np;
 from utils import plottmp, rad_to_deg, rad_to_deg_pitopi, deg_to_rad, between;
 from matplotlib import pyplot as plt;
@@ -407,3 +407,17 @@ phis_wtfluc = np.array(phis_wtfluc);
 plottmp(wire_angles, rad_to_deg_pitopi(phis_wtfluc-phis), outname='diff_phi', ylabel='Angle diff. [deg.]');
 #'''
 
+
+# pandas test
+#'''
+import pandas as pd;
+import numpy as np;
+from utils import colors, getPandasPickle, plottmphist;
+database = 'output_ver3/db/all_pandas.pkl';
+df = getPandasPickle(database);
+print(df.keys());
+print('plottmphist(df[\'r\'],i=0,show=True)');
+print(df['band']);
+print(df['band'].to_numpy());
+
+#'''

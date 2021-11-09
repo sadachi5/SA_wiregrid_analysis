@@ -162,7 +162,7 @@ def drawAngleHist(ax, iselections, selections, fit_models, fit_results, nzerobin
     if showText: ax.legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 7,title='',borderaxespad=0.,labelspacing=1.2);
     center_ave = sum([ center.value for center in centers])/float(len(centers));
     center_ave_err = np.sqrt(sum([ center.stderr**2. for center in centers]))/float(len(centers));
-    if showText and not zeroCenter : ax.text(-20,20, 'Averaged center of peaks:\n {:.2f} $\pm$ {:.2f}'.format(center_ave,center_ave_err), fontsize=10, color='tab:blue');
+    if showText and not zeroCenter : ax.text(-20,20, 'Averaged center of peak:\n {:.2f} $\pm$ {:.2f}'.format(center_ave,center_ave_err), fontsize=10, color='tab:blue');
     return 0;
 
 
