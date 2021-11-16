@@ -168,8 +168,8 @@ def drawAngleHist(ax, iselections, selections, fit_models, fit_results, means, s
     if showText: ax.legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 7,title='',borderaxespad=0.,labelspacing=1.2);
     center_ave = sum([ center.value for center in centers])/float(len(centers));
     center_ave_err = np.sqrt(sum([ center.stderr**2. for center in centers]))/float(len(centers));
-    means = np.array(means);
-    stds = np.array(stds);
+    means = np.array(means)[iselections]; # retrieve mean in iselections
+    stds = np.array(stds)[iselections]; # retrieve std in iselections
     print(f'means = {means}, stds = {stds}');
     mean_ave = np.mean(means);
     std_ave  = np.sqrt(np.sum(stds*stds)/float(len(stds)));
@@ -996,6 +996,8 @@ if __name__=='__main__' :
     nwafer = len(wafers);
 
     icolor=0;
+    dphis = [];
+    dphi_errs = [];
     for n, label in enumerate(g_labels):
         for i, sel in enumerate(g_sel0[n]):
 
@@ -1039,8 +1041,12 @@ if __name__=='__main__' :
                 label2 = g_labels2[n];
                 ax = axs[1,1];
                 x = np.arange(nwafer);
-                y    = np.array(g_means[n*2+1][i]) - np.array(g_means[n*2][i]) ; # B-A
+                y    = np.array(g_means[n*2][i]) - np.array(g_means[n*2+1][i]); # A-B
                 yerr = np.sqrt( np.array(g_stds[n*2][i])**2. +  np.array(g_stds[n*2+1][i])**2. );
+                dphi = np.mean(y); # average on wafers
+                dphi_err = 1./len(y) * np.sqrt(np.sum(yerr*yerr)) # average on wafers
+                dphis.append(dphi); 
+                dphi_errs.append(dphi_err);
                 nonzero = np.array(y!=None)
                 ax.errorbar(x[nonzero]+0.1*n,y[nonzero],yerr=yerr[nonzero],marker='o',markersize=4,linestyle='',color=colors[icolor],label=f'{label2} {sel[1]}');
                 ax.set_title('Wafer v.s. A - B');
@@ -1051,10 +1057,31 @@ if __name__=='__main__' :
                 ax.set_xticks(np.arange(-0.5,nwafer+0.5,1));
                 ax.set_xticklabels(['']+wafers, ha='right');
                 ax.legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 10, title='',borderaxespad=0.,labelspacing=0.8,bbox_to_anchor=(1.02,1));
+
+                ax = axs[1,2];
+                x = np.arange(nwafer);
+                y    = np.array(g_means[n*2][i]) + np.array(g_means[n*2+1][i]); # A+B
+                yerr = np.sqrt( np.array(g_stds[n*2][i])**2. +  np.array(g_stds[n*2+1][i])**2. );
+                nonzero = np.array(y!=None)
+                ax.errorbar(x[nonzero]+0.1*n,y[nonzero],yerr=yerr[nonzero],marker='o',markersize=4,linestyle='',color=colors[icolor],label=f'{label2} {sel[1]}');
+                ax.set_title('Wafer v.s. A + B');
+                ax.set_xlabel('Wafer');
+                ax.set_ylabel(r'$\phi_{A} + \phi_{B}$ [deg.]');
+                ax.set_ylim(-10,10);
+                ax.grid(True)
+                ax.set_xticks(np.arange(-0.5,nwafer+0.5,1));
+                ax.set_xticklabels(['']+wafers, ha='right');
+                ax.legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 10, title='',borderaxespad=0.,labelspacing=0.8,bbox_to_anchor=(1.02,1));
                 pass;
 
             icolor += 1;
 
+            pass;
+        pass;
+
+    if len(dphis)>0:
+        for i, label in enumerate(g_labels2) :
+            print(f'dphi(A-B) ({label}) = {dphis[i]} +- {dphi_errs[i]} deg');
             pass;
         pass;
 

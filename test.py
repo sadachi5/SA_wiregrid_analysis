@@ -427,10 +427,8 @@ import os
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), './library/simons_array_offline_software'))
 from spt3g import core
-filename_tmp='/group/cmb/polarbear/data/pb2a/g3compressed/22300000_v05/Run22300609/';
 runID = 22300609
 subID = 0
-path = filename_tmp;
 start = "20210205_174900";
 end   = "20210205_175900";
 
@@ -441,22 +439,17 @@ end_mjd   = None if end  ==None else core.G3Time(end  ).mjd;
 print(f'{start} = {start_mjd}')
 print(f'{end} = {end_mjd}')
 
-#import sa_datafile as sa_datafile;
-#datafile = sa_datafile.SimonsArrayDataFilePB1(path, start_mjd, end_mjd);
-#print(datafile)
-#print('time', datafile.get_value('bolo_time'))
-
-
 import simons_array_python.sa_pipeline_inputs as sa_pi;
 import simons_array_python.sa_observation as sa_ob;
 import simons_array_python.sa_pipeline_filters as sa_pf;
-
 import simons_array_python.sa_timestream_operators as sa_op;
+
 all_detectors = sa_op.gen_bolo_list()[:1] # Only 1 bolos
 #all_detectors = sa_op.gen_bolo_list()[:10] # Only 10 bolos
 #all_detectors = sa_op.gen_bolo_list() # All bolos
 print(f'all_detectors {all_detectors} ({len(all_detectors)} bolos)');
 
+#'''
 # pipeline
 pi = sa_pi.InputLevel0CachedByObsID(all_detectors=all_detectors, n_per_cache=len(all_detectors), 
         load_g3=True, load_gcp=True,
@@ -481,13 +474,21 @@ print('time clip operation')
 op_timeclip = sa_pf.OperatorClipBeginEnd(begin_mjd=start_mjd, end_mjd=end_mjd)
 op_timeclip.filter_obs(ob)
 
+# Operator for HWP angle
+import simons_array_python.sa_hwp as sa_hwp;
+print('HWP operation')
+op_hwp = sa_hwp.HWPAngleCalculator(encoder_reference_angle=0.)
+op_hwp.filter_obs(ob)
+
+
 print(ob)
-print(ob.tod_list[0], len(ob.tod_list))
 tod = ob.tod_list[0];
+print(tod, len(ob.tod_list))
 print('keys',tod.cache.keys());
 print('times',tod.read_times(), len(tod.read_times()));
 print('bolo_times',tod.read('bolo_time'), len(tod.read('bolo_time')));
 print('raw_az_pos', tod.read('raw_az_pos'));
-print('TOD', tod.read('13.13_15.90B-I'), len(tod.read('13.13_15.90B-I')));
+print('TOD', tod.read('13.13_15.90T-I'), len(tod.read('13.13_15.90T-I')));
+#'''
 
 #'''

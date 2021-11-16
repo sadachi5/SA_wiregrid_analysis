@@ -75,13 +75,31 @@ output\_ver8, plot\_ver8
 
 output\_ver9, plot\_ver9
 ------------------------
-  - version description: Use libg3py3\_v2.py & loadbolo\_v2.py*
+  - version description: Use libg3py3\_v2.py & loadbolo\_v2.py
     - Use libg3py3.py and loadbolo.py
     - Change to *import loadbolo.py --> loadbolo\_v2.py in OneAngleData.py*
         - HWP encoder 0 point should be corrected.
     - demod wire\_angle=180 deg data, but do not use it in fitDemodResult.py.
 
+ver9.2 (tag, branch) 
+-----------------------
+The last version using libg3py3.py
 
+
+ver10
+----------
+From this version, sa pipeline is used to read TOD.
+To use *simons_array_offline_software* at kekcc, there are several modifications.
+1. Make a *sa_config.py* file for myself (in library/mychange)
+2. Comment-out *from toast import qarray as qa*
+    - Importing toast has an issue at kekcc.
+3. Comment-out *from .sa_cuts import ...* to avoid toast importing
+4. Add paths on *PYTHONPATH* in *env-shell.sh*
+
+Other modification on *simons_array_offline_software*:
+1. To use time clip operation on the TOD, I modified *sa_pipline_filters.py/OperatorClipBeginEnd()*
+2. To fix bug in *sa_pipline_filters.py/OperatorClipBeginEnd()*, 
+   add items on the list that would go with bolometer (L195).
 
 ## run scripts
  - (./plot.sh: make plot of TODs)
