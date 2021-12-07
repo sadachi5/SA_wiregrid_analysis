@@ -6,9 +6,9 @@ import copy
 
 import libg3py3 as libg3
 
-doRun = True;
+doRun = False;
 doGridAna = True;
-doFit     = True;
+doFit     = False;
 # Number of bolometers in one job
 #Nbolobunch= 50; # to execute only fit-script
 Nbolobunch= 1; 
@@ -31,12 +31,10 @@ ignoreFileExist = False;
 wafers=['PB20.13.13', 'PB20.13.15', 'PB20.13.28', 'PB20.13.11', 'PB20.13.12', 'PB20.13.10', 'PB20.13.31'];
 #wafers=['PB20.13.10'];
 
-#outdir1='output_ver2';
-#outdir2='output_ver5';
+outdir1='output_ver10';
+outdir2='output_ver10';
 
-outdir1='output_ver9';
-outdir2='output_ver9';
-
+runID   =22300609;
 #filename='/group/cmb/polarbear/data/pb2a/g3compressed/22300000_v05/Run22300609';
 filename='/group/cmb/polarbear/usr/sadachi/SparseWireCalibration/PB2a/g3compressed/Run22300609/';
 
@@ -44,13 +42,24 @@ optgrid = '' # read TOD from g3 files
 #optgrid = '-L' # read TOD from pickle files
 optfit = '--excludeAngle 180'
 
+# Use loadbolo_pipeline.py
+usePipeline = True;
+# Use loadbolo.py or loadbolo_v2.py
+#usePipeline = False;
+
 # get bolonames
-g3c=libg3.G3Compressed(filename,loadtime=False)
-bolonames = np.array(g3c.bolonames_all) ;
+if usePipeline:
+    from loadbolo_pipeline import getbolonames
+    tmp, bolonames = getbolonames(boloname=None);
+else :
+    g3c=libg3.G3Compressed(filename,loadtime=False)
+    bolonames = np.array(g3c.bolonames_all) ;
+    pass;
 print('get {} bolos from {}'.format(len(bolonames), filename));
 # retrieve wafername
 wafer_bolos = {};
 for boloname in bolonames :
+    # boloname (readoutname) : PB20.13.13_Comb01Ch01
     wafer = boloname.split('_')[0];
     if wafer in wafer_bolos.keys() : wafer_bolos[wafer].append(boloname);
     else                           : wafer_bolos[wafer]=[boloname];
@@ -116,6 +125,7 @@ def runJob() :
             if doGridAna :
                 commands += \
                 'python3 grid_rotation_analysis.py \
+                -r \"{runID}\" \
                 -b \"{bolonames}\" -o \"{prefix}\" -f \"{filename}\" \
                 -d \"{plotdirs}\" -p \"{pickledir}\" --loadpickledir \"{pickledir}\" {opt} \
                 2>&1>& {txtout};\n'.format(\

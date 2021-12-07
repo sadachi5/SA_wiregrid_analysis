@@ -7,6 +7,7 @@ import matplotlib.dates as mdates
 import numpy as np
 import pickle
 import math
+import copy
 from scipy.optimize import curve_fit
 from datetime import datetime
 
@@ -16,15 +17,25 @@ from slowdaq_map import *;
 # my library
 import Out;
 from utils import rad_to_deg, theta0to2pi, colors;
+
+# Use pipeline to read data
+# Use runID / Not use filename in OneAngleData
+usePipeline = True; 
+from loadbolo_pipeline import loadbolo;
+
+# Use library implemented by Satoru to read data
+# Use filename / Not use runID in OneAngleData
+#usePipeline = False; 
 #from loadbolo import loadbolo;
 #from loadbolo_v2 import loadbolo;
-from loadbolo_pipeline import loadbolo;
 
 class OneAngleData :
 
 
+    # runID will be used only if usePipeline=True.
+    # filename will be used only if usePipeline=False.
     def __init__(   self        ,   
-                    filename    , boloname=None , 
+                    runID=0, filename='', boloname=None , 
                     start=None  , end=None      ,
                     loaddata=True, loadWHWP=True, loadSlow=True,
                     outname='output'    , outdir='plot' , 
@@ -32,7 +43,7 @@ class OneAngleData :
                     out=None            , verbosity=0   ) :
 
         # initialize data variables
-        self.m_bolonames  = []; # boloname array
+        self.m_bolonames  = []; # bolometer readout name array
         self.m_time       = []; # time array
         self.m_whwp_angle = []; # whwp angle array
         self.m_bolotime_array = []; # bolotime-array x bolos
@@ -43,6 +54,7 @@ class OneAngleData :
         self.m_SIMtemp_data   = {}; # SIM900 temperature data {'label':[TOD data],..}
          
         # initialize input variables
+        self.m_runID = 0;
         self.m_filename = '';
         self.m_boloname = '';
         self.m_start = '';
@@ -57,6 +69,7 @@ class OneAngleData :
         self.m_out = None; # class Out
 
         # assign input variables
+        self.m_runID     = runID;
         self.m_filename  = filename;
         self.m_boloname  = boloname;
         self.m_start     = start;
@@ -93,12 +106,18 @@ class OneAngleData :
                 self.m_whwp_angle= pickle.load(outfile);
                 self.m_bolotime_array  = pickle.load(outfile);
                 self.m_y_array         = pickle.load(outfile);
-                self.m_LStemp_time = pickle.load(outfile);
-                self.m_LStemp_data = pickle.load(outfile);
-                self.m_SIMtemp_time = pickle.load(outfile);
-                self.m_SIMtemp_data = pickle.load(outfile);
-                self.m_out.OUTVar(self.m_LStemp_time,-1);
-                self.m_out.OUTVar(self.m_LStemp_data,-1);
+                if self.m_loadSlow:
+                    self.m_LStemp_time = pickle.load(outfile);
+                    self.m_LStemp_data = pickle.load(outfile);
+                    self.m_SIMtemp_time = pickle.load(outfile);
+                    self.m_SIMtemp_data = pickle.load(outfile);
+                    self.m_out.OUTVar(self.m_LStemp_time,-1);
+                    self.m_out.OUTVar(self.m_LStemp_data,-1);
+                    pass;
+                self.m_out.OUT(f'time (size={len(self.m_time)})= {self.m_time}',-1);
+                self.m_out.OUT(f'whwp angle data (size={len(self.m_whwp_angle)})= {self.m_whwp_angle}',-1);
+                self.m_out.OUT(f'bolo time[0] (size={len(self.m_bolotime_array[0])})= {self.m_bolotime_array[0]}',-1);
+                self.m_out.OUT(f'bolo data[0] (size={len(self.m_y_array[0])})= {self.m_y_array[0]}',-1);
             else : # if there is no pickle file, load g3 datafile
                 self.m_loaddata = True;
                 pass;
@@ -114,22 +133,32 @@ class OneAngleData :
             outfile = open(self.m_outpath+'.pkl', 'wb');
     
             # get bolometer instance
-            g3c, self.m_bolonames, self.m_time, start_mjd, end_mjd = \
-                loadbolo(self.m_filename, self.m_boloname, self.m_start, self.m_end,
-                        loadWHWP=self.m_loadWHWP, loadSlow=self.m_loadSlow, out=self.m_out);
+            detector_names = []; # list to loop over detectors
+            if usePipeline :
+                self.m_out.OUT(f'loadbolo({self.m_runID}, {self.m_boloname}, {self.m_start}, {self.m_end}, loadHWP={self.m_loadWHWP}, loadSlow={self.m_loadSlow}, out={self.m_out})',0)
+                g3c, self.m_bolonames, detector_names, self.m_time, start_mjd, end_mjd = \
+                    loadbolo(self.m_runID, self.m_boloname, self.m_start, self.m_end,
+                            loadHWP=self.m_loadWHWP, loadSlow=self.m_loadSlow, out=self.m_out);
+            else :
+                g3c, self.m_bolonames, self.m_time, start_mjd, end_mjd = \
+                    loadbolo(self.m_filename, self.m_boloname, self.m_start, self.m_end,
+                            loadHWP=self.m_loadWHWP, loadSlow=self.m_loadSlow, out=self.m_out);
+                detector_names = self.m_bolonames;
+                pass;
+            self.m_out.OUT(f'time (size={len(self.m_time)})= {self.m_time}',-1);
      
             # get whwp angle
-            if self.m_loadWHWP : self.m_whwp_angle = g3c.angle%(2.*np.pi); # [rad.] / g3c.angle is not-repeated value.
+            if self.m_loadWHWP : self.m_whwp_angle = copy.deepcopy(g3c.angle)%(2.*np.pi); # [rad.] / g3c.angle is not-repeated value.
             #if self.m_loadWHWP : self.m_whwp_angle = (g3c.angle%(2.*np.pi)) * 360./(2.*np.pi) ; # [deg.]
             else  : self.m_whwhp_angle = np.array([]);
-            self.m_out.OUT('whwp angle data = {}'.format(self.m_whwp_angle),-1);
+            self.m_out.OUT(f'whwp angle data (size={len(self.m_whwp_angle)})= {self.m_whwp_angle}',-1);
 
             # get slow daq data
-            if 'slowData' in vars(g3c).keys() : 
+            if self.m_loadSlow and 'slowData' in vars(g3c).keys() : 
                 slowData = g3c.slowData;
          
-                LStemp_slowtime = slowData['Lakeshore151']['time'];
-                LStemp_slowData = slowData['Lakeshore151']['MODEL370_370A4A_T'];
+                LStemp_slowtime = copy.deepcopy(slowData['Lakeshore151']['time']);
+                LStemp_slowData = copy.deepcopy(slowData['Lakeshore151']['MODEL370_370A4A_T']);
                 self.m_LStemp_time= np.array([ datetime.utcfromtimestamp(time) for time in LStemp_slowtime ]);
                 # initialize data array
                 self.m_LStemp_data = {label:[] for label in LStemp_map};
@@ -141,9 +170,9 @@ class OneAngleData :
                     pass;
                 pass;
          
-                SIMtemp_slowtime = slowData['SIM900']['time'];
-                SIMtemp_slowData = slowData['SIM900']['SIM900']['TEMP'];
-                SIMtemp_labels   = slowData['SIM900']['SIM900']['LABELS']; # array for each samplings
+                SIMtemp_slowtime = copy.deepcopy(slowData['SIM900']['time']);
+                SIMtemp_slowData = copy.deepcopy(slowData['SIM900']['SIM900']['TEMP']);
+                SIMtemp_labels   = copy.deepcopy(slowData['SIM900']['SIM900']['LABELS']); # array for each samplings
                 self.m_SIMtemp_time= np.array([ datetime.utcfromtimestamp(time) for time in SIMtemp_slowtime ]);
                 # initialize data array
                 self.m_SIMtemp_data = {label:[] for label in SIMtemp_labels[0]};
@@ -156,11 +185,14 @@ class OneAngleData :
 
     
             # loop over bolonames to retrieve TOD data from g3 datafile
-            for name in self.m_bolonames:
-                bolo=g3c.loadbolo(name,start=start_mjd,end=end_mjd)
-                bolotime = g3c.bolotime;
-                self.m_out.OUT('bolo = {}'.format(bolo),-1);
-                y=bolo[0].real
+            for name in detector_names:
+                self.m_out.OUT('detector name = {}'.format(name), 1);
+                bolos = g3c.loadbolo(name) if usePipeline else g3c.loadbolo(name,start=start_mjd,end=end_mjd)
+                bolotime = copy.deepcopy(g3c.bolotime);
+                self.m_out.OUT('bolo = {}'.format(bolos),-1);
+                y=copy.deepcopy(bolos[0].real)
+                self.m_out.OUT(f'bolo time (size={len(bolotime)}= {bolotime}',-1);
+                self.m_out.OUT(f'bolo data (size={len(y)}= {y}',-1);
                 # append to boloarray
                 self.m_bolotime_array.append(bolotime);
                 self.m_y_array       .append(y);
@@ -179,7 +211,6 @@ class OneAngleData :
                 pickle.dump(self.m_SIMtemp_data, outfile);
                 pass;
             outfile.close();
-            del bolo;
             del g3c;
             pass;
         # End of loaddata
@@ -290,6 +321,7 @@ if __name__=='__main__' :
 
     verbose = 0;
     filename='/group/cmb/polarbear/data/pb2a/g3compressed/22300000_v05/Run22300609';
+    runID   =22300609;
     boloname='PB20.13.13_Comb01Ch01';
     outname ='aho';
     outdir  ='./plot';
@@ -308,13 +340,15 @@ if __name__=='__main__' :
 
 
     parser = argparse.ArgumentParser();
-    parser.add_argument('--filename', default=filename, help='input g3 filename (default: {})'.format(filename));
+    parser.add_argument('--runID', default=runID, type=int, help='runID (default: {}, ONLY used if usePipeline=True)'.format(runID));
+    parser.add_argument('--filename', default=filename, help='input g3 filename (default: {}, ONLY used if usePipeline=False)'.format(filename));
     parser.add_argument('--boloname', default=boloname, help='boloname (default: {})'.format(boloname));
     parser.add_argument('--outdir', default=outdir, help='output directory for the plots (default: {})'.format(outdir));
     parser.add_argument('--outname', default=outname, help='output filename (default: {})'.format(outname));
     parser.add_argument('--start', default=startStr, help='start time string (default: {})'.format(startStr));
     parser.add_argument('--end', default=endStr, help='end time string (default: {})'.format(endStr));
     parser.add_argument('--noHWP', dest='loadWHWP', default=True, action='store_false', help='Not load WHWP data (default: {})'.format(True));
+    parser.add_argument('--loadSlow', dest='loadSlow', default=False, action='store_true', help='Load slow DAQ data (default: {})'.format(False));
     parser.add_argument('-L', '--loadpickle', dest='loaddata', action='store_false', default=True, 
             help='Whether load g3 data file or not. If not load it, it will load pickle file before run. (default: True)');
     parser.add_argument('-v', '--verbose', default=verbose, type=int, help='verbosity level: A larger number means more printings. (default: {})'.format(verbose));
@@ -325,6 +359,9 @@ if __name__=='__main__' :
     out.OUT('loaddata = {}'.format(args.loaddata),1)
 
 
-    onedata = OneAngleData(args.filename,args.boloname,args.start,args.end,args.loaddata,args.loadWHWP,outname=args.outname,outdir=args.outdir,out=out);
+    onedata = OneAngleData(args.runID, args.filename, args.boloname, 
+            args.start, args.end, 
+            args.loaddata, args.loadWHWP, args.loadSlow, 
+            outname=args.outname,outdir=args.outdir,out=out);
     onedata.plot();
     pass;

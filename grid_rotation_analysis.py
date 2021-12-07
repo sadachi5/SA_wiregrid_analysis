@@ -11,6 +11,7 @@ from scipy.optimize import curve_fit
 from scipy.fftpack import fft, fftfreq;
 
 import Out;
+from OneAngleData import usePipeline 
 from OneAngleData import OneAngleData 
 from Demod import Demod
 from utils import mjd_to_second, theta0to2pi, rad_to_deg, between, rms, saveFig, colors;
@@ -161,7 +162,9 @@ def plotAll(angleDataList, db_theta=None, outdir='aho', outname='aho', pickledir
     bandwidth_narrow = 0.1;
     for j, angledata in enumerate(angleDataList) :
         data  = angledata['data'];
-        time  = data.m_bolotime_array[0] * 1.e-8;
+        out.OUT(f'usePipeline = {usePipeline}',0);
+        if usePipeline: time = mjd_to_second(data.m_bolotime_array[0]); # convert to sec time (bolotime was divided by 1e+8 to prevent overflow in OneAngleData.py.)
+        else          : time = data.m_bolotime_array[0] * 1.e-8; # convert MJD time to sec
         #angle = data.m_whwp_angle/360. * 2. * np.pi; # deg. --> rad.
         angle = data.m_whwp_angle; # [rad.]
         demod = Demod(time,angle,
@@ -209,7 +212,8 @@ def plotAll(angleDataList, db_theta=None, outdir='aho', outname='aho', pickledir
 
             demod_result = {};
 
-            time = data.m_bolotime_array[i] * 1.e-8;
+            if usePipeline: time = mjd_to_second(data.m_bolotime_array[i]); # convert to sec time (bolotime was divided by 1e+8 to prevent overflow in OneAngleData.py.)
+            else          : time = data.m_bolotime_array[i] * 1.e-8; # convert MJD time to sec
             time = time - time[0];
             y          = data.m_y_array[i];
             whwp_angle = data.m_whwp_angle;
@@ -486,11 +490,11 @@ def plotAll(angleDataList, db_theta=None, outdir='aho', outname='aho', pickledir
     
 
 
-def main(boloname, filename='', 
+def main(boloname, runID=0, filename='', 
          outdir='aho', outname='aho', pickledir='aho', loadpickledir='aho',
          #theta_det_db=['output_ver2/db/all_mod.db','wiregrid','readout_name'], 
          theta_det_db=None, 
-         loaddata=True, out0=None, ext='pdf', verbosity=0 ) :
+         loaddata=True, loadSlow=False, out0=None, ext='pdf', verbosity=0 ) :
 
     # initialize Out
     if out0==None : out = Out.Out(verbosity=verbosity);
@@ -592,11 +596,12 @@ def main(boloname, filename='',
     for i, angleData in enumerate(angleDataList) :
         out.OUTVar(boloname,0);
         oneAngleData = OneAngleData(
-                    filename = filename             , boloname  = boloname          ,
+                    runID = runID, filename = filename             , boloname  = boloname          ,
                     start    = angleData['start']   , end       = angleData['end']  ,
                     outname  = angleData['outname'] , outdir    = pickledir+'/'+boloname,
                     loadpickledir = loadpickledir+'/'+boloname, 
-                    loaddata = loaddata             , out       = out               ,
+                    loaddata = loaddata             , loadSlow=loadSlow, 
+                    out      = out                  ,
                 );
         angleDataList[i]['data'] = oneAngleData;
         angleDataList[i]['cal'    ] = cal;
@@ -615,6 +620,7 @@ if __name__=='__main__' :
     filename='/group/cmb/polarbear/data/pb2a/g3compressed/22300000_v05/Run22300609';
     #boloname='PB20.13.13_Comb01Ch01';
     boloname='PB20.13.13_Comb01Ch02';
+    runID   =22300609;
     outname ='ver1_';
     outdir  ='plot_ver1';
     pickledir = 'plot'; # write directory for demod data
@@ -623,6 +629,7 @@ if __name__=='__main__' :
 
     parser = argparse.ArgumentParser();
     parser.add_argument('-b', '--boloname', default=boloname, help='boloname (default: {}): If boloname=="", make data and stop job. (no making plot or demodulation) '.format(boloname));
+    parser.add_argument('-r', '--runID', default=runID, type=int, help='runID (default: {}, ONLY used if usePipeline=True in OneAngleData())'.format(runID));
     parser.add_argument('-f', '--filename', default=filename, help='input g3 filename (default: {})'.format(filename));
     parser.add_argument('-d', '--outdir', default=outdir, help='output directory for the plots (default: {})'.format(outdir));
     parser.add_argument('-o', '--outname', default=outname, help='output filename (default: {})'.format(outname));
@@ -630,6 +637,7 @@ if __name__=='__main__' :
     parser.add_argument('-l', '--loadpickledir', default=pickledir, help='read directory for pickle files to load the data retreived from g3 file (default=pickledir)');
     parser.add_argument('-L', '--loadpickle', dest='loaddata', action='store_false', default=True, 
             help='Whether load pickle file or not. If not load it, it will load raw data file. (default: False)');
+    parser.add_argument('--loadSlow', dest='loadSlow', action='store_true', default=False, help='Whether load slow DAQ data or not. (default: False)');
     parser.add_argument('-e', '--extension', default=ext, help='Output file extensions for figure: You can set multiple extensions by "," e.g. "pdf,png". (default: {})'.format(ext));
     parser.add_argument('--anglecalib', default=None, help='Input database for angle calibration of theta_det e.g. "<DB filename>,<tablename>,<columnname for bolo>". (default: None)');
     parser.add_argument('-v', '--verbose', default=verbose, type=int, help='verbosity level: A larger number means more printings. (default: {})'.format(verbose));
@@ -643,10 +651,10 @@ if __name__=='__main__' :
     out = Out.Out(args.verbose);
     out.OUT('loaddata = {}'.format(args.loaddata),1)
 
-    main(boloname=args.boloname, filename=args.filename, 
+    main(boloname=args.boloname, runID=args.runID, filename=args.filename, 
             outdir=args.outdir, outname=args.outname, pickledir=args.pickledir, loadpickledir=loadpickledir,
             theta_det_db = theta_det_db,
-            loaddata=args.loaddata, out0=out, ext=args.extension);
+            loaddata=args.loaddata, loadSlow=args.loadSlow, out0=out, ext=args.extension);
     pass;
 
 

@@ -17,7 +17,7 @@ print(topdir)
 # plotting
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-get_ipython().magic(u'matplotlib inline')
+#get_ipython().magic(u'matplotlib inline')
 # inline non-interactive mode
 # python kernel check
 print(sys.executable)

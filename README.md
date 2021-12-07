@@ -104,6 +104,10 @@ Other modification on *simons_array_offline_software*:
 ## run scripts
  - (./plot.sh: make plot of TODs)
 
+ - ./test\_pipeline.sh
+    - From demod to fit circle
+    - run each stage of analysis by using loadbolo\_pipeline.py
+
  - ./analysis.sh
     - From demod to fit circle
 

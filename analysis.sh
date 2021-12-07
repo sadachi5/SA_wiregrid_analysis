@@ -48,12 +48,7 @@ done
 
 wafer='PB20.13.13';
 bolonames=(
-'PB20.13.13_Comb01Ch14'
 'PB20.13.13_Comb01Ch01'
-'PB20.13.13_Comb01Ch02'
-'PB20.13.13_Comb01Ch03'
-'PB20.13.13_Comb01Ch17'
-'PB20.13.13_Comb01Ch24'
 );
 #'PB20.13.13_Comb01Ch01'
 #'PB20.13.13_Comb01Ch02'
@@ -75,8 +70,8 @@ filename='/group/cmb/polarbear/usr/sadachi/SparseWireCalibration/PB2a/g3compress
 outdir='plot_ver9_circlefit';
 loadpickledir="plot_ver9/pkl/${wafer}";
 pickledir="plot_ver9/pkl/${wafer}";
-optgrid=''
-#optgrid='-L'
+#optgrid=''
+optgrid='-L -v 2'
 #optfit=''
 #optfit='--excludeAngle 157.5,180 -e pdf,png'
 #optfit='--excludeAngle 180 -e pdf,png --fineCircle'
@@ -88,8 +83,8 @@ mkdir -vp  ${outdir}/txt/${wafer}/fit
 
 for boloname in ${bolonames[@]}; do
     echo $boloname;
-    #python3 grid_rotation_analysis.py -b ${boloname} -o 'gridana_' -f ${filename} -d ${outdir}/plot/${wafer}/${boloname} -p ${pickledir} ${optgrid} 2>&1>& ${outdir}/txt/${wafer}/gridana/gridana_${boloname}.out
-    python3 fitDemodResult.py -b ${boloname} -p ${pickledir} --pickleprefix 'gridana_' --picklesuffix '' -d ${outdir} --outprefix 'Fit_' --outsuffix '' $optfit  --notbatch -v 1 2>&1>& ${outdir}/txt/${wafer}/fit/fit_${boloname}.out
+    python3 grid_rotation_analysis.py -b ${boloname} -o 'gridana_' -f ${filename} -d ${outdir}/plot/${wafer}/${boloname} -p ${pickledir} ${optgrid} 2>&1>& ${outdir}/txt/${wafer}/gridana/gridana_${boloname}.out
+    #python3 fitDemodResult.py -b ${boloname} -p ${pickledir} --pickleprefix 'gridana_' --picklesuffix '' -d ${outdir} --outprefix 'Fit_' --outsuffix '' $optfit  --notbatch -v 1 2>&1>& ${outdir}/txt/${wafer}/fit/fit_${boloname}.out
     # Cout directly
     #python3 fitDemodResult.py -b ${boloname} -p ${pickledir} --pickleprefix 'gridana_' --picklesuffix '' -d ${outdir} --outprefix 'Fit_' --outsuffix '' $optfit  --notbatch -v 1
 
