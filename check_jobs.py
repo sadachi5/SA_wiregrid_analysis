@@ -168,7 +168,11 @@ def check_jobs(outdir='output_ver5') :
 
 
 if __name__=='__main__' :
-    outdir = 'output_ver10';
+    ver='ver10';
+    if len(sys.argv)>1:
+        ver = sys.argv[1];
+        pass;
+    outdir = f'output_{ver}';
     check_jobs(outdir);
 
 

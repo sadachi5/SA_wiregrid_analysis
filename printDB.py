@@ -26,8 +26,6 @@ def main(database):
     #database2 = 'data/pb2a-20210205/pb2a_mapping.db';
     database2 = 'data/pb2a-20211004/pb2a_mapping.db';
     db = DBreader(dbfilename=database2, tablename='pb2a_focalplane', idcolumn='readout_name');
-
-
     
     return 0;
 

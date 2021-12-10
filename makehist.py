@@ -140,23 +140,20 @@ def main(database, baseselect=[''],outfile='aho.png',verbose=0,
     return 0;
 
 if __name__=='__main__' :
-    #database = 'output_ver2/db/all_pandas.pkl';
-    #outdir   = 'output_ver2/summary';
-    #database = 'output_ver3/db/all_pandas.pkl';
-    #outdir0  = 'output_ver3/summary';
-    #database = 'output_ver4/db/all_pandas.pkl';
-    #outdir0  = 'output_ver4/summary';
-    #database = 'output_ver5/db/all_pandas.pkl';
-    #outdir0  = 'output_ver5/summary';
-    database = 'output_ver10/db/all_pandas.pkl';
-    outdir0  = 'output_ver10/summary';
+    ver='ver10';
+    if len(sys.argv)>1:
+        ver = sys.argv[1];
+        pass;
+    database = f'output_{ver}/db/all_pandas.pkl';
+    outdir0  = f'output_{ver}/db/summary';
+
     wafers=['13.13', '13.15', '13.28', '13.11', '13.12', '13.10', '13.31'];
     nbins = 360*1;
     ext = 'png';
     for stacked, stacklabel in (False,'nostack'),(True,'stack') :
         draw_all = stacked; # stacked histograms has a total histogram.
         outdir = outdir0+'/'+stacklabel;
-        main(database, baseselect=["readout_name==readout_name",''], outfile=outdir+'/all_nocut.'+ext,stacked=stacked,calib_tau=False,draw_all=draw_all,nbins=36*5,verbose=1);
+        main(database, baseselect=["readout_name==readout_name",''], outfile=outdir+'/all_nocut.'+ext,stacked=stacked,calib_tau=False,draw_all=draw_all,nbins=nbins,verbose=1);
         for calib_tau, tausuffix, taulabel in (False,'',r' (No $\tau$-corr.)'),(True,'_taucorr',r' (Wt $\tau$-corr.)') :
             # 0.017453292519943295 rad. = 1 deg.
             wg_qualitycut = 'theta_det_err<0.017453292519943295*0.5';

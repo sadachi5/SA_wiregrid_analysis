@@ -7,8 +7,6 @@ from utils import deg0to180, theta0topi, colors, printVar, rad_to_deg, rad_to_de
 from matplotlib import pyplot as plt;
 from lmfit.models import GaussianModel
 
-ver='_ver10';
-isCorrectHWPenc=True;
 
 
 def plotEachWire(dfs, var_set, var_mean_set, var_std_set, slabels, 
@@ -169,7 +167,7 @@ def drawAngleHist(ax, iselections, selections, fit_models, fit_results, nzerobin
 
 
 
-def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
+def check_absolute(ver, outfile='out_check_absolute/check_absolute'+ver, isCorrectHWPenc=True):
 
     # Configure for base selections
     stim_quality_cut = 'tau>0.';
@@ -187,7 +185,7 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
 
 
     # Configure for inputs
-    database_wiregrid = 'output{}/db/all_pandas_correct_label.db'.format(ver);
+    database_wiregrid = 'output_{}/db/all_pandas_correct_label.db'.format(ver);
     tablename_wiregrid = 'wiregrid';
     #columns_wiregrid   = 'readout_name,theta_det,theta_det_err,tau,tauerr';
     columns_wiregrid   = '*';
@@ -782,4 +780,12 @@ def check_absolute(outfile='out_check_absolute/check_absolute'+ver):
 
 
 if __name__=='__main__' :
-    check_absolute();
+    ver='ver10';
+    isCorrectHWPenc=True;
+    if len(sys.argv)>1:
+        ver = sys.argv[1];
+        pass;
+    if len(sys.argv)>2:
+        isCorrectHWPenc = (bool)((int)(sys.argv[2]));
+        pass;
+    check_absolute(ver=ver, outfile=f'output_{ver}/check_absolute',isCorrectHWPenc=isCorrectHWPenc):

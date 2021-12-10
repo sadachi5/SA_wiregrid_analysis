@@ -1,11 +1,16 @@
 #!/bin/env python
-
+import sys
 import pandas as pd;
 import numpy as np;
 from utils import colors, getPandasPickle, plottmphist;
 
-database = 'output_ver10/db/all_pandas.pkl';
-outdir = 'output_ver10/check_db';
+ver='ver10';
+if len(sys.argv)>1:
+    ver = sys.argv[1];
+    pass;
+
+database = f'output_{ver}/db/all_pandas.pkl';
+outdir = f'output_{ver}/db/check_db';
 
 df = getPandasPickle(database);
 print(df.keys());
