@@ -111,10 +111,9 @@ Other modification on *simons_array_offline_software*:
             - To avoid the duplicated bolos, add new selection run_subid=='[1, 4, 7, 10, 13, 16, 19, 22]'
     - *pb2a_mapping* (offset\_det\_x,y):
         - NOTE: No updating in merge.py because newer database than p22a-20210205 has calibrated pol\_angles but it needs design values in pol\_angle.
-        - updated in compare_DB_for_labelcorrection.py: pb2a-20211004/pb2a\_mapping.db
-        - updated the hardware_map_commit_hash :
-            - 6f306f8261c2be68bc167e2375ddefdec1b247a2 --> 13decf63ba87f93ae31ae0b3e76dd020c91babd6
-                - The same hash as in simons_array_offline_software/simons_array_python/sa_config.py
+    - *Kyohei's pb2a_focalplane DB* :
+        - updated in compare_DB_for_labelcorrection.py: ykyohei/mapping/pb2a\_focalplane\_postv4.db
+            - (The HWM hash is not changed) 6f306f8261c2be68bc167e2375ddefdec1b247a2
 
 - Add errors, tau correction in wiregrid DB
     - Add systematics from tau\_err in *merge.py*
@@ -126,6 +125,15 @@ Other modification on *simons_array_offline_software*:
         - *theta_det* : theta_det original + theta_det_taucorr
 
 - Fill 0 in NULL in tau, tauerr in wiregrid in *merge.py*
+- Update *compare\_DB\_for\_labelcorrection.py* for ver10
+    - Wiregrid DB is merged with an old pb2a\_focalplane DB which has original detector labels and design pol\_angle.
+    - It is compared with Kyohei's DB (postv4) to get corrected pixel labels.
+    - Drop NaN bolometers in readout\_name or theta\_det (wiregrid data) for label corrected DB
+
+- Update *check\_absolute\_nocorr.py* for ver10
+    - Remove old check\_absolute\_nocorr.py & create from check\_absolute.py
+    - No plots with *det\_offset\_x/y* or *mislabel* 
+        because the DB before label correction does not have them
 
 ## run scripts
  - (./plot.sh: make plot of TODs)
@@ -134,11 +142,15 @@ Other modification on *simons_array_offline_software*:
     - From demod to fit circle
     - run each stage of analysis by using loadbolo\_pipeline.py
 
- - ./analysis.sh
+ - ./analysis\_misc.sh
+    - For test or check run
     - From demod to fit circle
 
  - python3 run\_batch.py
     - Run demod & fit for many detectors by using batch job
+
+ - ./analysis\_DB.sh
+    - Run DB modification or check after the fit circle
 
 
 ## Scripts for each analysis steps
@@ -237,13 +249,13 @@ Other modification on *simons_array_offline_software*:
 
 ### Check diff between wiregrid measured angle and design detector angle
 - check\_absolute.py
-    - make angle plots of DB with wiregrid corrected labels
+    - make angle plots of DB after wiregrid corrected labels
         - 2D plot: theta_det_angle (wiregrid measured angle) v.s. pol_angle (design value) for good data (tau!=nan, theta_det_err<0.5deg, pol_angle!=nan) 
         - 2D plot: theta_det_angle (wiregrid measured angle) v.s. pol_angle (design value) for correct labels
         - 1D plot: diff. between measured angle(theta_det_angle) and design angle(pol_angle)
     - make focal plane plot
-    - input : output\_ver4/db/all\_pandas\_correct\_label.db
-    - output: out\_check\_absolute/check\_absolute.png
+    - input : output\_ver10/db/all\_pandas\_correct\_label.db
+    - output: output\_ver10/check\_absolute/\*.png
 
 - check\_absolute\_labelcorrecteddb.py
     - make angle plots of DB with wiregrid corrected labels
@@ -253,11 +265,10 @@ Other modification on *simons_array_offline_software*:
     - output: out\_check\_absolute/check\_absolute\_labelcorrectedDB.png
 
 - check\_absolute\_nocorr.py
-    - make angle plots of DB without wiregrid label correction
+    - make angle plots of DB before wiregrid label correction
     - input : 
-        - output\_ver4/db/all\_pandas.db 
-        - data/ykyohei/mapping/pb2a\_mapping\_postv2.db
-    - output: out\_check\_absolute/check\_absolute\_nocorr.png
+        - output\_ver10/db/all\_pandas.db 
+    - output: output\_ver10/check\_absolute\_nocorr/\*.png
 
 ### Others
 - makehist.py

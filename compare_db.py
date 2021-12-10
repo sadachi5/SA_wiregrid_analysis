@@ -6,7 +6,13 @@ import copy;
 from utils import theta0topi, colors, printVar;
 from matplotlib import pyplot as plt;
 
-
+# 1. merge with DBs by primarycolumn
+# 2. compare the columns in each DBs in varnames
+# 3. make mislabel DB from varname1!=varname2
+# 4. return dfs, dfmerge, dfmislabel;
+#       dfs     : input DBs
+#       dfmerge : merged DB
+#       dfmislabel: mislabeled bolometer DB
 
 def compare_db(
     dbnames, 
@@ -101,10 +107,15 @@ def compare_db(
     pandas.set_option('display.max_columns', 50)
     print(' check difference between {} and {}'.format(varname1,varname2));
     #dfmislabel = dfmerge.query('{}!={}'.format(varname1,varname2))[~(dfmerge[varname1].isnull())];
-    dfmislabel = dfmerge.query('{}!={}'.format(varname1,varname2)).dropna(subset=[varname1]);
+    dfmislabel0 = dfmerge.query('{}!={}'.format(varname1,varname2))
+    # Drop NaN bolometers in varname1 & primarycolumn in DB1 (Bolometers in DB1 is not able to be compared.)
+    dfmislabel = dfmislabel0.dropna(subset=[varname1,primarycolumn]);
     print(dfmislabel);
     pandas.set_option('display.max_columns', 5)
-    print('Size of no mislabel = {}'.format(len(dfmerge)-len(dfmislabel)));
+    print('Size of merged DB   = {}'.format(len(dfmerge)));
+    print('Size of NaN DB in {} or {}   = {}'.format(varname1, primarycolumn, len(dfmislabel0)-len(dfmislabel)));
+    print('Size of mislabel    = {}'.format(len(dfmislabel)));
+    print('Size of correct label DB = merged DB - mislabel - NaN DB = {}'.format(len(dfmerge)-len(dfmislabel0)));
 
     dfmislabel.to_csv(outname+'.csv', header=True, index=True);
 

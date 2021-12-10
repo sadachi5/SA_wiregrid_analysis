@@ -1,5 +1,5 @@
 #!/bin/python
-
+import sys, os;
 import numpy as np;
 import sqlite3, pandas;
 import copy;
@@ -155,7 +155,7 @@ def drawAngleHist(ax, iselections, selections, fit_models, fit_results, nzerobin
     ax.set_title(baseselect[1] if len(baseselect)>1 else '');
     ax.set_xlabel(r'$\theta_{\mathrm{det}} - \theta_{\mathrm{design}}$ [deg.]',fontsize=16);
     ax.set_ylabel(r'# of bolometers',fontsize=16);
-    ax.set_xticks(np.arange(xbinrange[0],xbinrange[1],5));
+    if np.abs(xbinrange[1]-xbinrange[0])<50.: ax.set_xticks(np.arange(xbinrange[0],xbinrange[1],5));
     ax.tick_params(labelsize=12);
     ax.grid(True);
     if showText: ax.legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 7,title='',borderaxespad=0.,labelspacing=1.2);
@@ -167,7 +167,7 @@ def drawAngleHist(ax, iselections, selections, fit_models, fit_results, nzerobin
 
 
 
-def check_absolute(ver, outfile='out_check_absolute/check_absolute'+ver, isCorrectHWPenc=True):
+def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCorrectHWPenc=True):
 
     # Configure for base selections
     stim_quality_cut = 'tau>0.';
@@ -258,9 +258,9 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute'+ver, isCorre
     print( '*** booleans for angle outliers (|diff.| > 45 deg.) ***');
     print( bools_angle_outlier );
     print( '*******************************************************');
-    '''
+    #'''
     df_angle_outlier = df_base[bools_angle_outlier];
-    df_angle_outlier.to_csv(outfile+'.csv');
+    df_angle_outlier.to_csv(outfile+'outliers.csv');
 
     # DB with offset (x,y)
     #print('df_base offset(x,y)', df_base[['det_offset_x','det_offset_y']]);
@@ -295,7 +295,7 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute'+ver, isCorre
 
     # histogram setting
     binwidth = 1.;
-    xbinrange = [-20,20];
+    xbinrange = [-20,20] if isCorrectHWPenc else [-90,90];
     nbins = int((xbinrange[1]-xbinrange[0])/binwidth);
     
     n_sels = [];
@@ -393,12 +393,14 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute'+ver, isCorre
     plt.subplots_adjust(wspace=0.3, hspace=0.3, left=0.15, right=0.95,bottom=0.15, top=0.95)
 
     # 2D plot 1 (Measured angle v.s. design angle)
-    axs[0][0].plot(df_notmislabel[dataname2], df_notmislabel[dataname],marker='o', markersize=1.0, linestyle='');
+    axs[0][0].plot(df_base[dataname2], df_base[dataname],marker='o', markersize=1.0, linestyle='', label='all');
+    axs[0][0].plot(df_angle_outlier[dataname2], df_angle_outlier[dataname],marker='o', markersize=1.0, linestyle='',color='r', label='outliers');
     axs[0][0].plot([-360,360],[-360,360],linestyle='-',color='k',linewidth=0.5);
     axs[0][0].plot([-360,360],[0,0],linestyle='-',color='k',linewidth=0.5);
     axs[0][0].plot([0,0],[-360,360],linestyle='-',color='k',linewidth=0.5);
     axs[0][0].grid(True);
-    axs[0][0].set_title('Bolos with correct labels originally (no mis-label)');
+    axs[0][0].legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 10, title='',borderaxespad=0.,labelspacing=1.0);
+    axs[0][0].set_title('Bolos with base cuts (all/outliers)');
     axs[0][0].set_xlabel(r'$\theta_{\mathrm{det,design}}$ [deg.]'+'\n("pol_angle-90deg" in focalplane database)',fontsize=16);
     axs[0][0].set_ylabel(r'$\theta_{\mathrm{det,wiregrid}}$ [deg.]',fontsize=16);
     axs[0][0].set_xticks(np.arange(-360,360,45));
@@ -408,14 +410,12 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute'+ver, isCorre
     axs[0][0].tick_params(labelsize=12);
 
     # 2D plot 2 (Measured angle v.s. design angle)
-    axs[0][1].plot(df_base[dataname2], df_base[dataname],marker='o', markersize=1.0, linestyle='', label='all');
-    axs[0][1].plot(df_angle_outlier[dataname2], df_angle_outlier[dataname],marker='o', markersize=1.0, linestyle='',color='r', label='outliers');
+    axs[0][1].plot(df_notmislabel[dataname2], df_notmislabel[dataname],marker='o', markersize=1.0, linestyle='');
     axs[0][1].plot([-360,360],[-360,360],linestyle='-',color='k',linewidth=0.5);
     axs[0][1].plot([-360,360],[0,0],linestyle='-',color='k',linewidth=0.5);
     axs[0][1].plot([0,0],[-360,360],linestyle='-',color='k',linewidth=0.5);
     axs[0][1].grid(True);
-    axs[0][1].legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 10, title='',borderaxespad=0.,labelspacing=1.0);
-    axs[0][1].set_title('Bolos with base cuts after label correction (all/outliers)');
+    axs[0][1].set_title('Bolos with correct labels originally (not mis-label)');
     axs[0][1].set_xlabel(r'$\theta_{\mathrm{det,design}}$ [deg.]'+'\n("pol_angle-90deg" in focalplane database)',fontsize=16);
     axs[0][1].set_ylabel(r'$\theta_{\mathrm{det,wiregrid}}$ [deg.]',fontsize=16);
     axs[0][1].set_xticks(np.arange(-360,360,45));
@@ -423,7 +423,6 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute'+ver, isCorre
     axs[0][1].set_xlim(-22.5,180);
     axs[0][1].set_ylim(-22.5,180);
     axs[0][1].tick_params(labelsize=12);
-
 
     # Focal plane plot 1
     im0= axs[2][0].scatter(df_offset['det_offset_x'], df_offset['det_offset_y'], c=df_offset[dataname], marker='o', s=10, cmap='coolwarm', vmin=0., vmax=180.);
@@ -557,8 +556,8 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute'+ver, isCorre
 
 
     # Save fig
-    print('savefig to '+outfile+'_misc.png');
-    fig.savefig(outfile+'_misc.png');
+    print('savefig to '+outfile+'misc.png');
+    fig.savefig(outfile+'misc.png');
 
 
 
@@ -744,7 +743,7 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute'+ver, isCorre
                 title=r'Signal power ($r$) ratio', 
                 vartitle=r'$r(\theta _{\mathrm{wire}})/r_{\mathrm{circle}}$',
                 mean_ref = 1., mean_yrange = (0.97,1.03),
-                outfilename = outfile+'_eachwire-{}{}.png'.format('r',selection_set['outname']),
+                outfilename = outfile+'eachwire-{}{}.png'.format('r',selection_set['outname']),
                 );
 
             #############################
@@ -757,7 +756,7 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute'+ver, isCorre
                 title=r'Theta diff. from expected one', 
                 vartitle=r'$\theta_{\mathrm{meas.}} - \theta_{\mathrm{exp.}}$',
                 mean_ref = 0., mean_yrange = (-4.,4.),
-                outfilename = outfile+'_eachwire-{}{}.png'.format('theta',selection_set['outname']),
+                outfilename = outfile+'eachwire-{}{}.png'.format('theta',selection_set['outname']),
                 );
 
             ##############################################
@@ -770,7 +769,7 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute'+ver, isCorre
                 title=r'Theta diff. from mean', 
                 vartitle=r'$\theta_{\mathrm{meas.}} - \theta_{\mathrm{exp. from mean}}$',
                 mean_ref = 0., mean_yrange = (-3.,3.),
-                outfilename = outfile+'_eachwire-{}{}.png'.format('theta_from_mean',selection_set['outname']),
+                outfilename = outfile+'eachwire-{}{}.png'.format('theta_from_mean',selection_set['outname']),
                 );
 
             pass;
@@ -782,10 +781,19 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute'+ver, isCorre
 if __name__=='__main__' :
     ver='ver10';
     isCorrectHWPenc=True;
+    suffix='';
     if len(sys.argv)>1:
         ver = sys.argv[1];
         pass;
     if len(sys.argv)>2:
         isCorrectHWPenc = (bool)((int)(sys.argv[2]));
         pass;
-    check_absolute(ver=ver, outfile=f'output_{ver}/check_absolute',isCorrectHWPenc=isCorrectHWPenc):
+    if len(sys.argv)>3:
+        suffix = sys.argv[3]; 
+        pass;
+    outdir = f'output_{ver}/check_absolute{suffix}';
+    if not os.path.isdir(outdir):
+        os.mkdir(outdir);
+        pass;
+    outfile = f'{outdir}/';
+    check_absolute(ver=ver, outfile=outfile,isCorrectHWPenc=isCorrectHWPenc);
