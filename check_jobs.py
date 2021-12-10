@@ -127,7 +127,7 @@ def check_jobs(outdir='output_ver5') :
             continue;
         grep_outputs=[];
         # Search for "error" words (ignore difference between lower-/upper- cases)
-        grep_outputs.append(subprocess.run('grep -i error {} | grep -v ErrorView'.format(log), encoding='utf-8', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True).stdout);
+        grep_outputs.append(subprocess.run('grep -i error {} | grep -v "error count" | grep -v ErrorView'.format(log), encoding='utf-8', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True).stdout);
         # Search for "warning" words (ignore difference between lower-/upper- cases)
         #grep_outputs.append(subprocess.run('grep -i warning {} '.format(log), encoding='utf-8', stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True).stdout);
         Ngrep_outputs = np.array([len(out) for out in grep_outputs]);
@@ -168,7 +168,7 @@ def check_jobs(outdir='output_ver5') :
 
 
 if __name__=='__main__' :
-    outdir = 'output_ver9';
+    outdir = 'output_ver10';
     check_jobs(outdir);
 
 

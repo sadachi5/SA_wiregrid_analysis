@@ -7,7 +7,7 @@ from utils import deg0to180, theta0topi, colors, printVar, rad_to_deg, rad_to_de
 from matplotlib import pyplot as plt;
 from lmfit.models import GaussianModel
 
-ver='_ver9';
+ver='_ver10';
 isCorrectHWPenc=True;
 
 

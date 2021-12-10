@@ -4,8 +4,8 @@ import pandas as pd;
 import numpy as np;
 from utils import colors, getPandasPickle, plottmphist;
 
-database = 'output_ver3/db/all_pandas.pkl';
-outdir = 'output_ver3/check_db';
+database = 'output_ver10/db/all_pandas.pkl';
+outdir = 'output_ver10/check_db';
 
 df = getPandasPickle(database);
 print(df.keys());

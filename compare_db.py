@@ -34,12 +34,13 @@ def compare_db(
             primarycolumn+',' if column!='*' else '', column, tablename, ('where '+selection) if not selection=='' else ''  )
         print('sqlite retrieving command = {}'.format(sqlite_cmd));
         df=pandas.read_sql_query(sqlite_cmd, conn);
+        print('Size of {}th database = {} ({})'.format(i, len(df), dbname));
         if dropNan[i] : 
             print('Size of {}th database before dropNan = {} ({})'.format(i, len(df), dbname));
             df=df.dropna(subset=[varnames[i]]);
+            print('Size of {}th database after dropNan = {} ({})'.format(i, len(df), dbname));
             pass;
         dfs.append(copy.deepcopy(df));
-        print('Size of {}th database = {} ({})'.format(i, len(df), dbname));
         #print(df.duplicated([primarycolumn]));
         #print('# of duplicated = {}'.format(sum(df.duplicated([primarycolumn]))));
         if i==0 :
@@ -70,7 +71,7 @@ def compare_db(
     #print(v2);
     #print(y);
     #axs[0].plot(x,y,marker='o', markersize=0.5, linestyle='');
-    axs[0].hist(y,bins=2,range=(-0.5,1.5),histtype='stepfilled', align='mid', orientation='vertical',log=True,linewidth=0.5, linestyle='-', edgecolor='k');
+    hist, bins, paches = axs[0].hist(y,bins=2,range=(-0.5,1.5),histtype='stepfilled', align='mid', orientation='vertical',log=True,linewidth=0.5, linestyle='-', edgecolor='k');
 
     xmax = 36000;
     #axs[0].plot([-xmax,xmax],[-xmax,xmax],linestyle='-',color='k',linewidth=0.5);
@@ -78,6 +79,11 @@ def compare_db(
     #axs[0].plot([0,0],[-xmax,xmax],linestyle='-',color='k',linewidth=0.5);
 
     axs[0].grid(True);
+    for i, count in enumerate(hist):
+        axs[0].text(i, count*1., str(count), horizontalalignment='center',fontsize=12)
+        pass;
+    axs[0].set_title(f'{varname1} v.s. {varname2}',fontsize=8);
+    axs[0].set_xlabel(r'DB1==DB2',fontsize=16);
     #axs[0].set_xlabel(r'$\theta_{\mathrm{det,wiregrid}}$ - 90 [deg.]',fontsize=16);
     #axs[0].set_ylabel(r'$\theta_{\mathrm{det,design}}$ [deg.]'+'\n("pol_angle" in focalplane database)',fontsize=16);
     #axs[0].set_xticks(np.arange(-360,360,45));

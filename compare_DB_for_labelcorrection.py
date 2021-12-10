@@ -5,26 +5,32 @@ import pandas;
 from compare_db import compare_db;
 from utils import theta0topi, rad_to_deg, deg_to_rad, diff_angle;
 
-ver='ver9'
+ver='ver10'
 isCorrectHWPenc=True;
 
 if __name__=='__main__' :
     dbname_out = 'output_{}/db/all_pandas_correct_label'.format(ver)
     dbnames =[
-            'output_{}/db/all_pandas.db'.format(ver),
-            #'data/pb2a-20210205/pb2a_mapping.db',
-            'data/ykyohei/mapping/pb2a_mapping_postv2.db',
+            'output_{}/db/all_pandas.db'.format(ver), 
+
+            # To get offset_det_x/y, band, pixel_type, bolo_type,pixel_handedness fixed by plant observations
+            #'data/ykyohei/mapping/pb2a_mapping_postv2.db',
+            # Update ver10
+            'data/pb2a-20211004/pb2a_mapping.db', # newer DB with corrected labels by planet obs. and preivous wiregrid check
             ];
     tablenames=[
             'wiregrid',
+
             #'pb2a_focalplane',
             'pb2a_focalplane',
             ];
     primarycolumn = 'readout_name';
     columns=[
             '*',
-            #'pol_angle,pixel_type,bolo_name,pixel_name,bolo_type,band,pixel_handedness',
-            'pixel_name,band,det_offset_x,det_offset_y,hardware_map_dir,hardware_map_commit_hash',
+            # For 'data/ykyohei/mapping/pb2a_mapping_postv2.db',
+            #'pixel_name,band,det_offset_x,det_offset_y,hardware_map_dir,hardware_map_commit_hash',
+            # For 'data/pb2a-20210205/pb2a_mapping.db',
+            'pixel_name,band,pixel_type,bolo_type,pixel_handedness,det_offset_x,det_offset_y,hardware_map_dir,hardware_map_commit_hash',
             ];
     if len(columns)==1 : columns = [columns[0] for i in range(len(dbnames))];
     suffixes=[
@@ -37,8 +43,10 @@ if __name__=='__main__' :
     if len(varnames)==1 : varnames = [varnames[0] for i in range(len(dbnames))];
     selections=[
             '',
+            # For 'data/ykyohei/mapping/pb2a_mapping_postv2.db',
             #"hardware_map_commit_hash=='6f306f8261c2be68bc167e2375ddefdec1b247a2'",
-            "hardware_map_commit_hash=='6f306f8261c2be68bc167e2375ddefdec1b247a2'",
+            # For 'data/pb2a-20210205/pb2a_mapping.db',
+            "hardware_map_commit_hash=='13decf63ba87f93ae31ae0b3e76dd020c91babd6'",
             ];
     dropNan=[
             False,
@@ -54,7 +62,7 @@ if __name__=='__main__' :
             suffixes   = suffixes,
             dropNan    = dropNan,
             primarycolumn=primarycolumn,
-            outname='aho.png',
+            outname='output_{}/db/compare_db.png'.format(ver),
             );
 
     #print(df);

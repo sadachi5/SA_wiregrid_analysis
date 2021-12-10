@@ -6,9 +6,9 @@ import copy
 
 import libg3py3 as libg3
 
-doRun = False;
-doGridAna = True;
-doFit     = False;
+doRun = True;
+doGridAna = False;
+doFit     = True;
 # Number of bolometers in one job
 #Nbolobunch= 50; # to execute only fit-script
 Nbolobunch= 1; 
@@ -29,7 +29,7 @@ ignoreFileExist = False;
 
 # All
 wafers=['PB20.13.13', 'PB20.13.15', 'PB20.13.28', 'PB20.13.11', 'PB20.13.12', 'PB20.13.10', 'PB20.13.31'];
-#wafers=['PB20.13.10'];
+#wafers=['PB20.13.13'];
 
 outdir1='output_ver10';
 outdir2='output_ver10';
@@ -50,7 +50,8 @@ usePipeline = True;
 # get bolonames
 if usePipeline:
     from loadbolo_pipeline import getbolonames
-    tmp, bolonames = getbolonames(boloname=None);
+    readoutnames, bolonames = getbolonames(readoutname=None);
+    bolonames = readoutnames; # Use readoutname as indices
 else :
     g3c=libg3.G3Compressed(filename,loadtime=False)
     bolonames = np.array(g3c.bolonames_all) ;
@@ -62,7 +63,10 @@ for boloname in bolonames :
     # boloname (readoutname) : PB20.13.13_Comb01Ch01
     wafer = boloname.split('_')[0];
     if wafer in wafer_bolos.keys() : wafer_bolos[wafer].append(boloname);
-    else                           : wafer_bolos[wafer]=[boloname];
+    else                           : 
+        print(f'add wafer: {wafer}');
+        wafer_bolos[wafer]=[boloname];
+        pass;
     pass;
 
 
@@ -129,7 +133,7 @@ def runJob() :
                 -b \"{bolonames}\" -o \"{prefix}\" -f \"{filename}\" \
                 -d \"{plotdirs}\" -p \"{pickledir}\" --loadpickledir \"{pickledir}\" {opt} \
                 2>&1>& {txtout};\n'.format(\
-                bolonames=bolonames, filename=filename, \
+                runID=runID, bolonames=bolonames, filename=filename, \
                 plotdirs=plotdirs, pickledir=pickledir, prefix=prefix, \
                 txtout=txtgridana, opt=optgrid);
                 pass;

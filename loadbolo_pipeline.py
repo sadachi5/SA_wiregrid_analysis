@@ -88,7 +88,7 @@ def getbolonames(readoutname=None, out=None):
     all_bolonames, all_readoutnames = my_gen_bolo_list(out=out);
     if readoutname is None or readoutname=="" :
         bolonames = np.array(all_bolonames);
-        readoutnames = np.array(readoutnames);
+        readoutnames = np.array(all_readoutnames);
     elif isinstance(readoutname, str):
         if not readoutname in all_readoutnames : 
             out.ERROR(f'There is no matched readoutname for {readoutname}.');

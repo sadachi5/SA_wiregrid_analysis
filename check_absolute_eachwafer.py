@@ -9,7 +9,7 @@ from matplotlib import cm as cm;
 from lmfit.models import GaussianModel
 #from scipy.stats import poisson
 
-ver='_ver9';
+ver='_ver10';
 isCorrectHWPenc=True;
 
 

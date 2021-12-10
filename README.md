@@ -88,6 +88,8 @@ The last version using libg3py3.py
 
 ver10
 ----------
+- version description: *Use sa_pipeline_software to retrieve TOD & HWP encoder angle data*
+
 From this version, sa pipeline is used to read TOD.
 To use *simons_array_offline_software* at kekcc, there are several modifications.
 1. Make a *sa_config.py* file for myself (in library/mychange)
@@ -100,6 +102,30 @@ Other modification on *simons_array_offline_software*:
 1. To use time clip operation on the TOD, I modified *sa_pipline_filters.py/OperatorClipBeginEnd()*
 2. To fix bug in *sa_pipline_filters.py/OperatorClipBeginEnd()*, 
    add items on the list that would go with bolometer (L195).
+
+- Update database to 20211004 (database/pb2a-20211004) after fitDemod
+    - *Amplitude calibration* of ADC counts: NOT updated
+    - *Tau correction*:
+        - updated in merge.py: pb2a-20211004/pb2a\_stim.db
+            - It has duplicate bolometers. (Use DISTINCT to retrieve sqlite3 database.)
+            - To avoid the duplicated bolos, add new selection run_subid=='[1, 4, 7, 10, 13, 16, 19, 22]'
+    - *pb2a_mapping* (offset\_det\_x,y):
+        - NOTE: No updating in merge.py because newer database than p22a-20210205 has calibrated pol\_angles but it needs design values in pol\_angle.
+        - updated in compare_DB_for_labelcorrection.py: pb2a-20211004/pb2a\_mapping.db
+        - updated the hardware_map_commit_hash :
+            - 6f306f8261c2be68bc167e2375ddefdec1b247a2 --> 13decf63ba87f93ae31ae0b3e76dd020c91babd6
+                - The same hash as in simons_array_offline_software/simons_array_python/sa_config.py
+
+- Add errors, tau correction in wiregrid DB
+    - Add systematics from tau\_err in *merge.py*
+        - *theta_det_err* : (Same as before) Statistical error of theta\_det calibration
+        - *thete_det_err_tau* : Error from tauerr in tau calibration
+        - *thete_det_err_total* : Root of squared sum of the above errors
+    - Add tau correction on theta\_det in *merge.py*
+        - *theta_det_taucorr* : - 2 * tau * hwp_speed * 2pi
+        - *theta_det* : theta_det original + theta_det_taucorr
+
+- Fill 0 in NULL in tau, tauerr in wiregrid in *merge.py*
 
 ## run scripts
  - (./plot.sh: make plot of TODs)
@@ -132,6 +158,10 @@ Other modification on *simons_array_offline_software*:
 
 
 ## DB modification
+### Summary of DB modification steps
+1. mergeDB.py
+2. compare\_DB\_for\_labelcorrection.py
+3. check\_absolute.py
 
 ### merge & modify DB
 - mergeDB.py: 
@@ -166,7 +196,8 @@ Other modification on *simons_array_offline_software*:
     - add Kyohei's det\_offset\_x/y datas 
     - input : 
         - my wiregrid DB                 : output_verX/db/all_pandas.db
-        - kyohei's corrected hardware map: data/ykyohei/mapping/pb2a_mapping_postv2.db
+        - kyohei's corrected hardware map: data/ykyohei/mapping/pb2a_mapping_postv2.db 
+          or a new pb2a_focalplane DB in pb2a_mapping.db
     - output:
         - output_verX/db/all_pandas_correct_label.db
 

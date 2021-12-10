@@ -6,8 +6,7 @@ import pandas as pd;
 from DBreader import DBreader;
 from utils import getPandasPickle;
 
-def main():
-    database = 'output_ver2/db/all_pandas.pkl';
+def main(database):
     df = getPandasPickle(database);
     pd.set_option('display.max_columns', 50)
     pd.set_option('display.max_rows', 50)
@@ -24,7 +23,8 @@ def main():
 
 
 
-    database2 = 'data/pb2a-20210205/pb2a_mapping.db';
+    #database2 = 'data/pb2a-20210205/pb2a_mapping.db';
+    database2 = 'data/pb2a-20211004/pb2a_mapping.db';
     db = DBreader(dbfilename=database2, tablename='pb2a_focalplane', idcolumn='readout_name');
 
 
@@ -33,7 +33,11 @@ def main():
 
 
 if __name__=='__main__' :
-    main();
+    database = 'output_ver2/db/all_pandas.pkl'
+    if len(sys.argv)>1:
+        database = sys.argv[1];
+        pass;
+    main(database);
     pass;
     
  

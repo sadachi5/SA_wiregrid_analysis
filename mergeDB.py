@@ -203,15 +203,17 @@ def convertSQLtoPandas(sqlfile, outputfile, tablename='wiregrid', addDB=[], doTa
             __dbtablename= db[1];
             __dbselection= None;
             __dbboloname = None;
+            __dbhowmerge = 'left'; # merged to the original DB
             if len(db)>2 and db[2]!='' : __dbselection= db[2];
             if len(db)>3 and db[3]!='' : __dbboloname = db[3];
+            if len(db)>4 and db[4]!='' : __dbhowmerge = db[4];
             if not os.path.isfile(__dbfilename) :
                 print('WARNING! There is no adding databese: {}'.format(__dbfilename));
                 print('         --> Skip!!');
                 continue;
             print('Adding {}..'.format(__dbfilename));
             __conn = sqlite3.connect(__dbfilename);
-            __query = 'SELECT * FROM {} {}'.format(__dbtablename, ('where '+__dbselection) if not __dbselection is None else '' );
+            __query = 'SELECT DISTINCT * FROM {} {}'.format(__dbtablename, ('where '+__dbselection) if not __dbselection is None else '' );
             print('query = {}'.format(__query));
             __df=pandas.read_sql_query(__query, __conn);
             # Modify __df
@@ -227,7 +229,7 @@ def convertSQLtoPandas(sqlfile, outputfile, tablename='wiregrid', addDB=[], doTa
                 print('---------------------------------------');
                 pandas.set_option('display.max_columns', 5)
                 pass;
-            dfmerge = pandas.merge(df, __dfnew, how='left', on='readout_name');
+            dfmerge = pandas.merge(df, __dfnew, how=__dbhowmerge, on='readout_name');
             #__conn.close();
             #del __df;
             #del __dfnew;
@@ -246,8 +248,16 @@ def convertSQLtoPandas(sqlfile, outputfile, tablename='wiregrid', addDB=[], doTa
 
     # do Tau Calibration
     if doTauCalib and 'tau' in df.keys() :
+       # 0 filling for NULL tau
+        df.loc[(df['tau'].isnull()), 'tauerr'] = 0.;
+        df.loc[(df['tau'].isnull()), 'tau'] = 0.; # Should be filled at last
+        # Tau calibration
         hwp_speed = 2.; # [Hz]
-        df.loc[(df['tau']>0.), 'theta_det'] = df['theta_det'] - 2.*df['tau'] * (hwp_speed * 2. * np.pi );
+        df['theta_det_taucorr'] = - 2.*df['tau'] * (hwp_speed * 2. * np.pi );
+        df['theta_det']         = df['theta_det'] + df['theta_det_taucorr'];
+        # Error calculation
+        df['theta_det_err_tau']   = 2.*df['tauerr'] * (hwp_speed * 2. * np.pi );
+        df['theta_det_err_total'] = np.sqrt( np.power(df['theta_det_err'],2.) + np.power(df['theta_det_err_tau'],2.) );
         pass;
         
     # Check outputfile name
@@ -345,11 +355,38 @@ if __name__=='__main__' :
     tablename = 'wiregrid'
     #inputdir = './output_ver2';
     #inputdir = './output_ver3';
-    #newfile = 'output_ver4/db/all';
-    #inputdir = './output_ver5';
-    #newfile = 'output_ver5/db/all';
+
+    #########
+    # addDB #
+    #########
+    # addDB = list of ['DB filename', 'tablename', 'selection', 'readout culumn name', 'how to merge']
+    # how to merge: 
+    #    left : The added DB is merged to the original DB.
+    #    right: The original DB is merged to the added DB.
+
+    '''
     inputdir = './output_ver9';
     newfile = 'output_ver9/db/all';
+    addDB=[
+        # Focalplane DB
+        ['data/pb2a-20210205/pb2a_mapping.db','pb2a_focalplane', "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'",None],
+        # Stimulator DB
+        ['data/pb2a_stimulator_run223_20210223.db','pb2a_stimulator', "run_id=='22300607'", 'Bolo_name'], # stimulator data before wiregrid
+        #['data/pb2a_stimulator_run223_20210223.db','pb2a_stimulator', "run_id=='22300610'", 'Bolo_name'], # stimulator data after wiregrid
+        ];
+    #'''
+
+    #'''
+    inputdir = './output_ver10';
+    newfile = 'output_ver10/db/all';
+    addDB=[
+            # Focalplane DB: Modified how to merge in ver10
+            ['data/pb2a-20210205/pb2a_mapping.db','pb2a_focalplane', "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'",None,'right'],
+            # Stimulator DB: Update in ver10
+            ['data/pb2a-20211004/pb2a_stim.db','pb2a_stimulator', "run_id=='22300610' and run_subid=='[1, 4, 7, 10, 13, 16, 19, 22]'", 'Bolo_name','left'],
+          ];
+    #'''
+
     oldfile = '{}/db/all'.format(inputdir);
     #inputdir = '/home/cmb/sadachi/analysis_2021/output_ver2';
     #inputdir = '/Users/shadachi/Experiment/PB/analysis/analysis_2021/output_ver2';
@@ -366,9 +403,17 @@ if __name__=='__main__' :
     # convert the merged sqlite3 db to pandas data (in a pickle file)
     convertSQLtoPandas(sqlfile=oldfile+('_mod.db' if doModify else '.db'), outputfile=newfile+'_pandas', tablename=tablename, verbose=verbose, doTauCalib=doTauCalib,
             addDB=[
-                ['data/pb2a-20210205/pb2a_mapping.db','pb2a_focalplane', "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'",None],
-                ['data/pb2a_stimulator_run223_20210223.db','pb2a_stimulator', "run_id=='22300610'", 'Bolo_name'],
-                #['data/pb2a_stimulator_run223_20210223.db','pb2a_stimulator', "run_id=='22300607'", 'Bolo_name'],
+                # Focalplane DB
+                ['data/pb2a-20210205/pb2a_mapping.db','pb2a_focalplane', "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'",None], # Used in older versions
+                # Modified in ver10
+                #['data/pb2a-20210205/pb2a_mapping.db','pb2a_focalplane', "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'",None,'right'],
+
+                # Stimulator DB
+                # Old databases
+                ['data/pb2a_stimulator_run223_20210223.db','pb2a_stimulator', "run_id=='22300607'", 'Bolo_name'], # Used in older versions
+                #['data/pb2a_stimulator_run223_20210223.db','pb2a_stimulator', "run_id=='22300610'", 'Bolo_name'],
+                # Update in ver10
+                #['data/pb2a-20211004/pb2a_stim.db','pb2a_stimulator', "run_id=='22300610' and run_subid=='[1, 4, 7, 10, 13, 16, 19, 22]'", 'Bolo_name','left'],
                 ]);
 
     # merge pickle files
