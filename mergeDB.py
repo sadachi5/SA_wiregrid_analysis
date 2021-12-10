@@ -371,8 +371,8 @@ if __name__=='__main__' :
         # Focalplane DB
         ['data/pb2a-20210205/pb2a_mapping.db','pb2a_focalplane', "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'",None],
         # Stimulator DB
-        ['data/pb2a_stimulator_run223_20210223.db','pb2a_stimulator', "run_id=='22300607'", 'Bolo_name'], # stimulator data before wiregrid
-        #['data/pb2a_stimulator_run223_20210223.db','pb2a_stimulator', "run_id=='22300610'", 'Bolo_name'], # stimulator data after wiregrid
+        #['data/pb2a_stimulator_run223_20210223.db','pb2a_stimulator', "run_id=='22300607'", 'Bolo_name'], # stimulator data before wiregrid
+        ['data/pb2a_stimulator_run223_20210223.db','pb2a_stimulator', "run_id=='22300610'", 'Bolo_name'], # stimulator data after wiregrid
         ];
     #'''
 
@@ -380,7 +380,7 @@ if __name__=='__main__' :
     inputdir = './output_ver10';
     newfile = 'output_ver10/db/all';
     addDB=[
-            # Focalplane DB: Modified how to merge in ver10
+            # Focalplane DB: Modify how to merge in ver10
             ['data/pb2a-20210205/pb2a_mapping.db','pb2a_focalplane', "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'",None,'right'],
             # Stimulator DB: Update in ver10
             ['data/pb2a-20211004/pb2a_stim.db','pb2a_stimulator', "run_id=='22300610' and run_subid=='[1, 4, 7, 10, 13, 16, 19, 22]'", 'Bolo_name','left'],
@@ -401,20 +401,8 @@ if __name__=='__main__' :
     # modify table (boloname "???" --> ???, column: boloname NUM-->readout_name TEXT)
     if doModify : modifySQL(sqlfile=oldfile+'.db', newfile=oldfile+'_mod.db', tablename=tablename, verbose=verbose);
     # convert the merged sqlite3 db to pandas data (in a pickle file)
-    convertSQLtoPandas(sqlfile=oldfile+('_mod.db' if doModify else '.db'), outputfile=newfile+'_pandas', tablename=tablename, verbose=verbose, doTauCalib=doTauCalib,
-            addDB=[
-                # Focalplane DB
-                ['data/pb2a-20210205/pb2a_mapping.db','pb2a_focalplane', "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'",None], # Used in older versions
-                # Modified in ver10
-                #['data/pb2a-20210205/pb2a_mapping.db','pb2a_focalplane', "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'",None,'right'],
-
-                # Stimulator DB
-                # Old databases
-                ['data/pb2a_stimulator_run223_20210223.db','pb2a_stimulator', "run_id=='22300607'", 'Bolo_name'], # Used in older versions
-                #['data/pb2a_stimulator_run223_20210223.db','pb2a_stimulator', "run_id=='22300610'", 'Bolo_name'],
-                # Update in ver10
-                #['data/pb2a-20211004/pb2a_stim.db','pb2a_stimulator', "run_id=='22300610' and run_subid=='[1, 4, 7, 10, 13, 16, 19, 22]'", 'Bolo_name','left'],
-                ]);
+    convertSQLtoPandas(sqlfile=oldfile+('_mod.db' if doModify else '.db'), outputfile=newfile+'_pandas', 
+            tablename=tablename, verbose=verbose, doTauCalib=doTauCalib,addDB=addDB);
 
     # merge pickle files
     #mergeAllDB(inputdir=inputdir, newfile=newfile, ispickle=True, tablename=tablename, verbose=verbose);
