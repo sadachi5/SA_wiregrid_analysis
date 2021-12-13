@@ -235,10 +235,10 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCo
     print('base selection = {}'.format(base_selection));
     if base_selection!='' : df_base = df_all.query(base_selection);
 
-    # DB of outliers in angles (possible mis-label) (|diff.| > 45 deg.)
-    bools_angle_outlier = np.abs(df_base['diff_angle']) >= 45.;
+    # DB of outliers in angles (possible mis-label) (|diff.| > 15 deg.)
+    bools_angle_outlier = np.abs(df_base['diff_angle']) >= 15.;
     '''
-    print( '*** booleans for angle outliers (|diff.| > 45 deg.) ***');
+    print( '*** booleans for angle outliers (|diff.| > 15 deg.) ***');
     print( bools_angle_outlier );
     print( '*******************************************************');
     #'''
@@ -352,8 +352,8 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCo
     drawAngleHist(abs_axs[1,3], iselections=[3], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
  
     # Save fig
-    print('savefig to '+outfile+'.png');
-    abs_fig.savefig(outfile+'.png');
+    print('savefig to '+outfile+'diffangle.png');
+    abs_fig.savefig(outfile+'diffangle.png');
 
 
 

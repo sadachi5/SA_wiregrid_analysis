@@ -20,8 +20,13 @@ isCorrectHWPenc=1
 #python3 compare_DB_for_labelcorrection.py 2>&1 | tee output_${VER}/db/compare_DB_for_labelcorrection.out
 
 # 5. check absolute angles (difference btw measured angles and design angles)
-python3 check_absolute.py ${VER} ${isCorrectHWPenc} 2>&1 | tee output_${VER}/check_absolute.out
+#python3 check_absolute.py ${VER} ${isCorrectHWPenc} "" ploterr 2>&1 | tee output_${VER}/check_absolute.out
 # For HWP optical axis check
-python3 check_absolute.py ${VER} 0 _noOffsetSubtract 2>&1 | tee output_${VER}/check_absolute.out
+#python3 check_absolute.py ${VER} 0 _noOffsetSubtract 2>&1 | tee output_${VER}/check_absolute_noOffsetSubtract.out
 # For check before no label correction
-python3 check_absolute_nocorr.py ${VER}  ${isCorrectHWPenc} 2>&1 | tee output_${VER}/check_absolute_nocorr.out
+#python3 check_absolute_nocorr.py ${VER}  ${isCorrectHWPenc} 2>&1 | tee output_${VER}/check_absolute_nocorr.out
+# For wobble check
+#python3 check_absolute_eachwafer.py ${VER} ${isCorrectHWPenc} 2>&1 | tee output_${VER}/check_absolute_eachwafer.out
+
+# 6. modify DB for public
+python3 modifyDB.py ${VER} 2>&1 | tee output_${VER}/modify.out

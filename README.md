@@ -129,11 +129,22 @@ Other modification on *simons_array_offline_software*:
     - Wiregrid DB is merged with an old pb2a\_focalplane DB which has original detector labels and design pol\_angle.
     - It is compared with Kyohei's DB (postv4) to get corrected pixel labels.
     - Drop NaN bolometers in readout\_name or theta\_det (wiregrid data) for label corrected DB
+    - Add a column of 'isCorrectLabel'
+        - True if mislabel is corrected or not mislabel.
+    - Fix bugs in bolo\_name or pixel\_number
 
 - Update *check\_absolute\_nocorr.py* for ver10
     - Remove old check\_absolute\_nocorr.py & create from check\_absolute.py
     - No plots with *det\_offset\_x/y* or *mislabel* 
         because the DB before label correction does not have them
+    - Outliers cut: >45deg --> >15deg.
+
+- Update *check\_absolute.py* for ver10
+    - Outliers cut: >45deg --> >15deg.
+
+- Add *modifyDB.py*
+    - Make a *pb2a_wiregrid_ver10.db* from *all_pandas_correct_label.db*.
+    - Modify & check the DB 
 
 ## run scripts
  - (./plot.sh: make plot of TODs)
@@ -174,6 +185,7 @@ Other modification on *simons_array_offline_software*:
 1. mergeDB.py
 2. compare\_DB\_for\_labelcorrection.py
 3. check\_absolute.py
+4. modifyDB.py
 
 ### merge & modify DB
 - mergeDB.py: 
@@ -211,9 +223,9 @@ Other modification on *simons_array_offline_software*:
         - kyohei's corrected hardware map: data/ykyohei/mapping/pb2a_mapping_postv2.db 
           or a new pb2a_focalplane DB in pb2a_mapping.db
     - output:
-        - output_verX/db/all_pandas_correct_label.db
+        - output_verX/db/all_pandas_correct_label.db/pkl
 
-- compare\_and\_make\_DB\_for\_labelcorrection.py
+- compare\_and\_make\_DB\_for\_labelcorrection.py (Old)
     - compare wiregrid DB and kyohei's DB to find mislabel bolometers.
     - make a new sqlite DB for SA official DB with corrected pol\_angle,pixel\_type,pixel\_handedness,bolo\_type on found mislabeled bolometers by wiregrid DB
         - base DB : original hardware map DB
@@ -225,6 +237,32 @@ Other modification on *simons_array_offline_software*:
     - output:
         - output_verX/db/pb2a_mapping_corrected_label_v2.db
 
+### Create wiregrid DB for public from all\_pandas\_correct\_label.db
+- modifyDB.py
+    - Make a new sqlite DB for SA official DB with corrected pol\_angle,pixel\_type,pixel\_handedness,bolo\_type by wiregrid DB
+    - Modifications:
+        - Keep the following columns:
+            - bolo_name
+            - pixel_name
+            - wafer_number
+            - band
+            - pixel_name
+            - pixel_number
+            - pixel_type
+            - pixel_handedness
+            - bolo_type
+            - mislabel
+            - pol_angle
+            - theta_det
+            - theta_det_err
+        - theta\_det is shifted by 90 deg. (0~pi) to match the definition as in pol\_angle.
+        - Drop bolometers:
+            - if tau is Nan or 0 (stimulator data is not good)
+            - if pol\_angle is Nan
+            - if theta\_det\_err is >=0.5deg
+        - If bolo_name is Nan and labels are corrected, bolo_name is corrected.
+            -  There are still mis-label in bolo_name related to the band. (534 bolos in ver10)
+        - Rename theta\_det\_err\_total --> theta\_det\_err
 
 
 ## Plotting scripts

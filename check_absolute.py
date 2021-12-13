@@ -33,7 +33,7 @@ def plotEachWire(dfs, var_set, var_mean_set, var_std_set, slabels,
         axs2[0][s].hist(var_set[s], bins=histbins, range=histxrange, histtype='stepfilled',
             align='mid', orientation='vertical', log=False, linewidth=0.5, linestyle='-', edgecolor='k',
             color=colors[0:len(var_set[s])], alpha=0.4, label=alabels, stacked=stacked);
-        axs2[0][s].legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 10,title='',borderaxespad=0.,labelspacing=1.0);
+        #axs2[0][s].legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 10,title='',borderaxespad=0.,labelspacing=1.0);
         axs2[0][s].grid(True);
         axs2[0][s].set_title(title+'for {}'.format(slabels[s])+ ( '(Stacked)' if stacked else '(Not stacked)'));
         axs2[0][s].set_xlabel(vartitle,fontsize=16);
@@ -167,7 +167,7 @@ def drawAngleHist(ax, iselections, selections, fit_models, fit_results, nzerobin
 
 
 
-def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCorrectHWPenc=True):
+def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCorrectHWPenc=True, opts=[]):
 
     # Configure for base selections
     stim_quality_cut = 'tau>0.';
@@ -252,10 +252,10 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCo
     # DB with correct label originally (before label correction)
     df_notmislabel = df_base.query('mislabel==False');
 
-    # DB of outliers in angles (possible mis-label) (|diff.| > 45 deg.)
-    bools_angle_outlier = np.abs(df_base['diff_angle']) >= 45.;
+    # DB of outliers in angles (possible mis-label) (|diff.| > 15 deg.)
+    bools_angle_outlier = np.abs(df_base['diff_angle']) >= 15.;
     '''
-    print( '*** booleans for angle outliers (|diff.| > 45 deg.) ***');
+    print( '*** booleans for angle outliers (|diff.| > 15 deg.) ***');
     print( bools_angle_outlier );
     print( '*******************************************************');
     #'''
@@ -376,8 +376,8 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCo
     drawAngleHist(abs_axs[1,3], iselections=[3], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
  
     # Save fig
-    print('savefig to '+outfile+'.png');
-    abs_fig.savefig(outfile+'.png');
+    print('savefig to '+outfile+'diff_angle.png');
+    abs_fig.savefig(outfile+'diff_angle.png');
 
 
 
@@ -552,6 +552,22 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCo
     axs[4][1].set_xlabel(r'Amplitude $r$ [K]');
     axs[4][1].set_ylabel(r'# of bolometers');
     axs[4][1].grid(True);
+
+    # Other histogram 6
+    # plot: theta_det_err
+    if 'ploterr' in opts:
+        __datas = [rad_to_deg(df_base['theta_det_err']),rad_to_deg(df_base['theta_det_err_tau']),rad_to_deg(df_base['theta_det_err_total'])];
+        __labels = ['Stat. error (mean={:.1e})'.format(np.mean(__datas[0])), 'Time-constant error (mean={:.1e})'.format(np.mean(__datas[1])), 'Total error (mean={:.1e})'.format(np.mean(__datas[2]))];
+        __colors = ['b','r','k'];
+        axs[4][2].hist(__datas, bins=50, range=[0.,1.], histtype='stepfilled',
+                 align='mid', orientation='vertical', log=False, linewidth=0.5, linestyle='-', edgecolor='k',
+                 color=__colors, alpha=0.25, label=__labels, stacked=False);
+        axs[4][2].set_title(r'Errors of $\theta_{\rm{deg}}$ [deg.]');
+        axs[4][2].set_xlabel(r'Errors of $\theta_{\rm{deg}}$ [deg.]');
+        axs[4][2].set_ylabel(r'# of bolometers');
+        axs[4][2].grid(True);
+        axs[4][2].legend(loc='upper right', framealpha = 1,frameon = False,fontsize = 10,title='',borderaxespad=0.,labelspacing=1.0);
+        pass;
 
 
 
@@ -782,6 +798,7 @@ if __name__=='__main__' :
     ver='ver10';
     isCorrectHWPenc=True;
     suffix='';
+    opts = [];
     if len(sys.argv)>1:
         ver = sys.argv[1];
         pass;
@@ -791,9 +808,12 @@ if __name__=='__main__' :
     if len(sys.argv)>3:
         suffix = sys.argv[3]; 
         pass;
+    if len(sys.argv)>4:
+        opts = sys.argv[4].split(','); 
+        pass;
     outdir = f'output_{ver}/check_absolute{suffix}';
     if not os.path.isdir(outdir):
         os.mkdir(outdir);
         pass;
     outfile = f'{outdir}/';
-    check_absolute(ver=ver, outfile=outfile,isCorrectHWPenc=isCorrectHWPenc);
+    check_absolute(ver=ver, outfile=outfile,isCorrectHWPenc=isCorrectHWPenc,opts=opts);

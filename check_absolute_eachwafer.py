@@ -1,5 +1,5 @@
 #!/bin/python
-
+import os, sys;
 import numpy as np;
 import sqlite3, pandas;
 import copy;
@@ -8,9 +8,6 @@ from matplotlib import pyplot as plt;
 from matplotlib import cm as cm;
 from lmfit.models import GaussianModel
 #from scipy.stats import poisson
-
-ver='_ver10';
-isCorrectHWPenc=True;
 
 
 def plotEachWire(dfs, var_set, var_mean_set, var_std_set, slabels, 
@@ -184,9 +181,39 @@ def drawAngleHist(ax, iselections, selections, fit_models, fit_results, means, s
     return 0;
 
 
+def drawAngleError(ax, iselections, selections, xlim, baseselect, df_selects, labels, showText=True) :
+    # Draw data
+    __dfs = [ df_selects[i] for i in iselections ];
+    __labels= [ labels[i]       for i in iselections ];
+    __colors= [ colors[i]       for i in iselections ];
+    for j, __df in enumerate(__dfs) :
+        x = __df['diff_angle']
+        xerr1 = rad_to_deg(__df['theta_det_err_tau']);
+        xerr2 = rad_to_deg(__df['theta_det_err_total']);
+        ax.errorbar(x=x,y=np.full(len(__df), 0.),xerr=xerr1, capsize=5, fmt='o', markersize=5, color=__colors[j], label=__labels[j]);
+        ax.errorbar(x=x,y=np.full(len(__df), 0.),xerr=xerr2, capsize=5, fmt='o', markersize=5, color='r');
+        if showText:
+            for _x, _xerr1, _xerr2 in zip(x,xerr1,xerr2):
+                if _x>xlim[0] and _x<xlim[1]: 
+                    ax.text(_x, 0.1, f'{_xerr1:.1f}', horizontalalignment='center',fontsize=8)
+                    ax.text(_x, 0.2, f'{_xerr2:.1f}', horizontalalignment='center',fontsize=8)
+                    pass;
+                pass;
+        pass;
+    ax.set_title(baseselect[1] if len(baseselect)>1 else '');
+    ax.set_xlabel(r'$\theta_{\mathrm{det}} - \theta_{\mathrm{design}}$ [deg.]',fontsize=16);
+    ax.set_ylabel(r'0.',fontsize=16);
+    ax.set_xticks(np.arange(xlim[0],xlim[1],5));
+    ax.tick_params(labelsize=12);
+    ax.grid(True);
+    if showText: ax.legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 7,title='',borderaxespad=0.,labelspacing=1.2);
+    ax.set_xlim(xlim)
+    ax.set_ylim(-0.5,0.5)
+    return 0;
 
 
-def check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute'+ver, additional_cut='', selectiontype=0, nogauss=False):
+
+def check_absolute(ver,isCorrectHWPenc=True, additional_plots=False, outfile='out_check_absolute/check_absoluteAho', additional_cut='', selectiontype=0, nogauss=False):
 
     # Configure for base selections
     stim_quality_cut = 'tau>0.';
@@ -201,7 +228,7 @@ def check_absolute(additional_plots=False, outfile='out_check_absolute/check_abs
 
 
     # Configure for inputs
-    database_wiregrid = 'output{}/db/all_pandas_correct_label.db'.format(ver);
+    database_wiregrid = 'output_{}/db/all_pandas_correct_label.db'.format(ver);
     tablename_wiregrid = 'wiregrid';
     #columns_wiregrid   = 'readout_name,theta_det,theta_det_err,tau,tauerr';
     columns_wiregrid   = '*';
@@ -268,15 +295,15 @@ def check_absolute(additional_plots=False, outfile='out_check_absolute/check_abs
     # DB with correct label originally (before label correction)
     df_notmislabel = df_base.query('mislabel==False');
 
-    # DB of outliers in angles (possible mis-label) (|diff.| > 45 deg.)
-    bools_angle_outlier = np.abs(df_base['diff_angle']) >= 45.;
+    # DB of outliers in angles (possible mis-label) (|diff.| > 15 deg.)
+    bools_angle_outlier = np.abs(df_base['diff_angle']) >= 15.;
     '''
-    print( '*** booleans for angle outliers (|diff.| > 45 deg.) ***');
+    print( '*** booleans for angle outliers (|diff.| > 15 deg.) ***');
     print( bools_angle_outlier );
     print( '*******************************************************');
     '''
     df_angle_outlier = df_base[bools_angle_outlier];
-    df_angle_outlier.to_csv(outfile+'.csv');
+    df_angle_outlier.to_csv(outfile+'outliers.csv');
 
     # Additional quality cut: remove outliers in angles (possible mis-label)
     df_base = df_base[abs(df_base['diff_angle'])<10.]  # 10deg is Tight cut (default: 20deg)
@@ -438,6 +465,8 @@ def check_absolute(additional_plots=False, outfile='out_check_absolute/check_abs
         Ncolumn = 4;
         abs_fig, abs_axs = plt.subplots(Nrow,Ncolumn);
         abs_fig.set_size_inches(6*Ncolumn,6*Nrow);
+        abs_fig2, abs_axs2 = plt.subplots(Nrow,Ncolumn);
+        abs_fig2.set_size_inches(6*Ncolumn,6*Nrow);
         plt.subplots_adjust(wspace=0.3, hspace=0.3, left=0.15, right=0.95,bottom=0.15, top=0.95)
 
         for j, wafer in enumerate(wafers):
@@ -447,7 +476,15 @@ def check_absolute(additional_plots=False, outfile='out_check_absolute/check_abs
             drawAngleHist(ax, iselections=[j], selections=selections[i], fit_models=fit_models[i], fit_results=fit_results[i], means=means[i], stds=stds[i], xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects[i], labels=labels[i], nbins=nbins, nzerobins=nzerobins[i], nogauss=nogauss);
             ax.set_title('Wafer {}'.format(wafer))
             pass;
-        pass;
+
+        for j, wafer in enumerate(wafers):
+            m = (int)(j/Ncolumn);
+            n = j%Ncolumn;
+            ax = abs_axs2[m,n];
+            xlim = [-1,1];
+            drawAngleError(ax, iselections=[j], selections=selections[i], xlim=xlim, baseselect=baseselect, df_selects=df_selects[i], labels=labels[i]);
+            ax.set_title('Wafer {}'.format(wafer))
+            pass;
 
         # band (90 or 150) v.s. pixel handedness (A or B)
         ax = abs_axs[2,0];
@@ -515,13 +552,15 @@ def check_absolute(additional_plots=False, outfile='out_check_absolute/check_abs
  
         # Save fig
         suffix = selectinfo[1].replace(' ','').replace('=','').replace('&','').replace("'","").replace('"','')
-        print('savefig to '+outfile+'_{}.png'.format(suffix));
-        abs_fig.savefig(outfile+'_{}.png'.format(suffix));
+        print('savefig to '+outfile+'{}.png'.format(suffix));
+        abs_fig.savefig(outfile+'{}.png'.format(suffix));
+        print('savefig to '+outfile+'{}2.png'.format(suffix));
+        abs_fig2.savefig(outfile+'{}2.png'.format(suffix));
         pass
 
     # Save fig
-    print('savefig to '+outfile+'.png');
-    abs_fig_all.savefig(outfile+'.png');
+    print('savefig to '+outfile+'diff_angle.png');
+    abs_fig_all.savefig(outfile+'diff_angle.png');
 
 
 
@@ -702,8 +741,8 @@ def check_absolute(additional_plots=False, outfile='out_check_absolute/check_abs
 
 
         # Save fig
-        print('savefig to '+outfile+'_misc.png');
-        fig.savefig(outfile+'_misc.png');
+        print('savefig to '+outfile+'misc.png');
+        fig.savefig(outfile+'misc.png');
 
 
 
@@ -889,7 +928,7 @@ def check_absolute(additional_plots=False, outfile='out_check_absolute/check_abs
                     title=r'Signal power ($r$) ratio', 
                     vartitle=r'$r(\theta _{\mathrm{wire}})/r_{\mathrm{circle}}$',
                     mean_ref = 1., mean_yrange = (0.97,1.03),
-                    outfilename = outfile+'_eachwire-{}{}.png'.format('r',selection_set['outname']),
+                    outfilename = outfile+'eachwire-{}{}.png'.format('r',selection_set['outname']),
                     );
 
                 #############################
@@ -902,7 +941,7 @@ def check_absolute(additional_plots=False, outfile='out_check_absolute/check_abs
                     title=r'Theta diff. from expected one', 
                     vartitle=r'$\theta_{\mathrm{meas.}} - \theta_{\mathrm{exp.}}$',
                     mean_ref = 0., mean_yrange = (-4.,4.),
-                    outfilename = outfile+'_eachwire-{}{}.png'.format('theta',selection_set['outname']),
+                    outfilename = outfile+'eachwire-{}{}.png'.format('theta',selection_set['outname']),
                     );
 
                 ##############################################
@@ -915,7 +954,7 @@ def check_absolute(additional_plots=False, outfile='out_check_absolute/check_abs
                     title=r'Theta diff. from mean', 
                     vartitle=r'$\theta_{\mathrm{meas.}} - \theta_{\mathrm{exp. from mean}}$',
                     mean_ref = 0., mean_yrange = (-3.,3.),
-                    outfilename = outfile+'_eachwire-{}{}.png'.format('theta_from_mean',selection_set['outname']),
+                    outfilename = outfile+'eachwire-{}{}.png'.format('theta_from_mean',selection_set['outname']),
                     );
 
                 pass;
@@ -927,12 +966,29 @@ def check_absolute(additional_plots=False, outfile='out_check_absolute/check_abs
 
 
 if __name__=='__main__' :
-    check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_90A-TorB'+ver, additional_cut="band==90&pixel_handedness=='A'&(bolo_type=='T'|bolo_type=='B')", nogauss=True);
-    #check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_90A'+ver, additional_cut="band==90&pixel_handedness=='A'");
-    #check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_90B'+ver, additional_cut="band==90&pixel_handedness=='B'");
-    #check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_150A'+ver, additional_cut="band==150&pixel_handedness=='A'");
-    #check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_150B'+ver, additional_cut="band==150&pixel_handedness=='B'");
+    ver='ver10';
+    isCorrectHWPenc=True;
+    suffix='';
+    if len(sys.argv)>1:
+        ver = sys.argv[1];
+        pass;
+    if len(sys.argv)>2:
+        isCorrectHWPenc = (bool)((int)(sys.argv[2]));
+        pass;
+    if len(sys.argv)>3:
+        suffix = sys.argv[3]; 
+        pass;
+    outdir = f'output_{ver}/check_absolute_eachwafer{suffix}';
+    if not os.path.isdir(outdir):
+        os.mkdir(outdir);
+        pass;
 
+    '''
+    check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/eachpol_90A-TorB'+ver, additional_cut="band==90&pixel_handedness=='A'&(bolo_type=='T'|bolo_type=='B')", nogauss=True);
+    check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/eachpol_90B-TorB'+ver, additional_cut="band==90&pixel_handedness=='B'&(bolo_type=='T'|bolo_type=='B')", nogauss=True);
+    check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/eachpol_150A-TorB'+ver, additional_cut="band==150&pixel_handedness=='A'&(bolo_type=='T'|bolo_type=='B')", nogauss=True);
+    check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/eachpol_150B-TorB'+ver, additional_cut="band==150&pixel_handedness=='B'&(bolo_type=='T'|bolo_type=='B')", nogauss=True);
+    #'''
 
     g_sel0 = [];
     g_fits = []; 
@@ -942,48 +998,49 @@ if __name__=='__main__' :
     '''
     outfile = f'out_check_absolute/check_absolute_eachwafer_allpol_Ahanded_compare{ver}.png';
     g_labels= ['90 GHz A Top', '90GHz A Bottom', '150GHz A Top', '150GHz A Bottom']
-    sel0, fits, means, stds = check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_allpol_90ATop'+ver, additional_cut="band==90&pixel_handedness=='A'&bolo_type=='T'", selectiontype=1);
+    sel0, fits, means, stds = check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/allpol_90ATop'+ver, additional_cut="band==90&pixel_handedness=='A'&bolo_type=='T'", selectiontype=1);
     g_sel0.append(sel0); g_fits.append(fits); g_means.append(means); g_stds.append(stds);
-    sel0, fits, means, stds = check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_allpol_90ABottom'+ver, additional_cut="band==90&pixel_handedness=='A'&bolo_type=='B'", selectiontype=1);
+    sel0, fits, means, stds = check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/allpol_90ABottom'+ver, additional_cut="band==90&pixel_handedness=='A'&bolo_type=='B'", selectiontype=1);
     g_sel0.append(sel0); g_fits.append(fits); g_means.append(means); g_stds.append(stds);
-    sel0, fits, means, stds = check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_allpol_150ATop'+ver, additional_cut="band==150&pixel_handedness=='A'&bolo_type=='T'", selectiontype=1);
+    sel0, fits, means, stds = check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/allpol_150ATop'+ver, additional_cut="band==150&pixel_handedness=='A'&bolo_type=='T'", selectiontype=1);
     g_sel0.append(sel0); g_fits.append(fits); g_means.append(means); g_stds.append(stds);
-    sel0, fits, means, stds = check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_allpol_150ABottom'+ver, additional_cut="band==150&pixel_handedness=='A'&bolo_type=='B'", selectiontype=1);
+    sel0, fits, means, stds = check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/allpol_150ABottom'+ver, additional_cut="band==150&pixel_handedness=='A'&bolo_type=='B'", selectiontype=1);
     g_sel0.append(sel0); g_fits.append(fits); g_means.append(means); g_stds.append(stds);
     #'''
 
     '''
     outfile = f'out_check_absolute/check_absolute_eachwafer_allpol_Bhanded_compare{ver}.png';
     g_labels= ['90 GHz B Top', '90GHz B Bottom', '150GHz B Top', '150GHz B Bottom']
-    sel0, fits, means, stds = check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_allpol_90BTop'+ver, additional_cut="band==90&pixel_handedness=='B'&bolo_type=='T'", selectiontype=1);
+    sel0, fits, means, stds = check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/allpol_90BTop'+ver, additional_cut="band==90&pixel_handedness=='B'&bolo_type=='T'", selectiontype=1);
     g_sel0.append(sel0); g_fits.append(fits); g_means.append(means); g_stds.append(stds);
-    sel0, fits, means, stds = check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_allpol_90BBottom'+ver, additional_cut="band==90&pixel_handedness=='B'&bolo_type=='B'", selectiontype=1);
+    sel0, fits, means, stds = check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/allpol_90BBottom'+ver, additional_cut="band==90&pixel_handedness=='B'&bolo_type=='B'", selectiontype=1);
     g_sel0.append(sel0); g_fits.append(fits); g_means.append(means); g_stds.append(stds);
-    sel0, fits, means, stds = check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_allpol_150BTop'+ver, additional_cut="band==150&pixel_handedness=='B'&bolo_type=='T'", selectiontype=1);
+    sel0, fits, means, stds = check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/allpol_150BTop'+ver, additional_cut="band==150&pixel_handedness=='B'&bolo_type=='T'", selectiontype=1);
     g_sel0.append(sel0); g_fits.append(fits); g_means.append(means); g_stds.append(stds);
-    sel0, fits, means, stds = check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_allpol_150BBottom'+ver, additional_cut="band==150&pixel_handedness=='B'&bolo_type=='B'", selectiontype=1);
+    sel0, fits, means, stds = check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/allpol_150BBottom'+ver, additional_cut="band==150&pixel_handedness=='B'&bolo_type=='B'", selectiontype=1);
     g_sel0.append(sel0); g_fits.append(fits); g_means.append(means); g_stds.append(stds);
     #'''
 
-    outfile = f'out_check_absolute/check_absolute_eachwafer_allpol_A-B_compare{ver}.png';
+    outfile = f'{outdir}/allpol_A-B_compare.png';
     g_labels= ['90 GHz A Top', '90 GHz B Top', '90GHz A Bottom', '90GHz B Bottom', '150GHz A Top', '150GHz B Top', '150GHz A Bottom', '150GHz B Bottom']
     g_labels2= ['90 GHz Top', '90GHz Bottom', '150GHz Top', '150GHz Bottom']
+    g_labels2_group= [[0, 1], [2,3]];
     
-    sel0, fits, means, stds = check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_allpol_90ATop'+ver, additional_cut="band==90&pixel_handedness=='A'&bolo_type=='T'", selectiontype=1, nogauss=True);
+    sel0, fits, means, stds = check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/allpol_90ATop'+ver, additional_cut="band==90&pixel_handedness=='A'&bolo_type=='T'", selectiontype=1, nogauss=True);
     g_sel0.append(sel0); g_fits.append(fits); g_means.append(means); g_stds.append(stds);
-    sel0, fits, means, stds = check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_allpol_90BTop'+ver, additional_cut="band==90&pixel_handedness=='B'&bolo_type=='T'", selectiontype=1, nogauss=True);
+    sel0, fits, means, stds = check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/allpol_90BTop'+ver, additional_cut="band==90&pixel_handedness=='B'&bolo_type=='T'", selectiontype=1, nogauss=True);
     g_sel0.append(sel0); g_fits.append(fits); g_means.append(means); g_stds.append(stds);
-    sel0, fits, means, stds = check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_allpol_90ABottom'+ver, additional_cut="band==90&pixel_handedness=='A'&bolo_type=='B'", selectiontype=1, nogauss=True);
+    sel0, fits, means, stds = check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/allpol_90ABottom'+ver, additional_cut="band==90&pixel_handedness=='A'&bolo_type=='B'", selectiontype=1, nogauss=True);
     g_sel0.append(sel0); g_fits.append(fits); g_means.append(means); g_stds.append(stds);
-    sel0, fits, means, stds = check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_allpol_90BBottom'+ver, additional_cut="band==90&pixel_handedness=='B'&bolo_type=='B'", selectiontype=1, nogauss=True);
+    sel0, fits, means, stds = check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/allpol_90BBottom'+ver, additional_cut="band==90&pixel_handedness=='B'&bolo_type=='B'", selectiontype=1, nogauss=True);
     g_sel0.append(sel0); g_fits.append(fits); g_means.append(means); g_stds.append(stds);
-    sel0, fits, means, stds = check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_allpol_150ATop'+ver, additional_cut="band==150&pixel_handedness=='A'&bolo_type=='T'", selectiontype=1, nogauss=True);
+    sel0, fits, means, stds = check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/allpol_150ATop'+ver, additional_cut="band==150&pixel_handedness=='A'&bolo_type=='T'", selectiontype=1, nogauss=True);
     g_sel0.append(sel0); g_fits.append(fits); g_means.append(means); g_stds.append(stds);
-    sel0, fits, means, stds = check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_allpol_150BTop'+ver, additional_cut="band==150&pixel_handedness=='B'&bolo_type=='T'", selectiontype=1, nogauss=True);
+    sel0, fits, means, stds = check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/allpol_150BTop'+ver, additional_cut="band==150&pixel_handedness=='B'&bolo_type=='T'", selectiontype=1, nogauss=True);
     g_sel0.append(sel0); g_fits.append(fits); g_means.append(means); g_stds.append(stds);
-    sel0, fits, means, stds = check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_allpol_150ABottom'+ver, additional_cut="band==150&pixel_handedness=='A'&bolo_type=='B'", selectiontype=1, nogauss=True);
+    sel0, fits, means, stds = check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/allpol_150ABottom'+ver, additional_cut="band==150&pixel_handedness=='A'&bolo_type=='B'", selectiontype=1, nogauss=True);
     g_sel0.append(sel0); g_fits.append(fits); g_means.append(means); g_stds.append(stds);
-    sel0, fits, means, stds = check_absolute(additional_plots=False, outfile='out_check_absolute/check_absolute_eachwafer_allpol_150BBottom'+ver, additional_cut="band==150&pixel_handedness=='B'&bolo_type=='B'", selectiontype=1, nogauss=True);
+    sel0, fits, means, stds = check_absolute(ver, isCorrectHWPenc, additional_plots=False, outfile=f'{outdir}/allpol_150BBottom'+ver, additional_cut="band==150&pixel_handedness=='B'&bolo_type=='B'", selectiontype=1, nogauss=True);
     g_sel0.append(sel0); g_fits.append(fits); g_means.append(means); g_stds.append(stds);
     #'''
 
@@ -1080,8 +1137,17 @@ if __name__=='__main__' :
         pass;
 
     if len(dphis)>0:
+        dphis     = np.array(dphis);
+        dphi_errs = np.array(dphi_errs);
         for i, label in enumerate(g_labels2) :
             print(f'dphi(A-B) ({label}) = {dphis[i]} +- {dphi_errs[i]} deg');
+            pass;
+        for group_indexs in g_labels2_group :
+            num = len(group_indexs);
+            dphi_av     = np.mean(dphis[group_indexs]);
+            dphi_av_err = np.sqrt(np.sum(np.power(dphi_errs[group_indexs]/num,2.)));
+            labels  = np.array(g_labels2)[group_indexs];
+            print(f'dphi(A-B) average in {labels} = {dphi_av} +- {dphi_av_err} deg');
             pass;
         pass;
 
