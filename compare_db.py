@@ -70,7 +70,7 @@ def compare_db(
     fig.set_size_inches(n_column*4,n_row*4);
     fig.tight_layout(rect=[0,0,1,1]);
     fig2, axs2 = plt.subplots(len(varnames),1);
-    fig2.set_size_inches(16, n_row*3);
+    fig2.set_size_inches(16, len(varnames)*3);
     fig2.tight_layout(rect=[0,0,1,1]);
     fig.subplots_adjust(wspace=0.5, hspace=0.4, left=0.30, right=0.95,bottom=0.30, top=0.80)
     fig2.subplots_adjust(wspace=0., hspace=0.6, left=0.30, right=0.95,bottom=0.30, top=0.80)
@@ -108,7 +108,7 @@ def compare_db(
             if isDiff: 
                 y2 = deg90to90(v2 - v1);
                 y2[v2.isnull()] = -90; # Nan data is replaced to -1.
-            ax2.plot(range(len(y)), y2, linestyle='', color='k', marker='.', markersize=0.2, markerfacecolor='k');
+            ax2.plot(range(len(y)), y2, linestyle='', color='k', marker='o', markersize=0.5, markerfacecolor='k');
             ax2.set_title(f'{varname1}',fontsize=10);
             ax2.set_xlabel(f'{primarycolumn} index'.replace('_', ' '),fontsize=10);
             ax2.set_ylabel(f'Difference' if isDiff else '',fontsize=10);
