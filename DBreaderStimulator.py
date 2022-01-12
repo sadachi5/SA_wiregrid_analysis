@@ -88,21 +88,25 @@ class DBreaderStimulator:
 
 
 if __name__ == '__main__':
-    '''
-    db = DBreaderStimulator('./data/pb2a_stimulator_run223_20210223.db', tablename='pb2a_stimulator');
-    print(db.getchannel(22300610, 'PB20.13.13_Comb01Ch01'));
-    print(db.gettau(22300610, 'PB20.13.13_Comb01Ch01'));
-    print(db.getamp(22300610, 'PB20.13.13_Comb01Ch01'));
+    #'''
+    #db = DBreaderStimulator('./data/pb2a_stimulator_run223_20210223.db', tablename='pb2a_stimulator');
+    db = DBreaderStimulator('./data/pb2a-20211004/pb2a_stim.db', tablename='pb2a_stimulator');
+    print('getchannel():', db.getchannel(22300610, 'PB20.13.13_Comb01Ch01'));
+    print('gettau():', db.gettau(22300610, 'PB20.13.13_Comb01Ch01'));
+    print('getamp():',db.getamp(22300610, 'PB20.13.13_Comb01Ch01'));
     for i in range(1,10) :
-        print(db.getamp(22300610, 'PB20.13.13_Comb01Ch0{}'.format(i)));
+        name = 'PB20.13.13_Comb01Ch0{}'.format(i);
+        print('getamp() for {}:'.format(name), db.getamp(22300610, name));
         pass;
     pass;
-    '''
+    #'''
 
+    '''
     db = DBreaderStimulator('./data/pb2a_stim_template_20210607.db', tablename='pb2a_stim_template');
     print(db.getintensity(channelname='PB20.13.13_Comb01Ch01',nearRunID=22300610,source='Jupiter'));
     for a in db.getintensity(channelname='PB20.13.13_Comb01Ch01',source='Jupiter'): print(a);
     print(np.mean(np.array(db.getintensity(channelname='PB20.13.13_Comb01Ch01',source='Jupiter'))[:,0])); # averaged jupiter [mK_RJ/amp]
+    #'''
 
 ### schema for pb2a_stim_template DB (pb2a_stim_template_20210607.db) ###
 # CREATE TABLE pb2a_stim_template (                                     #

@@ -143,7 +143,7 @@ def plotDemodFigure(time, y_demods, y_demods_narrow,
     return 0;
  
 
-def plotAll(angleDataList, db_theta=None, outdir='aho', outname='aho', pickledir='aho', out=None, ext='pdf', verbosity=0) :
+def plotAll(angleDataList, db_theta=None, db_stim=None, outdir='aho', outname='aho', pickledir='aho', out=None, ext='pdf', verbosity=0) :
     # initialize Out
     if out==None : out = Out.Out(verbosity=verbosity);
     else         : out = out;
@@ -200,6 +200,16 @@ def plotAll(angleDataList, db_theta=None, outdir='aho', outname='aho', pickledir
         if not db_theta is None :
             out.OUT('db_theta = {}'.format(db_theta),0);
             theta_det = db_theta.getcolumn('theta_det', boloname);
+            out.OUT('db_theta = {}'.format(theta_det),0);
+            # Get tau correction
+            if db_stim is not None:
+                tau = db_stim.gettau(22300610, boloname)[0];
+                out.OUT('tau from stimulator DB = {}'.format(tau),0);
+                taucorr = 2.*2.*np.pi*tau*demods[0].m_speed;
+                theta_det = theta_det + taucorr;
+                out.OUT('tau correction on theta_det = {}'.format(taucorr),0);
+                out.OUT('db_theta after tau correction = {}'.format(theta_det),0);
+                pass;
             pass;
     
         for j, angledata in enumerate(angleDataList) :
@@ -530,17 +540,17 @@ def main(boloname, runID=0, filename='',
         pass;
 
 
+    # set calibration constant and its error from ADC output to mK_RJ
+    cal     = stimulator_temp/stimulator_amp[1][0]  if stimulator_amp[1][0]>0. else 0.; # chose sitmulator run after calibration
+    cal_err = cal/stimulator_amp[1][0] * stimulator_amp[1][1] if stimulator_amp[1][0]>0. else 0.; # chose stimulator run after calibration 
+    out.OUT('calibration constant (ADC->mK_RJ) = {:.3f} +- {:.3f}'.format(cal,cal_err),0);
+
     # DB for theta_det calibration
     db_theta = None;
     if (not theta_det_db is None) and len(theta_det_db)>2 :
         out.OUT('Read theta_det form DB in {}'.format(theta_det_db[0]),0);
         db_theta = DBreader(theta_det_db[0], theta_det_db[1], theta_det_db[2], verbose=verbosity);
         pass;
-
-    # set calibration constant and its error from ADC output to mK_RJ
-    cal     = stimulator_temp/stimulator_amp[1][0]  if stimulator_amp[1][0]>0. else 0.; # chose sitmulator run after calibration
-    cal_err = cal/stimulator_amp[1][0] * stimulator_amp[1][1] if stimulator_amp[1][0]>0. else 0.; # chose stimulator run after calibration 
-    out.OUT('calibration constant (ADC->mK_RJ) = {:.3f} +- {:.3f}'.format(cal,cal_err),0);
 
     # ver0
     if 'ver0' in outdir :
@@ -608,7 +618,7 @@ def main(boloname, runID=0, filename='',
         angleDataList[i]['cal_err'] = cal_err;
         pass;
 
-    if boloname!='' : plotAll(angleDataList, db_theta=db_theta, outdir=outdir, outname=outname, pickledir=pickledir, out=out, ext=ext);
+    if boloname!='' : plotAll(angleDataList, db_theta=db_theta, db_stim=db_stim, outdir=outdir, outname=outname, pickledir=pickledir, out=out, ext=ext);
 
     return 0;
 

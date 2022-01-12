@@ -145,6 +145,8 @@ Other modification on *simons_array_offline_software*:
 - Add *modifyDB.py*
     - Make a *pb2a_wiregrid_ver10.db* from *all_pandas_correct_label.db*.
     - Modify & check the DB 
+    - theta\_det
+        - Demod[TOD * exp(-i(4*HWP\_angle-2*(theta\_det+tau*hwp\_speed*2.*pi)))
 
 ## run scripts
  - (./plot.sh: make plot of TODs)
@@ -270,7 +272,7 @@ Other modification on *simons_array_offline_software*:
 ### Check TOD
 - checkspeed.py
     - print average frequency [Hz] of HWP
-    - input : output\_ver2/pkl/PB20.13.13/PB20.13.13\_Comb01Ch01/\*.pkl
+    - input : output\_verX/pkl/PB20.13.13/PB20.13.13\_Comb01Ch01/\*.pkl
         - TOD for only one bolometer
     - output: No (only printing)
 
@@ -292,27 +294,33 @@ Other modification on *simons_array_offline_software*:
         - 2D plot: theta_det_angle (wiregrid measured angle) v.s. pol_angle (design value) for correct labels
         - 1D plot: diff. between measured angle(theta_det_angle) and design angle(pol_angle)
     - make focal plane plot
-    - input : output\_ver10/db/all\_pandas\_correct\_label.db
-    - output: output\_ver10/check\_absolute/\*.png
+    - input : output\_verX/db/all\_pandas\_correct\_label.db
+    - output: output\_verX/check\_absolute/\*.png
 
 - check\_absolute\_labelcorrecteddb.py
     - make angle plots of DB with wiregrid corrected labels
     - input :
-        - output\_ver4/db/all\_pandas.db # No correction data
-        - output\_ver4/db/pb2a\_mapping\_corrected_label\_v2.db.db # Corrected data
+        - output\_verX/db/all\_pandas.db # No correction data
+        - output\_verX/db/pb2a\_mapping\_corrected_label\_v2.db.db # Corrected data
     - output: out\_check\_absolute/check\_absolute\_labelcorrectedDB.png
 
 - check\_absolute\_nocorr.py
     - make angle plots of DB before wiregrid label correction
     - input : 
-        - output\_ver10/db/all\_pandas.db 
-    - output: output\_ver10/check\_absolute\_nocorr/\*.png
+        - output\_verX/db/all\_pandas.db 
+    - output: output\_verX/check\_absolute\_nocorr/\*.png
+
+### Check diff between 2 DBs for the same readout\_name
+- diff\_db.py
+    - make diff or same histograms for each columns for the same *readout\_name*
+    - input : 2 DBs (any DB is OK if it has the readout\_name column.)
+    - output: output\_verX/db/diff\_db.png, diff\_db2.png, diff\_db.csv (different bolometer info)
 
 ### Others
 - makehist.py
     - make histogram of wiregrid measured angels for each bolometer groups
-    - input : output\_ver4/db/all\_pandas.pkl
-    - output: output\_ver4/summary/\*.png
+    - input : output\_verX/db/all\_pandas.pkl
+    - output: output\_verX/summary/\*.png
 
 - check\_jobs.py
     - check if all the jobs run by bsub is finished successfully.

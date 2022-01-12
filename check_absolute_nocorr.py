@@ -179,9 +179,9 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCo
     #database_mapping = 'data/ykyohei/mapping/pb2a_mapping_postv1.db';
     #database_mapping = 'data/ykyohei/mapping/pb2a_mapping_210510.db';
     database_mapping = None;
-    tablename_mapping = 'pb2a_focalplane';
-    selection_mapping = "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'";
-    columns_mapping   = 'readout_name,pol_angle,pixel_type';
+    tablename_mapping = ''; # 'pb2a_focalplane';
+    selection_mapping = ''; # "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'";
+    columns_mapping   = ''; # 'readout_name,pol_angle,pixel_type';
 
     # Plot cosmetics
     fp_width = 3.0;

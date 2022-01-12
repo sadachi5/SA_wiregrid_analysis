@@ -3,7 +3,7 @@ import os, sys;
 import numpy as np;
 import sqlite3, pandas;
 import copy;
-from utils import theta0topi, colors, printVar;
+from utils import deg90to90, theta0topi, colors, printVar;
 from matplotlib import pyplot as plt;
 
 # 1. merge with DBs by primarycolumn
@@ -24,6 +24,7 @@ def compare_db(
     varnames,
     primarycolumn='readout_name',
     outname='aho',
+    doPlotAll=False,
     ):
 
     dfs = [];
@@ -62,44 +63,64 @@ def compare_db(
 
 
 
-    fig, axs = plt.subplots(1,2);
-    fig.set_size_inches(12,6);
-    #fig.tight_layout(rect=[0,0,1,1]);
-    plt.subplots_adjust(wspace=0.3, hspace=0., left=0.15, right=0.95,bottom=0.15, top=0.95)
+    # Plots
+    n_row = max(2, (int)(len(varnames)/3+1))
+    n_column = 3;
+    fig, axs = plt.subplots(n_row,n_column);
+    fig.set_size_inches(n_column*4,n_row*4);
+    fig.tight_layout(rect=[0,0,1,1]);
+    fig2, axs2 = plt.subplots(len(varnames),1);
+    fig2.set_size_inches(16, n_row*3);
+    fig2.tight_layout(rect=[0,0,1,1]);
+    fig.subplots_adjust(wspace=0.5, hspace=0.4, left=0.30, right=0.95,bottom=0.30, top=0.80)
+    fig2.subplots_adjust(wspace=0., hspace=0.6, left=0.30, right=0.95,bottom=0.30, top=0.80)
+    for n, varname in enumerate(varnames):
+        ax = axs[(int)(n/3)][n%3]
+        ax2 = axs2[n]
+        varname1 = varname;
+        varname2 = varname+suffixes[1]
+        v1 = dfmerge[varname1];
+        v2 = dfmerge[varname2];
 
-    # 2D plot
-    varname1 = varnames[0];
-    varname2 = varnames[1]+suffixes[1]
-    v1 = dfmerge[varname1];
-    v2 = dfmerge[varname2];
-    y = (v1==v2)
-    #print(v1);
-    #print(v2);
-    #print(y);
-    #axs[0].plot(x,y,marker='o', markersize=0.5, linestyle='');
-    hist, bins, paches = axs[0].hist(y,bins=2,range=(-0.5,1.5),histtype='stepfilled', align='mid', orientation='vertical',log=True,linewidth=0.5, linestyle='-', edgecolor='k');
+        # Different or Same histogram
+        y = (v1==v2);
+        y[v2.isnull()] = -1; # Nan data is replaced to -1.
+        hist, bins, paches = ax.hist(y,bins=3,range=(-1.5,1.5),histtype='stepfilled', 
+                align='mid', orientation='vertical',log=False,linewidth=0.5, linestyle='-', edgecolor='k');
+ 
+        ax.grid(True);
+        for i, count in enumerate(hist):
+            ax.text(i-1, count*1., str(count), horizontalalignment='center', fontsize=10)
+            pass;
+        ax.set_xticks([-1.,0.,1.])
+        ax.set_xticklabels(['Null', 'Different','Same'])
+        ax.set_title(f'{varname1}',fontsize=10);
+        ax.tick_params(labelsize=10);
 
-    xmax = 36000;
-    #axs[0].plot([-xmax,xmax],[-xmax,xmax],linestyle='-',color='k',linewidth=0.5);
-    #axs[0].plot([-xmax,xmax],[0,0],linestyle='-',color='k',linewidth=0.5);
-    #axs[0].plot([0,0],[-xmax,xmax],linestyle='-',color='k',linewidth=0.5);
-
-    axs[0].grid(True);
-    for i, count in enumerate(hist):
-        axs[0].text(i, count*1., str(count), horizontalalignment='center',fontsize=12)
+        # Diff plot
+        if doPlotAll:
+            y2 = (v1==v2)
+            y2[v2.isnull()] = -1; # Nan data is replaced to -1.
+            isDiff = False
+            if isinstance(v1[0], float): 
+                isDiff = True;
+            print(f'isDiff = {isDiff} (v1[0] = {v1[0]})')
+            if isDiff: 
+                y2 = deg90to90(v2 - v1);
+                y2[v2.isnull()] = -90; # Nan data is replaced to -1.
+            ax2.plot(range(len(y)), y2, linestyle='', color='k', marker='.', markersize=0.2, markerfacecolor='k');
+            ax2.set_title(f'{varname1}',fontsize=10);
+            ax2.set_xlabel(f'{primarycolumn} index'.replace('_', ' '),fontsize=10);
+            ax2.set_ylabel(f'Difference' if isDiff else '',fontsize=10);
+            # if varname1 == 'pol_angle': ax2.set_ylim(-20,20) # for pol_angle
+            if not isDiff:
+                ax2.set_yticks([-1.,0.,1.])
+                ax2.set_yticklabels(['Null','Different','Same'])
+            ax2.tick_params(labelsize=10);
+            pass;
         pass;
-    axs[0].set_title(f'{varname1} v.s. {varname2}',fontsize=8);
-    axs[0].set_xlabel(r'DB1==DB2',fontsize=16);
-    #axs[0].set_xlabel(r'$\theta_{\mathrm{det,wiregrid}}$ - 90 [deg.]',fontsize=16);
-    #axs[0].set_ylabel(r'$\theta_{\mathrm{det,design}}$ [deg.]'+'\n("pol_angle" in focalplane database)',fontsize=16);
-    #axs[0].set_xticks(np.arange(-360,360,45));
-    #axs[0].set_yticks(np.arange(-360,360,45));
-    #axs[0].set_xlim(-22.5,180);
-    #axs[0].set_ylim(-22.5,180);
-    axs[0].tick_params(labelsize=12);
-
     fig.savefig(outname+'.png');
-
+    if doPlotAll: fig2.savefig(outname+'2.png');
 
 
     # Show 

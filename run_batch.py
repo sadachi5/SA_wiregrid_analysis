@@ -7,8 +7,8 @@ import copy
 import libg3py3 as libg3
 
 doRun = True;
-doGridAna = False;
-doFit     = True;
+doGridAna = True;
+doFit     = False;
 # Number of bolometers in one job
 #Nbolobunch= 50; # to execute only fit-script
 Nbolobunch= 1; 
@@ -24,6 +24,8 @@ bolofile='' # In this case, bololist is used.
 # boloname list. NOTE: This is valid only when bolofile is empty
 bololist=[];
 #blolist=['PB20.13.13_Comb01Ch02','PB20.13.13_Comb01Ch03'];
+bololist=['PB20.13.13_Comb01Ch01', 'PB20.13.13_Comb01Ch02', 'PB20.13.13_Comb01Ch03', 'PB20.13.13_Comb01Ch17', 'PB20.13.13_Comb01Ch14', 'PB20.13.13_Comb01Ch24'];
+
 
 ignoreFileExist = False;
 
@@ -72,7 +74,7 @@ for boloname in bolonames :
 
 def runJob() :
 
-    bololist='';
+    global bololist;
     if len(bolofile)>0 :
         f = open(bolofile);
         bololist = [ s.strip() for s in f.readlines() ];
