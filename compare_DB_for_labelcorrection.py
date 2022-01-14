@@ -70,6 +70,22 @@ def labelcorrection(
     print('New DB keys before add det_offset_x/y:', df_new.columns.values);
     print('df0s[1] keys:', df0s[1].columns.values)
     df_new = pandas.merge(df_new, df0s[1][['det_offset_x','det_offset_y',primarycolumn]], how='left', on=primarycolumn);
+    # copy "band" from df0s[1]
+    for i in range(len(df_new)):
+        readout_name = df_new.loc[i,'readout_name'];
+        band = df_new.loc[i,'band'];
+        band_fix = df[df['readout_name']==readout_name]['band_fix']
+        if len(band_fix)!=1:
+            print('Warning! There is no correct reference DB for {} (size={})!'.format(readout_name, len(band_fix)));
+            continue;
+        band_fix = band_fix.reset_index().loc[0, 'band_fix'];
+        print('band_fix = {}'.format(band_fix));
+        if band!=band_fix:
+            print('New DB has different band from the reference DB:');
+            print('     band is changed! {} --> {}'.format(band, band_fix));
+            df_new.loc[i, 'band'] = band_fix
+            pass;
+        pass;
     print('New DB after add:');
     print(df_new['det_offset_x']);
     print('New DB keys after add:', df_new.columns.values);
@@ -125,12 +141,14 @@ def labelcorrection(
                         print('WARNING! {} has NaN band!'.format(name));
                         nwarns[0]+=1;
                         pass;
+                    print('band = {}'.format(band_fix));
                     # pixel_type
                     pixel_types_fix = np.array(correct_info['pixel_type']);
                     if np.all(pixel_types_fix==pixel_types_fix[0]) :
                         print('pixel_type : all same = {}'.format(pixel_types_fix[0]));
                         pixel_type_fix0 = dfmislabel.at[i,'pixel_type_fix'];
-                        if pixel_types_fix[0]==pixel_type_fix0:
+                        # Ignore this check if pixel_type_fix0 is None.
+                        if pixel_types_fix[0]==pixel_type_fix0 or pixel_type_fix0 is None: 
                             pixel_type_fix = pixel_types_fix[0];
                         else :
                             print('pixel_type : different from the reference DB = {}'.format(pixel_type_fix0));
@@ -154,7 +172,8 @@ def labelcorrection(
                     if np.all(pixel_handednesses_fix==pixel_handednesses_fix[0]) :
                         print('pixel_handedness : all same = {}'.format(pixel_handednesses_fix[0]));
                         pixel_handedness_fix0 = dfmislabel.at[i,'pixel_handedness_fix'];
-                        if pixel_handednesses_fix[0]==pixel_handedness_fix0:
+                        # Ignore this check if pixel_handedness_fix0 is None.
+                        if pixel_handednesses_fix[0]==pixel_handedness_fix0 or pixel_handedness_fix0 is None:
                             pixel_handedness_fix = pixel_handednesses_fix[0];
                         else:
                             print('pixel_handedness : different from the reference DB = {}'.format(pixel_handedness_fix0));
@@ -238,10 +257,11 @@ def labelcorrection(
                             if len(bolo_names_fix2)>0 and np.all(bolo_names_fix2==bolo_names_fix2[0]):
                                 print('bolo_name after pol_angle selection : all same = {}'.format(bolo_names_fix2[0]));
                                 bolo_name_fix = bolo_names_fix2[0];
+                                pass;
                             else :
                                 print('bolo_name after pol_angle selection : different = {}'.format(bolo_names_fix2));
                                 band_in_boloname = np.array([ (int)(name.split('.')[2][:-1]) for name in bolo_names_fix2 ]);
-                                is_correct_band = (band_in_boloname==band_fix);
+                                is_correct_band = (band_in_boloname==(int)(band_fix));
                                 correct_bolonames = bolo_names_fix2[is_correct_band];
                                 print('bolo_name after band selection (={}) : candidates = {}'.format(band_fix, correct_bolonames));
                                 if len(correct_bolonames)==1 :
@@ -253,6 +273,18 @@ def labelcorrection(
                                 pass;
                             pass;
                         pass;
+                    # check bolo_name band / modify bolo_name
+                    bolo_name_fix_parts = bolo_name_fix.split('.');
+                    if len(bolo_name_fix)>0:
+                        band_in_boloname_fix = (int)(bolo_name_fix_parts[2][:-1]);
+                        if band_in_boloname_fix==(int)(band_fix):
+                            print('band in bolo_name is correct!: {}'.format(bolo_name_fix));
+                        else:
+                            print('band in bolo_name is wrong!: {}'.format(bolo_name_fix));
+                            bolo_name_fix = '{}.{}.{}{}'.format(
+                                    bolo_name_fix_parts[0], bolo_name_fix_parts[1], (int)(band_fix), bolo_name_fix_parts[2][-1])
+                            print('bolo_name is changed! --> {}'.format(bolo_name_fix));
+                            pass;
                     # Check if the correct label is obtained or not
                     if  band_fix>0 and \
                         len(pixel_name_fix)>0 and \

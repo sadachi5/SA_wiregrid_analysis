@@ -59,12 +59,12 @@ fi
 
 # 3. check absolute angles (difference btw measured angles and design angles)
 # For check after label correction
-#python3 hwpss/hwpss_check_absolute.py ${HWPSS_VER} ${isCorrectHWPenc} "" "" 2>&1 | tee ${HWPSS_OUTDIR}/check_absolute.out
+python3 hwpss/hwpss_check_absolute.py ${HWPSS_VER} ${isCorrectHWPenc} "" "" 2>&1 | tee ${HWPSS_OUTDIR}/check_absolute.out
 # For check before no label correction
 python3 hwpss/hwpss_check_absolute_nocorr.py ${HWPSS_VER}  ${isCorrectHWPenc} '' 2>&1 | tee ${HWPSS_OUTDIR}/check_absolute_nocorr.out
 
 # 4. modify DB for public
-#python3 hwpss/hwpss_modifyDB.py ${HWPSS_VER} 2>&1 | tee ${HWPSS_OUTDIR}/modify.out
+python3 hwpss/hwpss_modifyDB.py ${HWPSS_VER} 2>&1 | tee ${HWPSS_OUTDIR}/modify.out
 
 #__COMMENT__
 

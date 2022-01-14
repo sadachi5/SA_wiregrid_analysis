@@ -36,7 +36,7 @@ def modify(infile='out_ver10/db/all_pandas_correct_label.db', outfile='out_ver10
         print('Go to HWPSS mode!')
         tablename = 'hwpss';
         new_tablename = 'pb2a_hwpss';
-        wg_quality_cut = ''
+        wg_quality_cut = 'pol_angle>=0'
         keep_columns   = [
             'bolo_name',
             'readout_name',
@@ -206,8 +206,27 @@ def modify(infile='out_ver10/db/all_pandas_correct_label.db', outfile='out_ver10
 
 
     # Nan check
-    for key in df_w.keys():
-        print('# of Nan ({}) = {}'.format(key, sum(df_w[key].isnull())) );
+    # string columns
+    keys=[
+            'bolo_name',
+            'readout_name',
+            'pixel_name',
+            'pixel_type',
+            'pixel_handedness',
+            'bolo_type',
+            'wafer_number',
+            ];
+    for key in keys:
+        print('# of Nan or 0 size ({}) = {}'.format(key, sum(df_w[key].isnull() | df_w[key].str.len()==0 )) );
+        pass;
+    # number columns
+    keys = [
+            'band',
+            'pixel_number',
+            'pol_angle',
+            ];
+    for key in keys:
+        print('# of Nan or -1 ({}) = {}'.format(key, sum(df_w[key].isnull() | df_w[key]<0 )) );
         pass;
 
     #print('New DB keys:');
