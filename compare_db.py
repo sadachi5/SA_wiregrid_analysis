@@ -112,18 +112,23 @@ def compare_db(
             ax2.set_title(f'{varname1}',fontsize=10);
             ax2.set_xlabel(f'{primarycolumn} index'.replace('_', ' '),fontsize=10);
             ax2.set_ylabel(f'Difference' if isDiff else '',fontsize=10);
-            # if varname1 == 'pol_angle': ax2.set_ylim(-20,20) # for pol_angle
+            if varname1 == 'pol_angle': ax2.set_ylim(-20,20) # for pol_angle
             if not isDiff:
                 ax2.set_yticks([-1.,0.,1.])
                 ax2.set_yticklabels(['Null','Different','Same'])
             ax2.tick_params(labelsize=10);
             pass;
         pass;
+    fig.suptitle(f'{dbnames[0]} v.s. {dbnames[1]}', fontsize=8)
     fig.savefig(outname+'.png');
-    if doPlotAll: fig2.savefig(outname+'2.png');
+    if doPlotAll: 
+        fig2.suptitle(f'{dbnames[0]} v.s. {dbnames[1]}', fontsize=8)
+        fig2.savefig(outname+'2.png');
 
 
     # Show 
+    varname1 = varnames[0]
+    varname2 = varnames[0]+suffixes[1]
     print('*************************');
     pandas.set_option('display.max_columns', 50)
     print(' check difference between {} and {}'.format(varname1,varname2));

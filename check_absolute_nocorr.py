@@ -3,11 +3,11 @@ import sys, os;
 import numpy as np;
 import sqlite3, pandas;
 import copy;
-from utils import deg0to180, theta0topi, colors, printVar, rad_to_deg, rad_to_deg_pitopi, rad_to_deg_0to2pi, deg_to_rad, deg90to90, calculateRTheta;
+from utils import deg0to180, theta0topi, colors, printVar, rad_to_deg, rad_to_deg_pitopi, rad_to_deg_0topi, rad_to_deg_0to2pi, deg_to_rad, deg90to90, calculateRTheta;
 from matplotlib import pyplot as plt;
 from lmfit.models import GaussianModel
 
-
+fitreport = False; # True (default)
 
 def plotEachWire(dfs, var_set, var_mean_set, var_std_set, slabels, 
         wire_angles, alabels,
@@ -153,17 +153,23 @@ def drawAngleHist(ax, iselections, selections, fit_models, fit_results, nzerobin
 
 
 
-def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCorrectHWPenc=True):
+def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCorrectHWPenc=True, opts=[], isHWPSS=False):
+    mode = 'wiregrid' if not isHWPSS else 'hwpss';
 
     # Configure for base selections
-    stim_quality_cut = 'tau>0.';
-    wg_quality_cut   = 'theta_det_err*180./{}<0.5&pol_angle>=0'.format(np.pi);
+    #stim_quality_cut = 'tau>0.';
+    if not isHWPSS:
+        wg_quality_cut   = 'theta_det_err*180./{}<0.5&pol_angle>=0'.format(np.pi);
+    else:
+        wg_quality_cut   = 'pol_angle>=0&entry>0'.format(np.pi);
+        pass;
     additional_cut = '';
     #additional_cut = 'band==90';
     #additional_cut = 'band==150';
     base_selection_name = additional_cut.replace('.','').replace('=','');
 
-    base_cuts      = [stim_quality_cut, wg_quality_cut, additional_cut];
+    #base_cuts      = [stim_quality_cut, wg_quality_cut, additional_cut];
+    base_cuts      = [wg_quality_cut, additional_cut];
     base_cuts      = [ cut for cut in base_cuts if cut!='']; # remove empty cut
     base_selection = '&'.join(base_cuts);
 
@@ -171,8 +177,14 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCo
 
 
     # Configure for inputs
-    database_wiregrid = 'output_{}/db/all_pandas.db'.format(ver);
-    tablename_wiregrid = 'wiregrid';
+    if not isHWPSS:
+        database_wiregrid = 'output_{}/db/all_pandas.db'.format(ver);
+        tablename_wiregrid = 'wiregrid';
+    else:
+        database_wiregrid = 'hwpss/output_{}/db/all_pandas.db'.format(ver);
+        #database_wiregrid = 'hwpss/output_{}/db/all_pandas_correct_label.db'.format(ver);
+        tablename_wiregrid = 'hwpss';
+        pass;
     #columns_wiregrid   = 'readout_name,theta_det,theta_det_err,tau,tauerr';
     columns_wiregrid   = '*';
     #database_mapping = 'data/ykyohei/mapping/pb2a_mapping_postv2.db';
@@ -182,6 +194,8 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCo
     tablename_mapping = ''; # 'pb2a_focalplane';
     selection_mapping = ''; # "hardware_map_commit_hash='6f306f8261c2be68bc167e2375ddefdec1b247a2'";
     columns_mapping   = ''; # 'readout_name,pol_angle,pixel_type';
+
+    outlier_deg = 15.; # ver10
 
     # Plot cosmetics
     fp_width = 3.0;
@@ -214,15 +228,22 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCo
 
     # Add variables
     # Add theta_det_angle column for comparison with pol_angle
-    convertF = 180./np.pi; # convert from rad --> deg
-    if isCorrectHWPenc :
-        # -16.71 is obtained from HWP offset angle in out_check_HWPzeroangle/check_HWPzeroangle_ver9.out 
-        # -16.708 is obtained from HWP offset angle in out_check_HWPzeroangle/check_HWPzeroangle_ver9_includeMislabel_afterLabelCorr.out 
-        # Use -16.5 as default.
-        df_all['theta_det_angle'] = theta0topi(df_all['theta_det'] + 2.*deg_to_rad(-16.5), upper=180.*np.pi/180.)*convertF; 
-    else :
-        df_all['theta_det_angle'] = theta0topi(df_all['theta_det'], upper=180.*np.pi/180.)*convertF;
+    if not isHWPSS:
+        if isCorrectHWPenc :
+            # -16.71 is obtained from HWP offset angle in out_check_HWPzeroangle/check_HWPzeroangle_ver9.out 
+            # -16.708 is obtained from HWP offset angle in out_check_HWPzeroangle/check_HWPzeroangle_ver9_includeMislabel_afterLabelCorr.out 
+            # Use -16.5 as default.
+            df_all['theta_det_angle'] = rad_to_deg_0topi(df_all['theta_det'] + 2.*deg_to_rad(-16.5)); 
+        else :
+            df_all['theta_det_angle'] = rad_to_deg_0topi(df_all['theta_det']);
+            pass;
+    else:
+        if isCorrectHWPenc:
+            df_all['theta_det_angle'] = rad_to_deg_0topi(-df_all['theta_det'] + deg_to_rad(-16.5-45.)); 
+        else:
+            df_all['theta_det_angle'] = rad_to_deg_0topi(-df_all['theta_det']);
         pass;
+
     # Convert pol_angle to the coordinates of theta_det_angle;
     df_all['theta_design_angle'] = deg0to180(df_all['pol_angle']-90., upper=180.);
     # Add diff. between theta_det_angle and pol_angle [-90., 90]
@@ -235,10 +256,10 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCo
     print('base selection = {}'.format(base_selection));
     if base_selection!='' : df_base = df_all.query(base_selection);
 
-    # DB of outliers in angles (possible mis-label) (|diff.| > 15 deg.)
-    bools_angle_outlier = np.abs(df_base['diff_angle']) >= 15.;
+    # DB of outliers in angles (possible mis-label) (|diff.| > outlier_deg deg.)
+    bools_angle_outlier = np.abs(df_base['diff_angle']) >= outlier_deg;
     '''
-    print( '*** booleans for angle outliers (|diff.| > 15 deg.) ***');
+    print( '*** booleans for angle outliers (|diff.| > {} deg.) ***'.format(outlier_deg));
     print( bools_angle_outlier );
     print( '*******************************************************');
     #'''
@@ -312,11 +333,11 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCo
         result = model.fit(data=histo, x=bins_center, params=params, weights=weights)
         #newparams = result.params;
         #result = model.fit(data=histo, x=bins_center, params=newparams)
-        print(result.fit_report());
+        if fitreport: print(result.fit_report());
         print('weights = ', result.weights);
         print('sqrt(N) = ', np.sqrt(result.data));
         print('red-chi-square = {}: chi-square={}/(Nfree-Nzero)=({}-{})'.format(result.chisqr/(result.nfree-nzerobin), result.chisqr, result.nfree, nzerobin));
-        print(result.ci_report());
+        if fitreport: print(result.ci_report());
         fit_models .append(copy.deepcopy(model));
         fit_results.append(copy.deepcopy(result));
         fit_bins   .append(copy.deepcopy(bins_center));
@@ -352,8 +373,8 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCo
     drawAngleHist(abs_axs[1,3], iselections=[3], selections=selections, fit_models=fit_models, fit_results=fit_results, nzerobins=nzerobins, xbinrange=xbinrange, baseselect=baseselect, data_selects=data_selects, labels=labels, nbins=nbins);
  
     # Save fig
-    print('savefig to '+outfile+'diffangle.png');
-    abs_fig.savefig(outfile+'diffangle.png');
+    print('savefig to '+outfile+'diff_angle.png');
+    abs_fig.savefig(outfile+'diff_angle.png');
 
 
 
@@ -378,7 +399,7 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCo
     axs[0][0].legend(mode = 'expand',framealpha = 1,frameon = False,fontsize = 10, title='',borderaxespad=0.,labelspacing=1.0);
     axs[0][0].set_title('Bolos with base cuts (all/outliers)');
     axs[0][0].set_xlabel(r'$\theta_{\mathrm{det,design}}$ [deg.]'+'\n("pol_angle-90deg" in focalplane database)',fontsize=16);
-    axs[0][0].set_ylabel(r'$\theta_{\mathrm{det,wiregrid}}$ [deg.]',fontsize=16);
+    axs[0][0].set_ylabel(r'$\theta_{\mathrm{det,'+mode+r'}}$ [deg.]',fontsize=16);
     axs[0][0].set_xticks(np.arange(-360,360,45));
     axs[0][0].set_yticks(np.arange(-360,360,45));
     axs[0][0].set_xlim(-22.5,180);
@@ -387,49 +408,59 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCo
 
 
 
-    # Other histogram 1
-    # Polarization offset r, theta
-    # select good bolos
-    df_base.loc[:,'r0'    ] = np.sqrt(df_base['x0']**2.+df_base['y0']**2.);
-    df_base.loc[:,'r0_err'] = np.sqrt(np.power(df_base['x0']*df_base['x0_err'],2.)+np.power(df_base['y0']*df_base['y0_err'],2.))/df_base['r0'];
-    #-----
-    df_base_center = df_base;
-    #df_base_center = df_base.query('theta0_err/theta0<0.1&r0_err/r0<0.1');
-    #print('before r0_err, theta0_err selection: # of bolos = {}'.format(len(df_base)));
-    #print('after  r0_err, theta0_err selection: # of bolos = {}'.format(len(df_base_center)));
-    #-----
-    # plot: polarization offset theta
-    axs[3][0].hist(df_base_center['r0'], bins=50, range=[0.,500.], histtype='stepfilled',
-             align='mid', orientation='vertical', log=False, linewidth=0.5, linestyle='-', edgecolor='k',
-             color=colors[0], alpha=1.0, label='r0', stacked=False);
-    axs[3][0].set_title('r0 of wire grid cal.');
-    axs[3][0].set_xlabel(r'$r_0$ [mK]');
-    axs[3][0].set_ylabel(r'# of bolometers');
-    axs[3][0].grid(True);
+    if not isHWPSS:
+        # Other histogram 1
+        # Polarization offset r, theta
+        # select good bolos
+        df_base.loc[:,'r0'    ] = np.sqrt(df_base['x0']**2.+df_base['y0']**2.);
+        df_base.loc[:,'r0_err'] = np.sqrt(np.power(df_base['x0']*df_base['x0_err'],2.)+np.power(df_base['y0']*df_base['y0_err'],2.))/df_base['r0'];
+        #-----
+        df_base_center = df_base;
+        #df_base_center = df_base.query('theta0_err/theta0<0.1&r0_err/r0<0.1');
+        #print('before r0_err, theta0_err selection: # of bolos = {}'.format(len(df_base)));
+        #print('after  r0_err, theta0_err selection: # of bolos = {}'.format(len(df_base_center)));
+        #-----
+        # plot: polarization offset theta
+        axs[3][0].hist(df_base_center['r0'], bins=50, range=[0.,500.], histtype='stepfilled',
+                 align='mid', orientation='vertical', log=False, linewidth=0.5, linestyle='-', edgecolor='k',
+                 color=colors[0], alpha=1.0, label='r0', stacked=False);
+        axs[3][0].set_title('r0 of wire grid cal.');
+        axs[3][0].set_xlabel(r'$r_0$ [mK]');
+        axs[3][0].set_ylabel(r'# of bolometers');
+        axs[3][0].grid(True);
+ 
+        # Other histogram 2
+        # plot: fake-polarization offset (theta0) with respect to theta_wire0
+        theta = (df_base_center['theta_wire0']-df_base_center['theta0'])/2.; 
+        #theta = rad_to_deg_pitopi(theta) # range [-pi,pi]
+        theta = rad_to_deg(theta0topi(theta)); # range [0,pi]
+        axs[3][1].hist(theta, bins=90, range=[0.,180.], histtype='stepfilled',
+                 align='mid', orientation='vertical', log=False, linewidth=0.5, linestyle='-', edgecolor='k',
+                 color=colors[0], alpha=1.0, label='theta0', stacked=False);
+        axs[3][1].set_title('Polarization offset angles in wire angle of wire grid cal.');
+        axs[3][1].set_xlabel(r'$\theta_{\mathrm{wire0}}$ [deg.]');
+        axs[3][1].set_ylabel(r'# of bolometers');
+        axs[3][1].grid(True);
+ 
+        # Other histogram 3 (2D histogram)
+        # plot: r0 v.s. theta0
+        h1 = axs[3][2].hist2d(df_base_center['r0'], theta, bins=40, cmap='jet', range=[[0.,500.],[0.,180.]]);
+        axs[3][2].set_title(r'r0 v.s. $\theta 0$ of fake pol.');
+        axs[3][2].set_xlabel(r'$r_0$ [mK]');
+        axs[3][2].set_ylabel(r'$\theta_0$ [deg.]');
+        axs[3][2].grid(True);
+        fig.colorbar(h1[3], ax=axs[3][2]);
 
-    # Other histogram 2
-    # plot: fake-polarization offset (theta0) with respect to theta_wire0
-    theta = (df_base_center['theta_wire0']-df_base_center['theta0'])/2.; 
-    #theta = rad_to_deg_pitopi(theta) # range [-pi,pi]
-    theta = rad_to_deg(theta0topi(theta)); # range [0,pi]
-    axs[3][1].hist(theta, bins=90, range=[0.,180.], histtype='stepfilled',
-             align='mid', orientation='vertical', log=False, linewidth=0.5, linestyle='-', edgecolor='k',
-             color=colors[0], alpha=1.0, label='theta0', stacked=False);
-    axs[3][1].set_title('Polarization offset angles in wire angle of wire grid cal.');
-    axs[3][1].set_xlabel(r'$\theta_{\mathrm{wire0}}$ [deg.]');
-    axs[3][1].set_ylabel(r'# of bolometers');
-    axs[3][1].grid(True);
-
-    # Other histogram 3 (2D histogram)
-    # plot: r0 v.s. theta0
-    h1 = axs[3][2].hist2d(df_base_center['r0'], theta, bins=40, cmap='jet', range=[[0.,500.],[0.,180.]]);
-    axs[3][2].set_title(r'r0 v.s. $\theta 0$ of fake pol.');
-    axs[3][2].set_xlabel(r'$r_0$ [mK]');
-    axs[3][2].set_ylabel(r'$\theta_0$ [deg.]');
-    axs[3][2].grid(True);
-    fig.colorbar(h1[3], ax=axs[3][2]);
-
-
+        # Other histogram 5
+        # plot: r
+        axs[4][1].hist(df_base['r']*1e-3, bins=100, range=[0.,10.], histtype='stepfilled',
+                 align='mid', orientation='vertical', log=False, linewidth=0.5, linestyle='-', edgecolor='k',
+                 color=colors[0], alpha=1.0, label='r', stacked=False);
+        axs[4][1].set_title(r'Amplitude $r$ [K]');
+        axs[4][1].set_xlabel(r'Amplitude $r$ [K]');
+        axs[4][1].set_ylabel(r'# of bolometers');
+        axs[4][1].grid(True);
+        pass; # end of not isHWPSS
 
     # Other histogram 4
     # plot: tau
@@ -441,229 +472,218 @@ def check_absolute(ver, outfile='out_check_absolute/check_absolute_verAho', isCo
     axs[4][0].set_ylabel(r'# of bolometers');
     axs[4][0].grid(True);
 
-    # Other histogram 5
-    # plot: r
-    axs[4][1].hist(df_base['r']*1e-3, bins=100, range=[0.,10.], histtype='stepfilled',
-             align='mid', orientation='vertical', log=False, linewidth=0.5, linestyle='-', edgecolor='k',
-             color=colors[0], alpha=1.0, label='r', stacked=False);
-    axs[4][1].set_title(r'Amplitude $r$ [K]');
-    axs[4][1].set_xlabel(r'Amplitude $r$ [K]');
-    axs[4][1].set_ylabel(r'# of bolometers');
-    axs[4][1].grid(True);
-
-
-
     # Save fig
     print('savefig to '+outfile+'misc.png');
     fig.savefig(outfile+'misc.png');
-
 
 
     ########################
     # each wire angle plot #
     ########################
 
-    # Define columns names
-    wire_angles = [0,22.5,45.,67.5,90.,112.5,135.,157.5]; # wire_angles[0] will be used as reference point.
-    columns_x     = [];
-    columns_x_err = [];
-    columns_y     = [];
-    columns_y_err = [];
-    for angle in wire_angles :
-        columns_x    .append('x_{}deg'    .format(angle));
-        columns_x_err.append('x_err_{}deg'.format(angle));
-        columns_y    .append('y_{}deg'    .format(angle));
-        columns_y_err.append('y_err_{}deg'.format(angle));
-        pass;
-
-    # Get columns names in database
-    columns = df_all.columns.values;
-
-    # Check columns names
-    column_ok = True;
-    for name in columns_x + columns_x_err + columns_y + columns_y_err :
-        if not name in columns : 
-            print('Error! There is no {}'.format(name));
-            column_ok = False;
-        pass;
-
-    # calculate r for each x,y
-    columns_r       = [];
-    columns_r_err   = [];
-    columns_r_ratio = [];
-    columns_theta      = [];
-    columns_theta_err  = [];
-    columns_theta_diff = [];
-    alabels = [];
-    x0 = df_base['x0'];
-    y0 = df_base['y0'];
-    for n, angle in enumerate(wire_angles) :
-        x     = df_base[columns_x[n]    ] - x0;
-        x_err = df_base[columns_x_err[n]];
-        y     = df_base[columns_y[n]    ] - y0;
-        y_err = df_base[columns_y_err[n]];
-        r0    = df_base['r']; # r for circle
-        (r, r_err), (theta, theta_err)= calculateRTheta(x, y ,x_err, y_err); # (r, theta) for each wire angle point
-        r_ratio    = r/r0;
-        if n==0: theta0 = theta;
-        theta = rad_to_deg_0to2pi(theta0 - theta);
-        theta_diff = theta - angle*2.;
-        r_column       = 'r_{}deg'.format(angle);
-        r_err_column   = 'r_err_{}deg'.format(angle);
-        r_ratio_column = 'r_ratio_{}deg'.format(angle);
-        theta_column      = 'theta_{}deg'.format(angle);
-        theta_err_column  = 'theta_err_{}deg'.format(angle);
-        theta_diff_column = 'theta_diff_{}deg'.format(angle);
-        columns_r      .append(r_column      );
-        columns_r_err  .append(r_err_column  );
-        columns_r_ratio.append(r_ratio_column);
-        columns_theta     .append(theta_column     );
-        columns_theta_err .append(theta_err_column );
-        columns_theta_diff.append(theta_diff_column);
-        df_base.loc[:,r_column      ] = r      ;
-        df_base.loc[:,r_err_column  ] = r_err  ;
-        df_base.loc[:,r_ratio_column] = r_ratio;
-        df_base.loc[:,theta_column     ] = theta     ;
-        df_base.loc[:,theta_err_column ] = theta_err ;
-        df_base.loc[:,theta_diff_column] = theta_diff;
-        alabels.append('wire={} deg'.format(angle));
-        pass;
- 
-
-    # Making plots...
-    if column_ok :
-        print('Found all the columns for each wire angles');
-
-        selection_sets = [
-                {'outname':'', 'sels':[''], 'labels':['']},
-                {'outname':'_pixel-handed', 'sels':["pixel_handedness=='A'", "pixel_handedness=='B'"], 'labels':['pixel A', 'pixel B'     ]},
-                {'outname':'_bolo-TB'     , 'sels':["bolo_type=='T'"       , "bolo_type=='B'"       ], 'labels':['Top bolo', 'Bottom bolo']},
-                {'outname':'_pixel-UQ'    , 'sels':["pixel_type=='U'"      , "pixel_type=='Q'"      ], 'labels':['U pixel' , 'Q pixel'    ]},
-                {'outname':'_band'        , 'sels':["band==90"             , "band==150"            ], 'labels':['90 GHz'  , '150 GHz'    ]},
-                {'outname':'_polangle0-45-90'  , 'sels':["pol_angle==0" , "pol_angle==45", "pol_angle==90" ], 'labels':['0 deg'  , '45 deg', '90 deg' ]},
-                {'outname':'_polangle15-60-105', 'sels':["pol_angle==15", "pol_angle==60", "pol_angle==105"], 'labels':['15 deg' , '60 deg', '105 deg']},
-                {'outname':'_polangle135-150'  , 'sels':["pol_angle==135", "pol_angle==150"], 'labels':['135 deg', '150 deg']},
-                {'outname':'_tau10', 'sels':['tau*1000.<10.', 'tau*1000.>=10.'], 'labels':['tau>10 msec', 'tau<10 msec']},
-                {'outname':'_FPposCenter-Out', 'sels':['wafer_number=="13.13"', 'wafer_number!="13.13"'], 'labels':['Center wafer', 'Outer wafers']},
-                ];
-        
-        
-        for selection_set in selection_sets :
-
-            sels    = selection_set['sels'];
-            slabels = selection_set['labels'];
-            nsel = len(sels);
-            dfs = [df_base.query(sel) if sel!='' else df_base for sel in sels];
-            for n, df in enumerate(dfs) :
-                print('# of bolos for {}({}) = {}'.format(sels[n], slabels[n], len(df)));
-                pass;
-
-            # calculate r for each x,y
-            r_set = [];
-            r_err_set = [];
-            r_ratio_set = [];
-            r_ratio_mean_set = [];
-            r_ratio_std_set = [];
-            theta_set = [];
-            theta_err_set = [];
-            theta_diff_set = [];
-            theta_diff_mean_set = [];
-            theta_diff_std_set = [];
-            theta_diffmean_set = [];
-            theta_diffmean_mean_set = [];
-            theta_diffmean_std_set = [];
-            for df in dfs :
-                rs = [];
-                r_errs = [];   
-                r_ratios = [];
-                r_ratio_means = [];
-                r_ratio_stds  = [];
-                thetas = [];
-                theta_errs = [];
-                theta_diffs = [];
-                theta_diff_means = [];
-                theta_diff_stds = [];
-                for n, angle in enumerate(wire_angles) :
-                    r       = df[columns_r[n]      ].values;
-                    r_err   = df[columns_r_err[n]  ].values;
-                    r_ratio = df[columns_r_ratio[n]].values;
-                    theta      = df[columns_theta[n]     ].values;
-                    theta_err  = df[columns_theta_err[n] ].values;
-                    theta_diff = df[columns_theta_diff[n]].values;
-                    rs.append(r);
-                    r_errs.append(r_err);
-                    r_ratios.append(r_ratio);
-                    r_ratio_means.append(np.mean(r_ratio));
-                    r_ratio_stds .append(np.std(r_ratio));
-                    thetas.append(theta);
-                    theta_errs.append(theta_err);
-                    theta_diffs.append(theta_diff);
-                    theta_diff_means.append(np.mean(theta_diff));
-                    theta_diff_stds .append(np.std(theta_diff));
-                    pass;
-                theta_diffmeans = [];
-                theta_diff_mean_mean = np.mean(theta_diff_means);
-                for n, angle in enumerate(wire_angles):
-                    theta_diffmeans.append(theta_diffs[n]-theta_diff_mean_mean);
-                    pass;
-                r_set.append(rs);
-                r_err_set.append(r_errs);
-                r_ratio_set.append(r_ratios);
-                r_ratio_mean_set.append(r_ratio_means);
-                r_ratio_std_set.append(r_ratio_stds);
-                theta_set.append(thetas);
-                theta_err_set.append(theta_errs);
-                theta_diff_set.append(theta_diffs);
-                theta_diff_mean_set.append(theta_diff_means);
-                theta_diff_std_set.append(theta_diff_stds);
-                theta_diffmean_set.append(theta_diffmeans);
-                theta_diffmean_mean_set.append(theta_diff_means-theta_diff_mean_mean);
-                theta_diffmean_std_set.append(theta_diff_stds);
-                pass;
-            #print('r_ratio_set', r_ratio_set);
-
-
-            #########################
-            # r for each wire angle #
-            #########################
-
-            plotEachWire(dfs, r_ratio_set, r_ratio_mean_set, r_ratio_std_set, slabels, 
-                wire_angles, alabels,
-                histbins=100, histxrange=(0.9,1.1),
-                title=r'Signal power ($r$) ratio', 
-                vartitle=r'$r(\theta _{\mathrm{wire}})/r_{\mathrm{circle}}$',
-                mean_ref = 1., mean_yrange = (0.97,1.03),
-                outfilename = outfile+'eachwire-{}{}.png'.format('r',selection_set['outname']),
-                );
-
-            #############################
-            # theta for each wire angle #
-            #############################
-
-            plotEachWire(dfs, theta_diff_set, theta_diff_mean_set, theta_diff_std_set, slabels, 
-                wire_angles, alabels,
-                histbins=100, histxrange=(-10,10),
-                title=r'Theta diff. from expected one', 
-                vartitle=r'$\theta_{\mathrm{meas.}} - \theta_{\mathrm{exp.}}$',
-                mean_ref = 0., mean_yrange = (-4.,4.),
-                outfilename = outfile+'eachwire-{}{}.png'.format('theta',selection_set['outname']),
-                );
-
-            ##############################################
-            # theta relative to mean for each wire angle #
-            ##############################################
-
-            plotEachWire(dfs, theta_diffmean_set, theta_diffmean_mean_set, theta_diffmean_std_set, slabels, 
-                wire_angles, alabels,
-                histbins=100, histxrange=(-10,10),
-                title=r'Theta diff. from mean', 
-                vartitle=r'$\theta_{\mathrm{meas.}} - \theta_{\mathrm{exp. from mean}}$',
-                mean_ref = 0., mean_yrange = (-3.,3.),
-                outfilename = outfile+'eachwire-{}{}.png'.format('theta_from_mean',selection_set['outname']),
-                );
-
+    if 'eachwire' in opts:
+        # Define columns names
+        wire_angles = [0,22.5,45.,67.5,90.,112.5,135.,157.5]; # wire_angles[0] will be used as reference point.
+        columns_x     = [];
+        columns_x_err = [];
+        columns_y     = [];
+        columns_y_err = [];
+        for angle in wire_angles :
+            columns_x    .append('x_{}deg'    .format(angle));
+            columns_x_err.append('x_err_{}deg'.format(angle));
+            columns_y    .append('y_{}deg'    .format(angle));
+            columns_y_err.append('y_err_{}deg'.format(angle));
             pass;
-        pass;
+ 
+        # Get columns names in database
+        columns = df_all.columns.values;
+ 
+        # Check columns names
+        column_ok = True;
+        for name in columns_x + columns_x_err + columns_y + columns_y_err :
+            if not name in columns : 
+                print('Error! There is no {}'.format(name));
+                column_ok = False;
+            pass;
+ 
+        # calculate r for each x,y
+        columns_r       = [];
+        columns_r_err   = [];
+        columns_r_ratio = [];
+        columns_theta      = [];
+        columns_theta_err  = [];
+        columns_theta_diff = [];
+        alabels = [];
+        x0 = df_base['x0'];
+        y0 = df_base['y0'];
+        for n, angle in enumerate(wire_angles) :
+            x     = df_base[columns_x[n]    ] - x0;
+            x_err = df_base[columns_x_err[n]];
+            y     = df_base[columns_y[n]    ] - y0;
+            y_err = df_base[columns_y_err[n]];
+            r0    = df_base['r']; # r for circle
+            (r, r_err), (theta, theta_err)= calculateRTheta(x, y ,x_err, y_err); # (r, theta) for each wire angle point
+            r_ratio    = r/r0;
+            if n==0: theta0 = theta;
+            theta = rad_to_deg_0to2pi(theta0 - theta);
+            theta_diff = theta - angle*2.;
+            r_column       = 'r_{}deg'.format(angle);
+            r_err_column   = 'r_err_{}deg'.format(angle);
+            r_ratio_column = 'r_ratio_{}deg'.format(angle);
+            theta_column      = 'theta_{}deg'.format(angle);
+            theta_err_column  = 'theta_err_{}deg'.format(angle);
+            theta_diff_column = 'theta_diff_{}deg'.format(angle);
+            columns_r      .append(r_column      );
+            columns_r_err  .append(r_err_column  );
+            columns_r_ratio.append(r_ratio_column);
+            columns_theta     .append(theta_column     );
+            columns_theta_err .append(theta_err_column );
+            columns_theta_diff.append(theta_diff_column);
+            df_base.loc[:,r_column      ] = r      ;
+            df_base.loc[:,r_err_column  ] = r_err  ;
+            df_base.loc[:,r_ratio_column] = r_ratio;
+            df_base.loc[:,theta_column     ] = theta     ;
+            df_base.loc[:,theta_err_column ] = theta_err ;
+            df_base.loc[:,theta_diff_column] = theta_diff;
+            alabels.append('wire={} deg'.format(angle));
+            pass;
+  
+ 
+        # Making plots...
+        if column_ok :
+            print('Found all the columns for each wire angles');
+ 
+            selection_sets = [
+                    {'outname':'', 'sels':[''], 'labels':['']},
+                    {'outname':'_pixel-handed', 'sels':["pixel_handedness=='A'", "pixel_handedness=='B'"], 'labels':['pixel A', 'pixel B'     ]},
+                    {'outname':'_bolo-TB'     , 'sels':["bolo_type=='T'"       , "bolo_type=='B'"       ], 'labels':['Top bolo', 'Bottom bolo']},
+                    {'outname':'_pixel-UQ'    , 'sels':["pixel_type=='U'"      , "pixel_type=='Q'"      ], 'labels':['U pixel' , 'Q pixel'    ]},
+                    {'outname':'_band'        , 'sels':["band==90"             , "band==150"            ], 'labels':['90 GHz'  , '150 GHz'    ]},
+                    {'outname':'_polangle0-45-90'  , 'sels':["pol_angle==0" , "pol_angle==45", "pol_angle==90" ], 'labels':['0 deg'  , '45 deg', '90 deg' ]},
+                    {'outname':'_polangle15-60-105', 'sels':["pol_angle==15", "pol_angle==60", "pol_angle==105"], 'labels':['15 deg' , '60 deg', '105 deg']},
+                    {'outname':'_polangle135-150'  , 'sels':["pol_angle==135", "pol_angle==150"], 'labels':['135 deg', '150 deg']},
+                    {'outname':'_tau10', 'sels':['tau*1000.<10.', 'tau*1000.>=10.'], 'labels':['tau>10 msec', 'tau<10 msec']},
+                    {'outname':'_FPposCenter-Out', 'sels':['wafer_number=="13.13"', 'wafer_number!="13.13"'], 'labels':['Center wafer', 'Outer wafers']},
+                    ];
+            
+            
+            for selection_set in selection_sets :
+ 
+                sels    = selection_set['sels'];
+                slabels = selection_set['labels'];
+                nsel = len(sels);
+                dfs = [df_base.query(sel) if sel!='' else df_base for sel in sels];
+                for n, df in enumerate(dfs) :
+                    print('# of bolos for {}({}) = {}'.format(sels[n], slabels[n], len(df)));
+                    pass;
+ 
+                # calculate r for each x,y
+                r_set = [];
+                r_err_set = [];
+                r_ratio_set = [];
+                r_ratio_mean_set = [];
+                r_ratio_std_set = [];
+                theta_set = [];
+                theta_err_set = [];
+                theta_diff_set = [];
+                theta_diff_mean_set = [];
+                theta_diff_std_set = [];
+                theta_diffmean_set = [];
+                theta_diffmean_mean_set = [];
+                theta_diffmean_std_set = [];
+                for df in dfs :
+                    rs = [];
+                    r_errs = [];   
+                    r_ratios = [];
+                    r_ratio_means = [];
+                    r_ratio_stds  = [];
+                    thetas = [];
+                    theta_errs = [];
+                    theta_diffs = [];
+                    theta_diff_means = [];
+                    theta_diff_stds = [];
+                    for n, angle in enumerate(wire_angles) :
+                        r       = df[columns_r[n]      ].values;
+                        r_err   = df[columns_r_err[n]  ].values;
+                        r_ratio = df[columns_r_ratio[n]].values;
+                        theta      = df[columns_theta[n]     ].values;
+                        theta_err  = df[columns_theta_err[n] ].values;
+                        theta_diff = df[columns_theta_diff[n]].values;
+                        rs.append(r);
+                        r_errs.append(r_err);
+                        r_ratios.append(r_ratio);
+                        r_ratio_means.append(np.mean(r_ratio));
+                        r_ratio_stds .append(np.std(r_ratio));
+                        thetas.append(theta);
+                        theta_errs.append(theta_err);
+                        theta_diffs.append(theta_diff);
+                        theta_diff_means.append(np.mean(theta_diff));
+                        theta_diff_stds .append(np.std(theta_diff));
+                        pass;
+                    theta_diffmeans = [];
+                    theta_diff_mean_mean = np.mean(theta_diff_means);
+                    for n, angle in enumerate(wire_angles):
+                        theta_diffmeans.append(theta_diffs[n]-theta_diff_mean_mean);
+                        pass;
+                    r_set.append(rs);
+                    r_err_set.append(r_errs);
+                    r_ratio_set.append(r_ratios);
+                    r_ratio_mean_set.append(r_ratio_means);
+                    r_ratio_std_set.append(r_ratio_stds);
+                    theta_set.append(thetas);
+                    theta_err_set.append(theta_errs);
+                    theta_diff_set.append(theta_diffs);
+                    theta_diff_mean_set.append(theta_diff_means);
+                    theta_diff_std_set.append(theta_diff_stds);
+                    theta_diffmean_set.append(theta_diffmeans);
+                    theta_diffmean_mean_set.append(theta_diff_means-theta_diff_mean_mean);
+                    theta_diffmean_std_set.append(theta_diff_stds);
+                    pass;
+                #print('r_ratio_set', r_ratio_set);
+ 
+ 
+                #########################
+                # r for each wire angle #
+                #########################
+ 
+                plotEachWire(dfs, r_ratio_set, r_ratio_mean_set, r_ratio_std_set, slabels, 
+                    wire_angles, alabels,
+                    histbins=100, histxrange=(0.9,1.1),
+                    title=r'Signal power ($r$) ratio', 
+                    vartitle=r'$r(\theta _{\mathrm{wire}})/r_{\mathrm{circle}}$',
+                    mean_ref = 1., mean_yrange = (0.97,1.03),
+                    outfilename = outfile+'eachwire-{}{}.png'.format('r',selection_set['outname']),
+                    );
+ 
+                #############################
+                # theta for each wire angle #
+                #############################
+ 
+                plotEachWire(dfs, theta_diff_set, theta_diff_mean_set, theta_diff_std_set, slabels, 
+                    wire_angles, alabels,
+                    histbins=100, histxrange=(-10,10),
+                    title=r'Theta diff. from expected one', 
+                    vartitle=r'$\theta_{\mathrm{meas.}} - \theta_{\mathrm{exp.}}$',
+                    mean_ref = 0., mean_yrange = (-4.,4.),
+                    outfilename = outfile+'eachwire-{}{}.png'.format('theta',selection_set['outname']),
+                    );
+ 
+                ##############################################
+                # theta relative to mean for each wire angle #
+                ##############################################
+ 
+                plotEachWire(dfs, theta_diffmean_set, theta_diffmean_mean_set, theta_diffmean_std_set, slabels, 
+                    wire_angles, alabels,
+                    histbins=100, histxrange=(-10,10),
+                    title=r'Theta diff. from mean', 
+                    vartitle=r'$\theta_{\mathrm{meas.}} - \theta_{\mathrm{exp. from mean}}$',
+                    mean_ref = 0., mean_yrange = (-3.,3.),
+                    outfilename = outfile+'eachwire-{}{}.png'.format('theta_from_mean',selection_set['outname']),
+                    );
+ 
+                pass; # end of loop over selection_sets
+            pass; # end of if column OK
+        pass; # end of each wire plots
 
     return 0;
 
@@ -681,9 +701,12 @@ if __name__=='__main__' :
     if len(sys.argv)>3:
         suffix = sys.argv[3]; 
         pass;
+    if len(sys.argv)>4:
+        opts = sys.argv[4].split(','); 
+        pass;
     outdir = f'output_{ver}/check_absolute_nocorr{suffix}';
     if not os.path.isdir(outdir):
         os.mkdir(outdir);
         pass;
     outfile = f'{outdir}/';
-    check_absolute(ver=ver, outfile=outfile,isCorrectHWPenc=isCorrectHWPenc);
+    check_absolute(ver=ver, outfile=outfile,isCorrectHWPenc=isCorrectHWPenc, opts=opts);

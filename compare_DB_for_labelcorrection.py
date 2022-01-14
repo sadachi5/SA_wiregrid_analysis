@@ -5,42 +5,16 @@ import pandas;
 from compare_db import compare_db;
 from utils import theta0topi, rad_to_deg, deg_to_rad, diff_angle;
 
-ver='ver10'
-isCorrectHWPenc=True;
 
-if __name__=='__main__' :
-    dbname_out = 'output_{}/db/all_pandas_correct_label'.format(ver)
-    dbnames =[
-            # wiregrid DB
-            'output_{}/db/all_pandas.db'.format(ver), 
 
-            # planet DB
-            # To get offset_det_x/y, band, pixel_type, bolo_type,pixel_handedness fixed by plant observations
-            #'data/ykyohei/mapping/pb2a_mapping_postv2.db',
-            'data/ykyohei/mapping/pb2a_mapping_postv4.db', # ver10
-            ];
-    tablenames=[
-            # wiregrid DB
-            'wiregrid',
+def labelcorrection(
+        dbname_out, compare_outname, 
+        dbnames, tablenames, columns, selections,
+        isCorrectHWPenc, isHWPSS=False):
+    mode = 'wiregrid' if not isHWPSS else 'HWPSS';
 
-            # planet DB
-            # For 'data/ykyohei/mapping/pb2a_mapping_postv2.db',
-            #'pb2a_focalplane',
-            # For 'data/ykyohei/mapping/pb2a_mapping_postv4.db',
-            'pb2a_focalplane',
-            ];
+    # variable setting
     primarycolumn = 'readout_name'; # target column in merging
-    columns=[
-            # wiregrid DB
-            '*',
-
-            # planet DB
-            # For 'data/ykyohei/mapping/pb2a_mapping_postv2.db',
-            #'pixel_name,band,det_offset_x,det_offset_y,hardware_map_dir,hardware_map_commit_hash',
-            # For 'data/ykyohei/mapping/pb2a_mapping_postv4.db',
-            'pixel_name,pixel_number,bolo_name,band,pixel_type,bolo_type,pixel_handedness,det_offset_x,det_offset_y,hardware_map_dir,hardware_map_commit_hash',
-            ];
-    if len(columns)==1 : columns = [columns[0] for i in range(len(dbnames))];
     suffixes=[
             '', # NEED TO BE EMPTY (No suffix)
             '_fix',
@@ -49,16 +23,6 @@ if __name__=='__main__' :
             'pixel_name', # compare column
             ];
     if len(varnames)==1 : varnames = [varnames[0] for i in range(len(dbnames))];
-    selections=[
-            # wiregrid DB
-            '',
-
-            # planet DB
-            # For 'data/ykyohei/mapping/pb2a_mapping_postv2.db',
-            #"hardware_map_commit_hash=='6f306f8261c2be68bc167e2375ddefdec1b247a2'",
-            # For 'data/ykyohei/mapping/pb2a_mapping_postv4.db',
-            "hardware_map_commit_hash=='6f306f8261c2be68bc167e2375ddefdec1b247a2'",
-            ];
     dropNan=[
             # wiregrid DB
             False,
@@ -66,6 +30,7 @@ if __name__=='__main__' :
             True,
             ];
 
+    # compare DBs
     df0s, df, dfmislabel = compare_db(
             dbnames    = dbnames,
             tablenames = tablenames,
@@ -75,7 +40,7 @@ if __name__=='__main__' :
             suffixes   = suffixes,
             dropNan    = dropNan,
             primarycolumn=primarycolumn,
-            outname='output_{}/db/compare_db'.format(ver),
+            outname=compare_outname
             );
 
     #print(df);
@@ -222,12 +187,20 @@ if __name__=='__main__' :
                             nwarns_angle[0]+=1;
                             print('pol_angle : No theta_det = {}'.format(theta_det));
                         else :
-                            if isCorrectHWPenc:
-                                calib_angle = theta0topi(theta_det - np.pi/2. + 2.*deg_to_rad(-16.71)); 
-                                # -16.71 is obtained from HWP offset angle in out_check_HWPzeroangle/check_HWPzeroangle_ver9.out 
-                            else :
-                                #calib_angle = rad_to_deg(theta0topi(theta_det - np.pi/2.));
-                                calib_angle = theta0topi(theta_det - np.pi/2.);
+                            if not isHWPSS:
+                                if isCorrectHWPenc:
+                                    calib_angle = theta0topi(theta_det - np.pi/2. + 2.*deg_to_rad(-16.71)); 
+                                    # -16.71 is obtained from HWP offset angle in out_check_HWPzeroangle/check_HWPzeroangle_ver9.out 
+                                else :
+                                    #calib_angle = rad_to_deg(theta0topi(theta_det - np.pi/2.));
+                                    calib_angle = theta0topi(theta_det - np.pi/2.);
+                                    pass;
+                            else:
+                                if isCorrectHWPenc:
+                                    calib_angle = theta0topi(theta_det - np.pi/2. + deg_to_rad(-16.71-45.)); 
+                                else :
+                                    calib_angle = theta0topi(-theta_det - np.pi/2.);
+                                    pass;
                                 pass;
                             print('calib_angle = {} [rad]'.format(calib_angle));
                             diff_angles = rad_to_deg(diff_angle(deg_to_rad(pol_angles_fix), calib_angle, upper90deg=True));
@@ -339,8 +312,8 @@ if __name__=='__main__' :
     print('  multiple candidates of band             = {}'.format(nwarns[0]));
     print('  multiple candidates or unmatched reference DB of pixel_type       = {}'.format(nwarns[1]));
     print('  multiple candidates or unmatched reference DB of pixel_handedness = {}'.format(nwarns[3]));
-    print('  multiple candidates of bolo_type        = {} (should be determined by wiregrid cal.)'.format(nwarns[2]));
-    print('  multiple candidates of bolo_name        = {} (should be determined by wiregrid cal.)'.format(nwarns[4]));
+    print('  multiple candidates of bolo_type        = {} (should be determined by {} cal.)'.format(nwarns[2], mode));
+    print('  multiple candidates of bolo_name        = {} (should be determined by {} cal.)'.format(nwarns[4], mode));
     print('  multiple candidates of pol_angle        = {}'.format(nwarns[5]));
     print('    No theta_det          = {}/{}'.format(nwarns_angle[0], nwarns[5]));
     print('    Failed for pol_angle  = {}/{}'.format(nwarns_angle[1], nwarns[5]));
@@ -359,7 +332,7 @@ if __name__=='__main__' :
     print('    Failure 0 (readout_name=None ) ={}'.format(nfails[0]));
     print('    Failure 1 (pixel_name_fix=NaN) ={}'.format(nfails[1]));
     print('    Failure 2 (No pixel_name_fix ) ={}'.format(nfails[2]));
-    print('    Failure 3 (Could not identify the correct label by wiregrid cal.) ={}'.format(nfails[3]));
+    print('    Failure 3 (Could not identify the correct label by {} cal.) ={}'.format(nfails[3], mode));
     #for name in names_fail :
     #    print(name);
     #    pass;
@@ -393,9 +366,62 @@ if __name__=='__main__' :
     outputname = dbname_out + '.db';
     print('Saving the pandas to a sqlite3 file ({})...'.format(outputname));
     conn = sqlite3.connect(outputname);
-    df_new.to_sql('wiregrid',conn,if_exists='replace',index=None);
+    df_new.to_sql('wiregrid' if not isHWPSS else 'hwpss',conn,if_exists='replace',index=None);
     conn.close();
 
+    return 0;
+
+
+if __name__=='__main__' :
+
+    ver='ver10'
+    isCorrectHWPenc=True;
+    dbname_out = 'output_{}/db/all_pandas_correct_label'.format(ver)
+    dbnames =[
+            # wiregrid DB
+            'output_{}/db/all_pandas.db'.format(ver), 
+
+            # planet DB
+            # To get offset_det_x/y, band, pixel_type, bolo_type,pixel_handedness fixed by plant observations
+            #'data/ykyohei/mapping/pb2a_mapping_postv2.db',
+            'data/ykyohei/mapping/pb2a_mapping_postv4.db', # ver10
+            ];
+    tablenames=[
+            # wiregrid DB
+            'wiregrid',
+
+            # planet DB
+            # For 'data/ykyohei/mapping/pb2a_mapping_postv2.db',
+            #'pb2a_focalplane',
+            # For 'data/ykyohei/mapping/pb2a_mapping_postv4.db',
+            'pb2a_focalplane',
+            ];
+    columns=[
+            # wiregrid DB
+            '*',
+
+            # planet DB
+            # For 'data/ykyohei/mapping/pb2a_mapping_postv2.db',
+            #'pixel_name,band,det_offset_x,det_offset_y,hardware_map_dir,hardware_map_commit_hash',
+            # For 'data/ykyohei/mapping/pb2a_mapping_postv4.db',
+            'pixel_name,pixel_number,bolo_name,band,pixel_type,bolo_type,pixel_handedness,det_offset_x,det_offset_y,hardware_map_dir,hardware_map_commit_hash',
+            ];
+    if len(columns)==1 : columns = [columns[0] for i in range(len(dbnames))];
+    selections=[
+            # wiregrid DB
+            '',
+
+            # planet DB
+            # For 'data/ykyohei/mapping/pb2a_mapping_postv2.db',
+            #"hardware_map_commit_hash=='6f306f8261c2be68bc167e2375ddefdec1b247a2'",
+            # For 'data/ykyohei/mapping/pb2a_mapping_postv4.db',
+            "hardware_map_commit_hash=='6f306f8261c2be68bc167e2375ddefdec1b247a2'",
+            ];
+
+    compare_outname='output_{}/db/compare_db'.format(ver);
+
+    labelcorrection(
+        dbname_out, compare_outname, 
+        dbnames, tablenames, columns, selections,
+        isCorrectHWPenc, isHWPSS=False);
     pass;
-
-

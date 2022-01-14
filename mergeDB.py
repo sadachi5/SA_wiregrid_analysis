@@ -1,5 +1,6 @@
 import os, sys;
 import numpy as np;
+from utils import deg_to_rad, theta0topi;
 
 def getSQLColumnDefs(con, cur, tablename, verbose=0):
     # Get table info from filetmp
@@ -170,7 +171,7 @@ def modifySQL(sqlfile, newfile, tablename='wiregrid', verbose=0) :
 
     return 0;
 
-def convertSQLtoPandas(sqlfile, outputfile, tablename='wiregrid', addDB=[], doTauCalib=False, verbose=0):
+def convertSQLtoPandas(sqlfile, outputfile, tablename='wiregrid', addDB=[], doTauCalib=False, isHWPSS=False, verbose=0):
     import sqlite3, pandas;
     import copy;
     # Open SQL
@@ -247,17 +248,22 @@ def convertSQLtoPandas(sqlfile, outputfile, tablename='wiregrid', addDB=[], doTa
         pass;
 
     # do Tau Calibration
-    if doTauCalib and 'tau' in df.keys() :
-       # 0 filling for NULL tau
-        df.loc[(df['tau'].isnull()), 'tauerr'] = 0.;
-        df.loc[(df['tau'].isnull()), 'tau'] = 0.; # Should be filled at last
+    hwp_speed = 2.; # [Hz]
+    # 0 filling for NULL tau
+    df.loc[(df['tau'].isnull()), 'tauerr'] = 0.;
+    df.loc[(df['tau'].isnull()), 'tau'] = 0.; # Should be filled at last
+    if doTauCalib and 'tau' in df.keys() and not isHWPSS:
         # Tau calibration
-        hwp_speed = 2.; # [Hz]
         df['theta_det_taucorr'] = - 2.*df['tau'] * (hwp_speed * 2. * np.pi );
         df['theta_det']         = df['theta_det'] + df['theta_det_taucorr'];
         # Error calculation
         df['theta_det_err_tau']   = 2.*df['tauerr'] * (hwp_speed * 2. * np.pi );
         df['theta_det_err_total'] = np.sqrt( np.power(df['theta_det_err'],2.) + np.power(df['theta_det_err_tau'],2.) );
+    elif isHWPSS:
+        df['theta_det'] = theta0topi(-deg_to_rad(df['mu']));
+        # Error calculation
+        df['theta_det_err'] = deg_to_rad(df['mu_error'])
+        df['theta_det_err_total'] = df['theta_det_err']
         pass;
         
     # Check outputfile name
@@ -273,7 +279,8 @@ def convertSQLtoPandas(sqlfile, outputfile, tablename='wiregrid', addDB=[], doTa
     outputfullname = outputfile + '.db';
     print('Saving the pandas to a sqlite3 file ({})...'.format(outputfullname));
     conn = sqlite3.connect(outputfullname);
-    df.to_sql('wiregrid',conn,if_exists='replace',index=None);
+    df.to_sql('wiregrid' if not isHWPSS else 'hwpss', 
+              conn, if_exists='replace', index=None);
     conn.close();
     del conn;
 

@@ -11,15 +11,17 @@ from compare_db import compare_db
 
 if __name__=='__main__' :
 
-    ver = 10.2;
-    outname = f'output_ver{ver}/db/diff_db';
+    ver = 9;
+    dbname = 'all_pandas';
+    #dbname = 'all_pandas_correct_label';
+    outname = f'output_ver{ver}/db/diff_db_{dbname}';
     dbnames =[
             'data/pb2a-20211004/pb2a_mapping.db',
-            f'output_ver{ver}/db/pb2a_wiregrid_ver{ver}.db',
+            f'output_ver{ver}/db/{dbname}.db',
             ];
     tablenames=[
             'pb2a_focalplane',
-            'pb2a_wiregrid',
+            'wiregrid',
             ];
     columns=[
             'pol_angle,pixel_type,bolo_name,pixel_name,bolo_type,band,pixel_handedness',

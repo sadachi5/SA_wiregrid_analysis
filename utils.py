@@ -182,6 +182,8 @@ def rad_to_deg(rad) : return np.multiply(rad, 180./(np.pi)) ; # [deg.]
 def rad_to_deg_0to2pi(rad) : return np.multiply( theta0to2pi(rad), 180./(np.pi) ); # [deg.]
 # --> [-180, 180] deg
 def rad_to_deg_pitopi(rad) : return np.multiply( thetapitopi(rad), 180./(np.pi) ); # [deg.]
+# --> [0, 180] deg
+def rad_to_deg_0topi(rad) : return np.multiply( theta0topi(rad), 180./(np.pi) ); # [deg.]
 
 # degree to radian
 def deg_to_rad(deg) : return np.multiply(deg, np.pi/180.);

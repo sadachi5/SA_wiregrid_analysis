@@ -147,6 +147,17 @@ Other modification on *simons_array_offline_software*:
     - Modify & check the DB 
     - theta\_det
         - Demod[TOD * exp(-i(4*HWP\_angle-2*(theta\_det+tau*hwp\_speed*2.*pi)))
+    - # of detectors in pb2a\_wiregrid\_ver10.db: 2499 bolos
+
+ver10.2
+----------
+Just change quality cut in modifyDB.py
+- Change final wiregrid DB: pb2a\_wiregrid.db
+- Modify modifyDB.py
+    - Remove tau>0 cut
+    - # of detectors in pb2a\_wiregrid\_ver10.2.db: 2833 bolos
+- Modify check\_absolute.py and check\_absolute\_nocorr.py
+    - remove stimulator quality cut: tau>0.
 
 ## run scripts
  - (./plot.sh: make plot of TODs)
@@ -263,7 +274,7 @@ Other modification on *simons_array_offline_software*:
             - if pol\_angle is Nan
             - if theta\_det\_err is >=0.5deg
         - If bolo_name is Nan and labels are corrected, bolo_name is corrected.
-            -  There are still mis-label in bolo_name related to the band. (534 bolos in ver10)
+            -  There were corrected bolo_name labels. The band name in bolo_name was wrong. (534 bolos in ver10)
         - Rename theta\_det\_err\_total --> theta\_det\_err
 
 
@@ -364,3 +375,7 @@ Other modification on *simons_array_offline_software*:
             # of "Function minimum is not valid." error = 186
             # of memory limit error = 0
             #################################################
+
+- hwpss/...
+    - Here is scripts for label correction and modification of HWPSS DB measured by Masaaki
+    - How to use is wrote in ./analysis\_DB.sh
