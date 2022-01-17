@@ -1,10 +1,7 @@
 SA wiregrid analysis
 ====================
 
-## Setting
-Environmental setting:
-
-    . env-shell.sh
+# Preparations
 
 ## Requirements of python libraries
 There are several python libraries aside from the libraries installed by env-shell.sh.
@@ -13,6 +10,24 @@ Please intall them by
     pip3 install -r requirements.txt
 
 **Do NOT forget to use pip3 instead of pip!**
+
+## Requirements for SA pipeline library
+loadbolo\_pipeline.py needs SA pipeline libraries(simons\_array\_offline\_software).
+Please make a symbolic link to your SA pipeline library as **./library/simons\_array\_offline\_software**.
+1. $ mkdir library
+2. $ ln -s <path-to-your-SA-pipeline> library/simons\_array\_offline\_software
+
+## Requirements for databases
+To make a DB by using wiregrid, you need to prepare two DBs:
+1. Kyohei's planet DB: *data/ykyohei/mapping/pb2a\_mapping\_postvX.db*
+    - Please copy from *tostada:/home/ykyohei/mydatabase*.
+2. An old *pb2a\_focalplane* DB: *data/pb2a-20210205/pb2a\_mapping.db*
+    - Please copy or make a link to *tostada:/data/pb2/ChileData/databases*.
+
+## Setting
+Environmental setting:
+
+    . env-shell.sh
 
 ## Versions
 output\_ver2
